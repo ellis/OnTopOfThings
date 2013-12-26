@@ -1,4 +1,7 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 import Data.Maybe (catMaybes)
+import Data.Text (Text, pack)
 import System.Console.GetOpt
 import System.Environment
 import System.Exit
@@ -78,6 +81,7 @@ showOptions =
 main :: IO ()
 main = do
   testChangeFile
+  db <- loadDB
   args <- getArgs
   case args of
     "add" : args' -> addHandler args'
@@ -105,13 +109,15 @@ addHandler args =
       hPutStrLn stderr (concat errors ++ usageInfo ("ft add:") addOptions)
       exitWith (ExitFailure 1)
   where
-    makeCmd :: AddOptions -> String -> [(String, [String])]
-    makeCmd opts title = [("fossil", "ticket":"add":args)] where
-      maybes :: [Maybe [String]]
-      maybes =
-        [ Just ["type", addOptType opts]
-        , Just ["title", title]
-        , fmap (\x -> ["parent", x]) (addOptParent opts)
-        , fmap (\x -> ["stage", x]) (addOptStage opts)
+    makeCmd :: AddOptions -> String -> ChangeFile
+    makeCmd opts title = ChangeFile 1 [chgset] where
+      time = "now"
+      uuid = "UUID"
+      chgset = ChangeSet "now" [chgblock]
+      chgblock = ChangeBlock "item" uuid l
+      l = catMaybes
+        [ Just $ ChangeProperty "type" "=" (pack $ addOptType opts)
+        , Just $ ChangeProperty "title" "=" $ pack title
+        , fmap (\x -> ChangeProperty "parent" "=" $ pack x) (addOptParent opts)
+        , fmap (\x -> ChangeProperty "stage" "=" $ pack x) (addOptStage opts)
         ]
-      args = concat $ catMaybes maybes

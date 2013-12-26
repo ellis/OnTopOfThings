@@ -1,11 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Change
-( ChangeFile
-, ChangeSet
-, ChangeBlock
-, ChangeProperty
+( ChangeFile(..)
+, ChangeSet(..)
+, ChangeBlock(..)
+, ChangeProperty(..)
+, DB
 , readChangeFile
+, loadDB
 , testChangeFile
 ) where
 
@@ -76,6 +78,14 @@ testChangeFile = do
       let db = processChangeFile file db0
       let l = M.toList db
       mapM_ (\(k, v) -> putStrLn $ (show k) ++ (show v)) l
+
+loadDB :: IO DB
+loadDB = do
+  d <- readChangeFile "testdata/change001.json"
+  case d of
+    Right file -> do
+      let db0 = M.empty :: DB
+      return $ processChangeFile file db0
 
 type DB = M.Map (Text, Text, Text) Value
 
