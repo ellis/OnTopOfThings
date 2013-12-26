@@ -6,6 +6,6 @@ make sure that ~/.cabal/bin is in the path
 
 In this source directory:
 cabal sandbox init
-cabal configure
 cabal install --only-depdencies
+cabal configure
 cabal build
