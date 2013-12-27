@@ -71,22 +71,23 @@ readChangeRecord filename = do
 
 testChangeRecord :: IO ()
 testChangeRecord = do
-  d <- readChangeRecord "testdata/change001.json"
-  putStrLn $ show d
-  case d of
-    Right file -> do
-      let db0 = M.empty :: DB
-      let db = processChangeRecord file db0
+  x <- loadDB
+  case x of
+    Right db -> do
       let l = M.toList db
       mapM_ (\(k, v) -> putStrLn $ (show k) ++ (show v)) l
+    Left msg -> do
+      putStrLn msg
 
-loadDB :: IO DB
+loadDB :: IO (Either String DB)
 loadDB = do
-  d <- readChangeRecord "testdata/change001.json"
-  case d of
-    Right file -> do
-      let db0 = M.empty :: DB
-      return $ processChangeRecord file db0
+  let files = ["testdata/change001.json", "testdata/change002.json"]
+  let db0 = M.empty :: DB
+  records <- mapM readChangeRecord files
+  return $ foldl fn (Right db0) records where
+    fn (Right db) (Right record) = Right $ processChangeRecord record db
+    fn (Left msg) _ = Left msg
+    fn _ (Left msg) = Left msg
 
 type DB = M.Map (Text, Text, Text) Value
 

@@ -1,7 +1,7 @@
 - [x] Change: switch to new JSON format
 - [x] Change: Give clearer names to the Change* types
 - [x] Create new change record files
-- [ ] Change: loadDB: load multiple files
+- [x] Change: loadDB: load multiple files
 - [ ] Change: loadDB: load all json files in direcory
 - [ ] Change: Switch to using UTCTime in Change.hs
 - [ ] Change: Convert Change* types to JSON
