@@ -7,6 +7,7 @@ module Change
 , DB
 , readChangeRecord
 , loadDB
+, saveChangeRecord
 , testChangeRecord
 ) where
 
@@ -18,7 +19,7 @@ import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as M
 import qualified Data.Vector as V
-import Data.Text (Text, pack, unpack)
+import Data.Text (Text, pack, unpack, concat)
 import Data.Time.Clock (UTCTime)
 import System.Directory (getDirectoryContents)
 import System.FilePath (takeExtension, joinPath)
@@ -41,6 +42,10 @@ data ChangeEntity = ChangeEntity
 data ChangeProperty = ChangeProperty !Text !Text !Text
   deriving (Show)
 
+instance ToJSON ChangeRecord where
+  toJSON (ChangeRecord format time entities) =
+    object ["format" .= format, "time" .= time, "entities" .= entities]
+
 instance FromJSON ChangeRecord where
   parseJSON (Object v) = ChangeRecord <$> format <*>  time <*> list where
     format = v .: "format"
@@ -50,12 +55,19 @@ instance FromJSON ChangeRecord where
       Nothing -> ((parseJSON (Object v)) :: Parser ChangeEntity) >>= (\x -> return [x])
   parseJSON _ = empty
 
+instance ToJSON ChangeEntity where
+  toJSON (ChangeEntity table id properties) =
+    object ["table" .= table, "id" .= id, "properties" .= properties]
+
 instance FromJSON ChangeEntity where
   parseJSON (Object v) = ChangeEntity <$> table <*> id <*> properties where
     table = v .:? "table" .!= "item"
     id = v .: "id"
     properties = v .: "properties"
   parseJSON _ = empty
+
+instance ToJSON ChangeProperty where
+  toJSON (ChangeProperty name op value) = String (Data.Text.concat [name, op, value])
 
 instance FromJSON ChangeProperty where
   parseJSON (String v) = result where
@@ -96,6 +108,10 @@ loadDB = do
     fn (Right db) (Right record) = Right $ processChangeRecord record db
     fn (Left msg) _ = Left msg
     fn _ (Left msg) = Left msg
+
+saveChangeRecord :: ChangeRecord -> IO ()
+saveChangeRecord record = do
+  putStrLn $ BL.unpack $ encode record
 
 type DB = M.Map (Text, Text, Text) Value
 

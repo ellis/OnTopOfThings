@@ -104,8 +104,9 @@ addHandler args = do
           exitWith (ExitFailure 1)
         words -> do
           let title = unwords words
-          let cmds = makeCmd opts title time
-          putStrLn $ show cmds
+          let record = makeCmd opts title time
+          putStrLn $ show record
+          saveChangeRecord record
           --mapM_ (\(cmd, args) -> rawSystem cmd args) cmds
     (_, _, errors) -> do
       hPutStrLn stderr (concat errors ++ usageInfo ("ft add:") addOptions)

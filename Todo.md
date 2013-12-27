@@ -5,7 +5,7 @@
 - [x] Change: loadDB: load all json files in direcory
 - [x] Change: Switch to using UTCTime in Change.hs
 - [x] Main: Get current time for change records
-- [ ] Change: Convert Change* types to JSON
+- [x] Change: Convert Change* types to JSON
 - [ ] Main: Generate UUID for new change records
 - [ ] Main: save change record to disk
 
