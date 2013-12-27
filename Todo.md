@@ -8,6 +8,10 @@
 - [x] Change: Convert Change* types to JSON
 - [ ] Main: Generate UUID for new change records
 - [ ] Main: save change record to disk
+- [ ] Main: find parent by title
+- [ ] Main: list tasks
+- [ ] Main: list tasks which have a field matching a string
+- [ ] Main: list tasks with specific fields, i.e. --stage=inbox
 
 - [ ] Change license to GPL3
 - [ ] Put git repository on github
