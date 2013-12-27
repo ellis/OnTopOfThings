@@ -1,5 +1,5 @@
-- [ ] Change: switch to new JSON format
+- [x] Change: switch to new JSON format
+- [x] Change: Give clearer names to the Change* types
 - [ ] Change: Switch to using UTCTime in Change.hs
-- [ ] Change: Give clearer names to the Change* types
 - [ ] Change: Convert Change* types to JSON
 - [ ] Main: Generate UUID for new change files

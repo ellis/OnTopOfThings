@@ -1,14 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Change
-( ChangeFile(..)
-, ChangeSet(..)
-, ChangeBlock(..)
+( ChangeRecord(..)
+, ChangeEntity(..)
 , ChangeProperty(..)
 , DB
-, readChangeFile
+, readChangeRecord
 , loadDB
-, testChangeFile
+, testChangeRecord
 ) where
 
 import Control.Applicative ((<$>), (<*>), empty)
@@ -19,90 +18,87 @@ import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as M
 import qualified Data.Vector as V
-import Data.Text (Text)
+import Data.Text (Text, pack, unpack)
+import Text.Regex (mkRegex, matchRegexAll)
 
-data ChangeFile = ChangeFile
-  { format :: Int
-  , changeSet :: [ChangeSet]
+data ChangeRecord = ChangeRecord
+  { changeFormat :: Int
+  , changeTime :: !Text
+  , changeEntities :: [ChangeEntity]
   } deriving (Show)
 
-data ChangeSet = ChangeSet
-  { date :: !Text
-  , changeBlock :: [ChangeBlock]
-  } deriving (Show)
-
-data ChangeBlock = ChangeBlock
-  { table :: !Text
-  , uuid :: !Text
-  , changeList :: [ChangeProperty]
+data ChangeEntity = ChangeEntity
+  { changeTable :: !Text
+  , changeId :: !Text
+  , changeProperties :: [ChangeProperty]
   } deriving (Show)
 
 data ChangeProperty = ChangeProperty !Text !Text !Text
   deriving (Show)
 
-instance FromJSON ChangeFile where
-  parseJSON (Object v) = ChangeFile <$> v .: "format" <*> v .: "changes"
+instance FromJSON ChangeRecord where
+  parseJSON (Object v) = ChangeRecord <$> format <*>  time <*> list where
+    format = v .: "format"
+    time = v .: "time"
+    list = case HM.lookup "list" v of
+      Just a -> parseJSON a
+      Nothing -> ((parseJSON (Object v)) :: Parser ChangeEntity) >>= (\x -> return [x])
   parseJSON _ = empty
 
-instance FromJSON ChangeSet where
-  parseJSON (Array v) = ChangeSet <$> date <*> changeBlock where
-    date = parseJSON (v V.! 0)
-    changeBlock = parseJSON $ Array (V.drop 1 v)
-  parseJSON _ = empty
-
-instance FromJSON ChangeBlock where
-  parseJSON (Array v) = ChangeBlock <$> table <*> uuid <*> changeList where
-    table = parseJSON (v V.! 0)
-    uuid = parseJSON (v V.! 1)
-    changeList = parseJSON $ Array (V.drop 2 v)
+instance FromJSON ChangeEntity where
+  parseJSON (Object v) = ChangeEntity <$> table <*> id <*> properties where
+    table = v .:? "table" .!= "item"
+    id = v .: "id"
+    properties = v .: "properties"
   parseJSON _ = empty
 
 instance FromJSON ChangeProperty where
+  parseJSON (String v) = result where
+    rx = mkRegex "[=+-]"
+    result = case matchRegexAll rx (unpack v) of
+      Just (name, op, value, _) ->
+        return $ ChangeProperty (pack name) (pack op) (pack value)
+      _ -> empty
   parseJSON (Array v) = ChangeProperty <$> name <*> op <*> value where
     name = parseJSON (v V.! 0)
     op = parseJSON (v V.! 1)
     value = parseJSON (v V.! 2)
   parseJSON _ = empty
 
-readChangeFile :: String -> IO (Either String ChangeFile)
-readChangeFile filename = do
-  (eitherDecode <$> B.readFile filename) :: IO (Either String ChangeFile)
+readChangeRecord :: String -> IO (Either String ChangeRecord)
+readChangeRecord filename = do
+  (eitherDecode <$> B.readFile filename) :: IO (Either String ChangeRecord)
 
-testChangeFile :: IO ()
-testChangeFile = do
-  d <- readChangeFile "testdata/change001.json"
+testChangeRecord :: IO ()
+testChangeRecord = do
+  d <- readChangeRecord "testdata/change001.json"
   putStrLn $ show d
   case d of
     Right file -> do
       let db0 = M.empty :: DB
-      let db = processChangeFile file db0
+      let db = processChangeRecord file db0
       let l = M.toList db
       mapM_ (\(k, v) -> putStrLn $ (show k) ++ (show v)) l
 
 loadDB :: IO DB
 loadDB = do
-  d <- readChangeFile "testdata/change001.json"
+  d <- readChangeRecord "testdata/change001.json"
   case d of
     Right file -> do
       let db0 = M.empty :: DB
-      return $ processChangeFile file db0
+      return $ processChangeRecord file db0
 
 type DB = M.Map (Text, Text, Text) Value
 
-processChangeFile :: ChangeFile -> DB -> DB
-processChangeFile file db = db'' where
-  l = changeSet file
-  db'' = foldl (\db' x -> processChangeSet x db') db l
+processChangeRecord :: ChangeRecord -> DB -> DB
+processChangeRecord record db = db'' where
+  entities = changeEntities record
+  db'' = foldl (\db' entity -> processChangeEntity (changeTime record) entity db') db entities
 
-processChangeSet :: ChangeSet -> DB -> DB
-processChangeSet set db = db'' where
-  l = changeBlock set
-  db'' = foldl (\db' x -> processChangeBlock (date set) x db') db l
-
-processChangeBlock :: Text -> ChangeBlock -> DB -> DB
-processChangeBlock date block db = db'' where
-  l = changeList block
-  db'' = foldl (\db' x -> processChangeProperty date (table block) (uuid block) x db') db l
+processChangeEntity :: Text -> ChangeEntity -> DB -> DB
+processChangeEntity time entity db = db'' where
+  properties = changeProperties entity
+  db'' = foldl (\db' x -> processChangeProperty time (changeTable entity) (changeId entity) x db') db properties
 
 processChangeProperty :: Text -> Text -> Text -> ChangeProperty -> DB -> DB
 processChangeProperty date table uuid (ChangeProperty property op value) db =

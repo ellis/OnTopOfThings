@@ -80,7 +80,7 @@ showOptions =
 
 main :: IO ()
 main = do
-  testChangeFile
+  testChangeRecord
   db <- loadDB
   args <- getArgs
   case args of
@@ -109,12 +109,11 @@ addHandler args =
       hPutStrLn stderr (concat errors ++ usageInfo ("ft add:") addOptions)
       exitWith (ExitFailure 1)
   where
-    makeCmd :: AddOptions -> String -> ChangeFile
-    makeCmd opts title = ChangeFile 1 [chgset] where
+    makeCmd :: AddOptions -> String -> ChangeRecord
+    makeCmd opts title = ChangeRecord 1 time [entity] where
       time = "now"
       uuid = "UUID"
-      chgset = ChangeSet "now" [chgblock]
-      chgblock = ChangeBlock "item" uuid l
+      entity = ChangeEntity "item" uuid l
       l = catMaybes
         [ Just $ ChangeProperty "type" "=" (pack $ addOptType opts)
         , Just $ ChangeProperty "title" "=" $ pack title
