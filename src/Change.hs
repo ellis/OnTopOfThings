@@ -19,7 +19,11 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as M
 import qualified Data.Vector as V
 import Data.Text (Text, pack, unpack)
+import System.Directory (getDirectoryContents)
+import System.FilePath (takeExtension, joinPath)
+--import qualified System.FilePath.Find as FF
 import Text.Regex (mkRegex, matchRegexAll)
+
 
 data ChangeRecord = ChangeRecord
   { changeFormat :: Int
@@ -81,9 +85,12 @@ testChangeRecord = do
 
 loadDB :: IO (Either String DB)
 loadDB = do
-  let files = ["testdata/change001.json", "testdata/change002.json"]
+  --let files = ["testdata/change001.json", "testdata/change002.json"]
+  files' <- getDirectoryContents "testdata"
+  let files = filter (\f -> takeExtension f == ".json") files'
+  --files <- FF.find (return False) (FF.extension `FF.==?` ".json") "testdata"
   let db0 = M.empty :: DB
-  records <- mapM readChangeRecord files
+  records <- mapM (\f -> readChangeRecord (joinPath ["testdata", f])) files
   return $ foldl fn (Right db0) records where
     fn (Right db) (Right record) = Right $ processChangeRecord record db
     fn (Left msg) _ = Left msg

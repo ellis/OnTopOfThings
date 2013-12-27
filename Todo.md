@@ -2,7 +2,7 @@
 - [x] Change: Give clearer names to the Change* types
 - [x] Create new change record files
 - [x] Change: loadDB: load multiple files
-- [ ] Change: loadDB: load all json files in direcory
+- [x] Change: loadDB: load all json files in direcory
 - [ ] Change: Switch to using UTCTime in Change.hs
 - [ ] Change: Convert Change* types to JSON
 - [ ] Main: Generate UUID for new change records

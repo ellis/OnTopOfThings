@@ -18,4 +18,4 @@ executable otot
   main-is: Main.hs
   hs-source-dirs: src
   -- other-modules:       
-  build-depends:       base ==4.6.*, persistent, persistent-template, persistent-sqlite, esqueleto, transformers, containers, aeson, bytestring, text, unordered-containers, vector, regex-compat
+  build-depends:       base ==4.6.*, persistent, persistent-template, persistent-sqlite, esqueleto, transformers, containers, aeson, bytestring, text, unordered-containers, vector, regex-compat, filepath, directory
