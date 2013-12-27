@@ -2,6 +2,7 @@
 
 import Data.Maybe (catMaybes)
 import Data.Text (Text, pack)
+import Data.Time.Clock (UTCTime, getCurrentTime)
 import System.Console.GetOpt
 import System.Environment
 import System.Exit
@@ -92,7 +93,8 @@ main = do
   putStrLn "Done."
 
 addHandler :: [String] -> IO ()
-addHandler args =
+addHandler args = do
+  time <- getCurrentTime
   case getOpt Permute addOptions args of
     (actions, nonOptions, []) -> do
       opts <- foldl (>>=) (return defaultAddOptions) actions
@@ -102,16 +104,15 @@ addHandler args =
           exitWith (ExitFailure 1)
         words -> do
           let title = unwords words
-          let cmds = makeCmd opts title
+          let cmds = makeCmd opts title time
           putStrLn $ show cmds
           --mapM_ (\(cmd, args) -> rawSystem cmd args) cmds
     (_, _, errors) -> do
       hPutStrLn stderr (concat errors ++ usageInfo ("ft add:") addOptions)
       exitWith (ExitFailure 1)
   where
-    makeCmd :: AddOptions -> String -> ChangeRecord
-    makeCmd opts title = ChangeRecord 1 time [entity] where
-      time = "now"
+    makeCmd :: AddOptions -> String -> UTCTime -> ChangeRecord
+    makeCmd opts title time = ChangeRecord 1 time [entity] where
       uuid = "UUID"
       entity = ChangeEntity "item" uuid l
       l = catMaybes

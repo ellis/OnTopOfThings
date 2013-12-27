@@ -3,9 +3,11 @@
 - [x] Create new change record files
 - [x] Change: loadDB: load multiple files
 - [x] Change: loadDB: load all json files in direcory
-- [ ] Change: Switch to using UTCTime in Change.hs
+- [x] Change: Switch to using UTCTime in Change.hs
+- [x] Main: Get current time for change records
 - [ ] Change: Convert Change* types to JSON
 - [ ] Main: Generate UUID for new change records
-- [ ] Main: Get current time for change records
+- [ ] Main: save change record to disk
+
 - [ ] Change license to GPL3
 - [ ] Put git repository on github

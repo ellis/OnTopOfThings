@@ -19,6 +19,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as M
 import qualified Data.Vector as V
 import Data.Text (Text, pack, unpack)
+import Data.Time.Clock (UTCTime)
 import System.Directory (getDirectoryContents)
 import System.FilePath (takeExtension, joinPath)
 --import qualified System.FilePath.Find as FF
@@ -27,7 +28,7 @@ import Text.Regex (mkRegex, matchRegexAll)
 
 data ChangeRecord = ChangeRecord
   { changeFormat :: Int
-  , changeTime :: !Text
+  , changeTime :: !UTCTime
   , changeEntities :: [ChangeEntity]
   } deriving (Show)
 
@@ -103,13 +104,13 @@ processChangeRecord record db = db'' where
   entities = changeEntities record
   db'' = foldl (\db' entity -> processChangeEntity (changeTime record) entity db') db entities
 
-processChangeEntity :: Text -> ChangeEntity -> DB -> DB
+processChangeEntity :: UTCTime -> ChangeEntity -> DB -> DB
 processChangeEntity time entity db = db'' where
   properties = changeProperties entity
   db'' = foldl (\db' x -> processChangeProperty time (changeTable entity) (changeId entity) x db') db properties
 
-processChangeProperty :: Text -> Text -> Text -> ChangeProperty -> DB -> DB
-processChangeProperty date table uuid (ChangeProperty property op value) db =
+processChangeProperty :: UTCTime -> Text -> Text -> ChangeProperty -> DB -> DB
+processChangeProperty time table uuid (ChangeProperty property op value) db =
   case M.lookup key db of
     Nothing ->
       case op of
