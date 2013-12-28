@@ -9,6 +9,7 @@ import System.Console.GetOpt
 import System.Environment
 import System.Exit
 import System.IO
+import Database.Persist.Sqlite (runSqlite)
 
 import Change
 import Command
@@ -97,9 +98,12 @@ main = do
   case x of
     Right records -> do
       mapM_ (putStrLn . show) records
-      --runSqlite ":memory:" do
+      runSqlite ":memory:" $ do
         -- 2) convert the command records to and SQL 'command' table
-      DB.processCommandRecords records
+        DB.databaseBuildCommandTable records
+        -- 3) process the 'command' table, producing the 'property' table
+        DB.databaseProcessCommandTable
+      --DB.processCommandRecords records
     Left msg -> do
       putStrLn msg
 

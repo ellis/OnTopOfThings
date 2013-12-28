@@ -10,6 +10,8 @@ module Database
 ( Command(..)
 , processCommandRecords
 , xyz
+, databaseBuildCommandTable
+, databaseProcessCommandTable
 ) where
 
 import           Control.Monad.IO.Class  (liftIO, MonadIO)
@@ -39,6 +41,10 @@ databaseBuildCommandTable records = do
   runMigration migrateAll
 --  processRecords records
   mapM_ processRecord records
+
+databaseProcessCommandTable :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
+databaseProcessCommandTable = do
+  processCommands
 
 xyz :: [C.CommandRecord] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 xyz records = do
