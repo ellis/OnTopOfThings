@@ -93,15 +93,15 @@ processAddCommand time args = do
     Just uuid -> do
       case createItem time map of
         Just item -> do
+          -- Create Item
           insert item
+          -- Update the other properties
+          mapM_ fn xs
           return ()
-        Nothing -> return ()
-        --return ()
-      -- Update the other properties
-      mapM_ fn xs
-      where
-        fn (Right x) = processItem uuid x
-        fn (Left msg) = liftIO $ putStrLn msg
+          where
+            fn (Right x) = processItem uuid x
+            fn (Left msg) = liftIO $ putStrLn msg
+        Nothing -> liftIO $ putStrLn "Couldn't construct Item"
 
 itemFields = ["id", "type", "title", "status", "parent", "stage", "label", "index"]
 
