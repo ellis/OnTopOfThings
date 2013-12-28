@@ -6,8 +6,28 @@ import DatabaseTables
 import qualified Data.Map as M
 import           Database.Persist
 import Data.Maybe (catMaybes)
+import Data.Time.Clock (UTCTime)
 import Text.Regex (mkRegex, matchRegexAll)
 import           Control.Monad.IO.Class  (liftIO)
+import qualified Command as C
+import qualified Data.Text as T
+
+createAddCommandRecord :: (PersistQuery m, PersistStore m) => UTCTime -> String -> String -> [String] -> m (Either String C.CommandRecord)
+createAddCommandRecord time user uuid args = do
+  return $ Right $ C.CommandRecord 1 time (T.pack user) (T.pack "add") (l1 ++ l2) where
+    xs = parseArgs args
+    map0 = makeMap xs
+    map1 = M.unions [M.fromList [("id", uuid)], map0, M.fromList [("type", "task"), ("stage", "inbox")]]
+    l1 = catMaybes
+      [ Just (T.pack $ "id=" ++ uuid)
+      , M.lookup "type" map1 >>= (\x -> Just $ T.pack $ "type=" ++ x)
+      , M.lookup "stage" map1 >>= (\x -> Just $ T.pack $ "stage=" ++ x)
+      ]
+    l2 = catMaybes $ map fn xs
+    fn :: Either String (String, String, Maybe String) -> Maybe T.Text
+    fn (Right (name, op, Just value)) = if name == "tag" then Just (T.pack $ name ++ op ++ value) else Nothing
+    fn (Right (name, "-", Nothing)) = if name == "tag" then Just (T.pack $ name ++ "-") else Nothing
+    fn _ = Nothing
 
 processAddCommand :: (PersistQuery m, PersistStore m) => [String] -> m ()
 processAddCommand args = do

@@ -1,6 +1,10 @@
 - [x] Command: instead of storing data changes, store commands
 - [x] Database: load command records into database
 - [x] Add: update database based on a Command
+- [ ] Add: create CommandRecord from CLI parameters
+- [ ] Add: append new CommandRecord to database
+- [ ] Add: save CommandRecord to disk
+- [ ] DatabaseTables: Switch to using UTCTime
 - [ ] Main: list tasks
 - [ ] Main: list tasks which have a field matching a string
 - [ ] Main: list tasks with specific fields, i.e. --stage=inbox
