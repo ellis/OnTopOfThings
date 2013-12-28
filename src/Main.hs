@@ -105,9 +105,8 @@ main = do
       runSqlite ":memory:" $ do
         DB.databaseInit
         -- 2) convert the command records to and SQL 'command' table
-        DB.databaseAddRecords records
         -- 3) process the 'command' table, producing the 'property' table
-        DB.databaseProcessCommandTable
+        DB.databaseAddRecords records
         case args of
           "add" : args' -> addHandler args'
           --"add" : args' -> addHandler args'
@@ -124,8 +123,14 @@ addHandler args = do
   time <- liftIO $ getCurrentTime
   uuid <- liftIO $ U4.nextRandom >>= return . U.toString
   chguuid <- liftIO $ U4.nextRandom >>= return . U.toString
+  -- 4) parse the command line and create a new command record
   x <- createAddCommandRecord time "default" uuid args
-  liftIO $ print x
+  case x of
+    Left msg -> do liftIO $ print msg
+    Right record -> do
+      -- 5) convert the new command record to a 'Command' and update the 'property' table
+      DB.databaseAddRecord record
+      liftIO $ print record
   return ()
 
 addHandler' :: [String] -> IO ()

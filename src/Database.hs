@@ -11,7 +11,6 @@ module Database
 , databaseInit
 , databaseAddRecord
 , databaseAddRecords
-, databaseProcessCommandTable
 ) where
 
 import           Control.Monad.IO.Class  (liftIO, MonadIO)
@@ -48,11 +47,8 @@ databaseAddRecords records = do
 
 databaseProcessCommandTable :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
 databaseProcessCommandTable = do
-  processCommands
-
-databaseProcessCommand :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
-databaseProcessCommand = do
-  processCommands
+  l <- selectList ([] :: [Filter Command]) []
+  mapM_ (\entity -> processCommand (entityVal entity)) l
 
 recordToCommand :: C.CommandRecord -> Command
 recordToCommand (C.CommandRecord format time user cmd args) =
@@ -66,8 +62,3 @@ processCommand command = do
     _ -> return ()
   where
     Just args = decode (BL.pack $ commandArgs command)
-
---processCommands :: (PersistQuery m, PersistStore m) => m ()
-processCommands = do
-  l <- selectList ([] :: [Filter Command]) []
-  mapM_ (\entity -> processCommand (entityVal entity)) l

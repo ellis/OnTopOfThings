@@ -2,7 +2,7 @@
 - [x] Database: load command records into database
 - [x] Add: update database based on a Command
 - [x] Add: create CommandRecord from CLI parameters
-- [ ] Add: append new CommandRecord to database
+- [x] Add: append new CommandRecord to database
 - [ ] Add: save CommandRecord to disk
 - [ ] DatabaseTables: Switch to using UTCTime
 - [ ] Main: list tasks
