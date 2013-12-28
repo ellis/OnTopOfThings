@@ -3,6 +3,8 @@
 import Data.Maybe (catMaybes)
 import Data.Text (Text, pack)
 import Data.Time.Clock (UTCTime, getCurrentTime)
+import qualified Data.UUID as U
+import qualified Data.UUID.V4 as U4
 import System.Console.GetOpt
 import System.Environment
 import System.Exit
@@ -95,6 +97,7 @@ main = do
 addHandler :: [String] -> IO ()
 addHandler args = do
   time <- getCurrentTime
+  uuid <- U4.nextRandom >>= return . U.toString
   case getOpt Permute addOptions args of
     (actions, nonOptions, []) -> do
       opts <- foldl (>>=) (return defaultAddOptions) actions
@@ -104,7 +107,7 @@ addHandler args = do
           exitWith (ExitFailure 1)
         words -> do
           let title = unwords words
-          let record = makeCmd opts title time
+          let record = makeCmd opts title time uuid
           putStrLn $ show record
           saveChangeRecord record
           --mapM_ (\(cmd, args) -> rawSystem cmd args) cmds
@@ -112,10 +115,9 @@ addHandler args = do
       hPutStrLn stderr (concat errors ++ usageInfo ("ft add:") addOptions)
       exitWith (ExitFailure 1)
   where
-    makeCmd :: AddOptions -> String -> UTCTime -> ChangeRecord
-    makeCmd opts title time = ChangeRecord 1 time [entity] where
-      uuid = "UUID"
-      entity = ChangeEntity "item" uuid l
+    makeCmd :: AddOptions -> String -> UTCTime -> String -> ChangeRecord
+    makeCmd opts title time uuid = ChangeRecord 1 time [entity] where
+      entity = ChangeEntity "item" (pack uuid) l
       l = catMaybes
         [ Just $ ChangeProperty "type" "=" (pack $ addOptType opts)
         , Just $ ChangeProperty "title" "=" $ pack title
