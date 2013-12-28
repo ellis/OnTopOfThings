@@ -11,7 +11,7 @@
 - [x] Main: 'mod' command
 - [x] Mod: modify item properties
 - [x] List: check off task if it's completed
-- [ ] List: use esqueleto
+- [x] List: use esqueleto
 - [ ] Main: 'done' command
 - [ ] Done: Mark a task as completed
 - [ ] List: list of lists and their components
