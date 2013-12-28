@@ -5,12 +5,22 @@
 - [x] Add: append new CommandRecord to database
 - [x] Main: save CommandRecord to disk
 - [x] Main: list tasks
-- [ ] List: prefix title with parent list name
+- [x] List: prefix title with parent list name
+- [ ] Add: store creation time for item
+- [ ] Database: index the tasks which are pending
+- [ ] Main: 'mod' command
+- [ ] Mod: modify item properties
+- [ ] Main: 'done' command
+- [ ] Done: Mark a task as completed
+- [ ] List: list of lists and their components
+- [ ] List: check off task if it's completed
 - [ ] List: prefix with start time
+- [ ] List: prefix with end time
+- [ ] List: list tasks for a given list
+- [ ] Add: find parent by label or title
 - [ ] Main: list tasks which have a field matching a string
 - [ ] Main: list tasks with specific fields, i.e. --stage=inbox
 - [ ] DatabaseTables: Switch to using UTCTime
-- [ ] Main: find parent by title
 - [ ] Main: when setting parent, prevent cyclic loops -- might want to check this in loadDB too.
 - [ ] Lookup tradeoffs for String, Text, ByteString, as well as the lazy and strict versions.
 

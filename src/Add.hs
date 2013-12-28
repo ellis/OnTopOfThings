@@ -21,7 +21,7 @@ createAddCommandRecord time user uuid args =
       Right (Just title, args') -> return $ Right $ C.CommandRecord 1 time (T.pack user) (T.pack "add") (l1 ++ l2) where
         xs = parseArgs args'
         map0 = makeMap xs
-        map1 = M.union map0 (M.fromList [("type", "task"), ("stage", "inbox")])
+        map1 = M.union map0 (M.fromList [("type", "task"), ("status", "pending"), ("stage", "inbox")])
         l1 = catMaybes
           [ Just (T.pack $ "id=" ++ uuid)
           , M.lookup "type" map1 >>= (\x -> Just $ T.pack $ "type=" ++ x)
@@ -71,7 +71,7 @@ preparseArgs l acc = case l of
       Right ("title", op, _) -> Left $ "cannot use `"++op++"` operator with `title`"
       Right (name, op, value) -> preparseArgs rest acc' where
         acc' = (fst acc, s : snd acc)
-    -- TODO: handle "+home" -> "tag+home", "@home" -> "context+home"
+    -- TODO: handle "+home" -> "tag+home", "@home" -> "context+home", "/list" -> "parent=list"
 
 parseArgs :: [String] -> [Either String (String, String, Maybe String)]
 parseArgs args = map parse args

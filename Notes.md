@@ -57,7 +57,9 @@
     * urgency [H/M/L/null]
     * description
     * after (UUID)
-    * stage (inbox, external, pending, next, today, now, completed)
+    * stage (inbox, external, pending, next, today, now)
+    * status (pending, completed, deleted)
+    * close reason (for tickets/bugs: fixed, won't fix, not a bug, ...)
     * due
     * defer/ignore/forget/hide/wait/postpone/delay/tickler till date
     * readiness: ready/actionable, waiting/external, needs to be decomposed into smaller steps
@@ -72,7 +74,7 @@
     * tags
     * contexts
 * item property interactions
-    * 
+    * there are lots of interactions between some of the variables (stage, status, close reason); figure this out better
 * item relations:
     * parent (realm, role, context, outcome, etc)
     * tag
