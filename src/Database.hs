@@ -45,10 +45,18 @@ databaseAddRecords :: [C.CommandRecord] -> SqlPersistT (NoLoggingT (ResourceT IO
 databaseAddRecords records = do
   mapM_ databaseAddRecord records
 
-databaseProcessCommandTable :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
-databaseProcessCommandTable = do
-  l <- selectList ([] :: [Filter Command]) []
-  mapM_ (\entity -> processCommand (entityVal entity)) l
+databaseUpdateIndexes :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
+databaseUpdateIndexes = do
+  -- TODO: There's a better way to do this, I'm sure -- something with joins or something.
+  -- Get a list of pending tasks
+  entities1 <- selectList [PropertyTable ==. "item", PropertyName ==. "type", PropertyValue ==. "task"] []
+  mapM_ choose entities1
+  selectList [PropertyTable ==. "item", PropertyName ==. "type", PropertyValue ==. "task"] []
+
+--databaseProcessCommandTable :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
+--databaseProcessCommandTable = do
+--  l <- selectList ([] :: [Filter Command]) []
+--  mapM_ (\entity -> processCommand (entityVal entity)) l
 
 recordToCommand :: C.CommandRecord -> Command
 recordToCommand (C.CommandRecord format time user cmd args) =

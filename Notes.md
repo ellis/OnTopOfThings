@@ -58,7 +58,7 @@
     * description
     * after (UUID)
     * stage (inbox, external, pending, next, today, now)
-    * status (pending, completed, deleted)
+    * status (pending/open, completed/closed, deleted)
     * close reason (for tickets/bugs: fixed, won't fix, not a bug, ...)
     * due
     * defer/ignore/forget/hide/wait/postpone/delay/tickler till date
@@ -75,6 +75,7 @@
     * contexts
 * item property interactions
     * there are lots of interactions between some of the variables (stage, status, close reason); figure this out better
+    * some properties are only relevant for some item types.  E.g., status=pending 
 * item relations:
     * parent (realm, role, context, outcome, etc)
     * tag
