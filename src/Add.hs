@@ -3,15 +3,20 @@ module Add
 , processAddCommand
 ) where
 
+import Control.Applicative ((<$>), (<*>), empty)
+import Control.Monad (when)
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Logger (NoLoggingT)
+import Control.Monad.Trans.Control (MonadBaseControl)
+import Control.Monad.Trans.Resource (ResourceT)
 import DatabaseTables
 import qualified Data.Map as M
 import Database.Persist
-import Data.Maybe (catMaybes)
+import Database.Persist.Sqlite
+import Data.Maybe (catMaybes, isJust, fromJust)
 import Data.Time.Clock (UTCTime)
 import Data.Time.ISO8601 (formatISO8601Millis)
 import Text.Regex (mkRegex, matchRegexAll)
-import Control.Monad (when)
-import Control.Monad.IO.Class (liftIO)
 import qualified Command as C
 import qualified Data.Text as T
 
@@ -79,7 +84,7 @@ makeMap xs = M.fromList $ catMaybes $ map fn xs where
   fn (Right (name, "=", Just value)) = Just (name, value)
   fn _ = Nothing
 
-processAddCommand :: (PersistQuery m, PersistStore m) => UTCTime -> [String] -> m ()
+processAddCommand :: UTCTime -> [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 processAddCommand time args = do
   let xs = parseArgs args
   let map = makeMap xs
@@ -88,14 +93,21 @@ processAddCommand time args = do
     Just uuid -> do
       -- if this item hasn't been created yet, set the creation time
       one <- selectList [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. "ctime"] [LimitTo 1]
-      when (null one) $ do
-        insert $ Property "item" uuid "ctime" (formatISO8601Millis time)
-        return ()
+      when (null one) $ case createItem time map of
+        Just item -> do
+          insert $ Property "item" uuid "ctime" (formatISO8601Millis time)
+          insert item
+          return ()
+        Nothing -> return ()
+        --return ()
       -- Update the other properties
       mapM_ fn xs
       where
         fn (Right x) = processItem uuid x
         fn (Left msg) = liftIO $ putStrLn msg
+
+createItem :: UTCTime -> M.Map String String -> Maybe Item
+createItem time map = Item time <$> M.lookup "type" map <*> M.lookup "title" map <*> M.lookup "status" map <*> Just (M.lookup "stage" map) <*> Just (M.lookup "label" map) <*> Just Nothing
 
 processItem :: (PersistQuery m, PersistStore m) => String -> (String, String, Maybe String) -> m ()
 processItem _ ("id", _, _) = return ()

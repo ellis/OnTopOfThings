@@ -26,11 +26,14 @@ type EntityMap = M.Map String PropertyMap
 
 listHandler :: [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 listHandler args = do
+  items <- select $ from $ \t -> do
+    return t
   entities <- select $ from $ \t -> do
     return t
   let properties = map entityVal entities
   let m = fn1' properties
   --mapM_ (\entity -> processCommand (entityVal entity)) l
+  liftIO $ mapM_ (\entity -> print $ ((entityVal entity) :: Item)) $ items
   liftIO $ mapM_ (\entity -> print $ entityVal entity) $ entities
   liftIO $ mapM_ (\(uuid, properties) -> putStrLn $ itemToString uuid properties m) $ M.toList m
   return ()

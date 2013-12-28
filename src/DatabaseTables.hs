@@ -32,4 +32,13 @@ Property
   name String
   value String
   deriving Show
+Item
+  ctime UTCTime
+  type String
+  title String
+  status String
+  stage String Maybe
+  label String Maybe
+  index Int Maybe
+  deriving Show
 |]
