@@ -131,6 +131,7 @@ addHandler args = do
       -- 5) convert the new command record to a 'Command' and update the 'property' table
       DB.databaseAddRecord record
       liftIO $ print record
+      liftIO $ saveCommandRecord record chguuid
   return ()
 
 addHandler' :: [String] -> IO ()
