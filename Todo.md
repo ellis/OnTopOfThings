@@ -1,7 +1,7 @@
 - [x] Command: instead of storing data changes, store commands
 - [x] Database: load command records into database
 - [x] Add: update database based on a Command
-- [ ] Add: create CommandRecord from CLI parameters
+- [x] Add: create CommandRecord from CLI parameters
 - [ ] Add: append new CommandRecord to database
 - [ ] Add: save CommandRecord to disk
 - [ ] DatabaseTables: Switch to using UTCTime
