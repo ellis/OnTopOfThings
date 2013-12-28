@@ -14,17 +14,18 @@ module Change
 import Control.Applicative ((<$>), (<*>), empty)
 import Data.Aeson
 import Data.Aeson.Types (Parser)
-import qualified Data.ByteString.Lazy as B
-import qualified Data.ByteString.Lazy.Char8 as BL
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Map as M
-import qualified Data.Vector as V
+import Data.Maybe (catMaybes)
 import Data.Text (Text, pack, unpack, concat)
 import Data.Time.Clock (UTCTime)
 import System.Directory (getDirectoryContents)
 import System.FilePath (takeExtension, joinPath)
 --import qualified System.FilePath.Find as FF
 import Text.Regex (mkRegex, matchRegexAll)
+import qualified Data.ByteString.Lazy as B
+import qualified Data.ByteString.Lazy.Char8 as BL
+import qualified Data.HashMap.Strict as HM
+import qualified Data.Map as M
+import qualified Data.Vector as V
 
 
 data ChangeRecord = ChangeRecord
@@ -43,8 +44,11 @@ data ChangeProperty = ChangeProperty !Text !Text !Text
   deriving (Show)
 
 instance ToJSON ChangeRecord where
-  toJSON (ChangeRecord format time entities) =
-    object ["format" .= format, "time" .= time, "entities" .= entities]
+  toJSON (ChangeRecord format time entities) = object (l1 ++ l2) where
+    l1 = ["format" .= format, "time" .= time]
+    l2 = case entities of
+      entity : [] -> getEntityPropertyPairs entity
+      _ -> ["entities" .= entities]
 
 instance FromJSON ChangeRecord where
   parseJSON (Object v) = ChangeRecord <$> format <*>  time <*> list where
@@ -56,8 +60,7 @@ instance FromJSON ChangeRecord where
   parseJSON _ = empty
 
 instance ToJSON ChangeEntity where
-  toJSON (ChangeEntity table id properties) =
-    object ["table" .= table, "id" .= id, "properties" .= properties]
+  toJSON entity = object $ getEntityPropertyPairs entity
 
 instance FromJSON ChangeEntity where
   parseJSON (Object v) = ChangeEntity <$> table <*> id <*> properties where
@@ -81,6 +84,10 @@ instance FromJSON ChangeProperty where
     op = parseJSON (v V.! 1)
     value = parseJSON (v V.! 2)
   parseJSON _ = empty
+
+--getEntityPropertyPairs :: ChangeEntity -> [(String, Value)]
+getEntityPropertyPairs (ChangeEntity table id properties) =
+  catMaybes [if table == "table" then Just ("table" .= table) else Nothing, Just ("id" .= id), Just ("properties" .= properties)]
 
 readChangeRecord :: String -> IO (Either String ChangeRecord)
 readChangeRecord filename = do

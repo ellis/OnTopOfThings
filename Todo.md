@@ -6,7 +6,8 @@
 - [x] Change: Switch to using UTCTime in Change.hs
 - [x] Main: Get current time for change records
 - [x] Change: Convert Change* types to JSON
-- [ ] Main: Generate UUID for new change records
+- [x] Main: Generate UUID for new change records
+- [ ] Change: remove unnecessary elements from JSON output
 - [ ] Main: save change record to disk
 - [ ] Main: find parent by title
 - [ ] Main: list tasks
