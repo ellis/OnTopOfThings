@@ -26,9 +26,8 @@ type EntityMap = M.Map String PropertyMap
 
 listHandler :: [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 listHandler args = do
-  entities :: [Entity Property]
-  entities <- select $ from $ \t -> do
-    return t
+  entities <- (select $ from $ \t -> do
+    return t) :: [Entity Property]
   let properties = map entityVal entities
   let m = fn1' properties
   --mapM_ (\entity -> processCommand (entityVal entity)) l
