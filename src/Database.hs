@@ -35,22 +35,24 @@ databaseInit :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
 databaseInit =
   runMigration migrateAll
 
-databaseAddRecords :: [C.CommandRecord] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
-databaseAddRecords records = do
-  mapM_ processRecord records
-
 databaseAddRecord :: C.CommandRecord -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 databaseAddRecord record = do
-  processRecord record
+  let command = recordToCommand record
+  insert command
+  processCommand command
   return ()
+
+databaseAddRecords :: [C.CommandRecord] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+databaseAddRecords records = do
+  mapM_ databaseAddRecord records
 
 databaseProcessCommandTable :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
 databaseProcessCommandTable = do
   processCommands
 
---databaseProcessCommand :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
---databaseProcessCommand = do
-  --processCommands
+databaseProcessCommand :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
+databaseProcessCommand = do
+  processCommands
 
 recordToCommand :: C.CommandRecord -> Command
 recordToCommand (C.CommandRecord format time user cmd args) =
@@ -58,22 +60,14 @@ recordToCommand (C.CommandRecord format time user cmd args) =
   where
     args' = BL.unpack $ encode args
 
-processRecord :: PersistStore m => C.CommandRecord -> m ()
-processRecord (C.CommandRecord format time user cmd args) = do
-  insert $ Command format (formatISO8601Millis time) (T.unpack user) (T.unpack cmd) args'
-  return ()
+processCommand command = do
+  case commandCmd command of
+    "add" -> do processAddCommand args
+    _ -> return ()
   where
-    args' = BL.unpack $ encode args
+    Just args = decode (BL.pack $ commandArgs command)
 
 --processCommands :: (PersistQuery m, PersistStore m) => m ()
 processCommands = do
   l <- selectList ([] :: [Filter Command]) []
-  mapM_ fn l
-  where
-    fn entity = do
-      case commandCmd command of
-        "add" -> do processAddCommand args
-        _ -> return ()
-      where
-        command = entityVal entity
-        Just args = decode (BL.pack $ commandArgs command)
+  mapM_ (\entity -> processCommand (entityVal entity)) l
