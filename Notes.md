@@ -102,6 +102,27 @@
     * Vivia OnTop (vot)
     * Vivia OnTopOfThings
 
+## Command Records
+
+For now I'm saving Change Records, but it might be better to save Command Records instead.
+
+```
+{
+ format:1, time:"2013-12-28T09:27:34.909Z", user:"default", cmd:"add", args: ["type=item", "title=improve my repos", "tag+repos"]
+}
+```
+
+```
+F [FORMAT]
+T [TIME]
+U [USER]
+C [COMMAND]
+= type item
++ tag repos
+L= title [LEN]
+[TEXT OF LENGTH `LEN`]
+```
+
 ## Change Records
 
 See the fossil file format: <http://www.fossil-scm.org/fossil/doc/trunk/www/fileformat.wiki>

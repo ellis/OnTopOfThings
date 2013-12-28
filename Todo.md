@@ -1,3 +1,16 @@
+- [x] Command: instead of storing data changes, store commands
+- [x] Database: load command records into database
+- [ ] Add: update database based on a Command
+- [ ] Main: list tasks
+- [ ] Main: list tasks which have a field matching a string
+- [ ] Main: list tasks with specific fields, i.e. --stage=inbox
+- [ ] Main: find parent by title
+- [ ] Main: when setting parent, prevent cyclic loops -- might want to check this in loadDB too.
+
+- [ ] Change license to GPL3
+- [ ] Put git repository on github
+
+## Old
 - [x] Change: switch to new JSON format
 - [x] Change: Give clearer names to the Change* types
 - [x] Create new change record files
@@ -9,10 +22,3 @@
 - [x] Main: Generate UUID for new change records
 - [x] Change: remove unnecessary elements from JSON output
 - [x] Main: save change record to disk
-- [ ] Main: find parent by title
-- [ ] Main: list tasks
-- [ ] Main: list tasks which have a field matching a string
-- [ ] Main: list tasks with specific fields, i.e. --stage=inbox
-
-- [ ] Change license to GPL3
-- [ ] Put git repository on github

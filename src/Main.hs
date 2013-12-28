@@ -11,6 +11,8 @@ import System.Exit
 import System.IO
 
 import Change
+import Command
+import qualified Database as DB
 
 -- ADD
 
@@ -83,8 +85,14 @@ showOptions =
 
 main :: IO ()
 main = do
-  testChangeRecord
-  db <- loadDB
+  x <- loadCommandRecords
+  case x of
+    Right records -> do
+      mapM_ (putStrLn . show) records
+      DB.processCommandRecords records
+    Left msg -> do
+      putStrLn msg
+
   args <- getArgs
   case args of
     "add" : args' -> addHandler args'
