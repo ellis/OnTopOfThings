@@ -31,11 +31,6 @@ import qualified Command as C
 import Add (processAddCommand)
 import DatabaseTables
 
---processCommandRecords :: (MonadBaseControl IO m, MonadIO m) => [C.CommandRecord] -> m ()
-processCommandRecords :: [C.CommandRecord] -> IO ()
-processCommandRecords records = runSqlite ":memory:" $ do
-  xyz records
-
 databaseInit :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
 databaseInit =
   runMigration migrateAll
@@ -53,25 +48,15 @@ databaseProcessCommandTable :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
 databaseProcessCommandTable = do
   processCommands
 
-xyz :: [C.CommandRecord] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
-xyz records = do
-  runMigration migrateAll
+--databaseProcessCommand :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
+--databaseProcessCommand = do
+  --processCommands
 
-  processRecords records
-  l <- selectList ([] :: [Filter Command]) []
-  liftIO $ print (l :: [Entity Command])
-
-  processCommands
-
-  l <- selectList ([] :: [Filter Property]) []
-  liftIO $ mapM_ print (l :: [Entity Property])
-
+recordToCommand :: C.CommandRecord -> Command
+recordToCommand (C.CommandRecord format time user cmd args) =
+  Command format (formatISO8601Millis time) (T.unpack user) (T.unpack cmd) args'
   where
-    processRecords records = case records of
-      [] -> return ()
-      record : rest -> do
-        processRecord record
-        processRecords rest
+    args' = BL.unpack $ encode args
 
 processRecord :: PersistStore m => C.CommandRecord -> m ()
 processRecord (C.CommandRecord format time user cmd args) = do
