@@ -28,9 +28,11 @@ listHandler args = do
   let properties = map entityVal entities
   let m = fn1' properties
   --mapM_ (\entity -> processCommand (entityVal entity)) l
+  liftIO $ mapM_ (\entity -> print $ entityVal entity) $ entities
   liftIO $ mapM_ (\(uuid, properties) -> putStrLn $ itemToString uuid properties m) $ M.toList m
   return ()
 
+fn1' :: [Property] -> EntityMap
 fn1' properties = fn1 properties M.empty
 
 fn1 :: [Property] -> EntityMap -> EntityMap
@@ -61,10 +63,21 @@ findParentLabel' (Just [uuid]) m acc =
       uuid' = M.lookup "parent" m'
 findParentLabel' _ _ acc = acc
 
+itemToString :: String -> PropertyMap -> EntityMap -> String
 itemToString uuid properties entities = unwords l where
   path = findParentLabel (M.lookup "parent" properties) entities
+  isTask :: Bool
+  isTask = (M.lookup "type" properties) == Just ["task"]
+  check :: String
+  check = case M.lookup "status" properties of
+    Just ["open"] -> if isTask then " [ ]" else ""
+    Just ["closed"] -> " [x]"
+    Just ["deleted"] -> " XXX"
+    _ -> ""
+  l :: [String]
   l = catMaybes $
-    [ Just "- [ ]"
+    [ Just $ "-" ++ check
+    , M.lookup "index" properties >>= (\x -> Just ("(" ++ unwords x ++ ")"))
     , if null path then Nothing else Just $ intercalate "/" path ++ ":"
     , M.lookup "title" properties >>= Just . unwords
     ]

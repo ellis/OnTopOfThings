@@ -7,7 +7,7 @@
 - [x] Main: list tasks
 - [x] List: prefix title with parent list name
 - [x] Add: store creation time for item
-- [ ] Database: index the tasks which are pending
+- [x] Database: index the tasks which are pending
 - [ ] Main: 'mod' command
 - [ ] Mod: modify item properties
 - [ ] Main: 'done' command
