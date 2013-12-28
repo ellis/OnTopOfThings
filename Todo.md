@@ -4,7 +4,9 @@
 - [x] Add: create CommandRecord from CLI parameters
 - [x] Add: append new CommandRecord to database
 - [x] Main: save CommandRecord to disk
-- [ ] Main: list tasks
+- [x] Main: list tasks
+- [ ] List: prefix title with parent list name
+- [ ] List: prefix with start time
 - [ ] Main: list tasks which have a field matching a string
 - [ ] Main: list tasks with specific fields, i.e. --stage=inbox
 - [ ] DatabaseTables: Switch to using UTCTime

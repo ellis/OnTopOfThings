@@ -14,6 +14,7 @@ import Database.Persist.Sqlite (runSqlite)
 
 import Add
 import Command
+import List
 import qualified Database as DB
 
 -- ADD
@@ -108,6 +109,7 @@ main = do
         DB.databaseAddRecords records
         case args of
           "add" : args' -> addHandler args'
+          "list" : args' -> listHandler args'
           --"add" : args' -> addHandler args'
           --"show" : args' -> showHandler args'
           [] -> do liftIO $ putStrLn "use one of these commands: add, view"

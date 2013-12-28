@@ -13,13 +13,13 @@ module Database
 , databaseAddRecords
 ) where
 
-import           Control.Monad.IO.Class  (liftIO, MonadIO)
-import Control.Monad.Trans.Control (MonadBaseControl)
-import           Database.Persist
-import           Database.Persist.Sqlite
-import           Database.Persist.TH
+import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Logger (NoLoggingT)
-import Control.Monad.Trans.Resource ( ResourceT)
+import Control.Monad.Trans.Control (MonadBaseControl)
+import Control.Monad.Trans.Resource (ResourceT)
+import Database.Persist
+import Database.Persist.Sqlite
+import Database.Persist.TH
 
 import Data.Aeson (encode, decode)
 import qualified Data.ByteString.Lazy.Char8 as BL
