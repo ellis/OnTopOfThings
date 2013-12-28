@@ -34,6 +34,7 @@ Property
   deriving Show
 Item
   uuid String
+  ItemUniqUuid uuid
   ctime UTCTime
   type String
   title String

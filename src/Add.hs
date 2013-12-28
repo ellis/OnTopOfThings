@@ -89,7 +89,7 @@ processAddCommand time args = do
   let xs = parseArgs args
   let map = makeMap xs
   case M.lookup "id" map of
-    Nothing -> return ()
+    Nothing -> liftIO $ putStrLn "Missing `id`"
     Just uuid -> do
       case createItem time map of
         Just item -> do
@@ -103,10 +103,55 @@ processAddCommand time args = do
             fn (Left msg) = liftIO $ putStrLn msg
         Nothing -> liftIO $ putStrLn "Couldn't construct Item"
 
+processModCommand :: UTCTime -> [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+processModCommand time args = do
+  let xs = parseArgs args
+  let map = makeMap xs
+  case M.lookup "id" map of
+    Nothing -> do liftIO $ putStrLn "Missing `id`"
+    Just uuid -> do
+      entity' <- getBy $ ItemUniqUuid uuid
+      case entity' of
+        Nothing -> do liftIO $ putStrLn "Could not find item with given id"
+        Just entity -> do
+          let item0 = entityVal entity
+          case updateItem time map item0 of
+            Nothing -> do liftIO $ putStrLn "Couldn't update item"
+            Just item -> do
+              replace (entityKey entity) item
+              mapM_ fn xs
+              where
+                fn (Right x) = processItem uuid x
+                fn (Left msg) = liftIO $ putStrLn msg
+
+
 itemFields = ["id", "type", "title", "status", "parent", "stage", "label", "index"]
 
 createItem :: UTCTime -> M.Map String String -> Maybe Item
 createItem time map = Item <$> M.lookup "id" map <*> Just time <*> M.lookup "type" map <*> M.lookup "title" map <*> M.lookup "status" map <*> Just (M.lookup "parent" map) <*> Just (M.lookup "stage" map) <*> Just (M.lookup "label" map) <*> Just Nothing
+
+updateItem :: UTCTime -> M.Map String String -> Item -> Maybe Item
+updateItem time map item0 =
+  Item <$> 
+    get "id" itemUuid <*>
+    Just (itemCtime item0) <*>
+    get "type" itemType <*>
+    get "title" itemTitle <*>
+    get "status" itemStatus <*>
+    getMaybe "parent" itemParent <*>
+    getMaybe "stage" itemStage <*>
+    getMaybe "label" itemLabel <*>
+    Just (itemIndex item0)
+  where
+    get :: String -> (Item -> String) -> Maybe String
+    get name fn = case M.lookup name map of
+      Nothing -> Just (fn item0)
+      Just s -> Just s
+
+    getMaybe :: String -> (Item -> Maybe String) -> Maybe (Maybe String)
+    getMaybe name fn = case M.lookup name map of
+      Nothing -> Just (fn item0)
+      Just s -> Just (Just s)
 
 processItem :: (PersistQuery m, PersistStore m) => String -> (String, String, Maybe String) -> m ()
 processItem uuid (name, op, value') =
