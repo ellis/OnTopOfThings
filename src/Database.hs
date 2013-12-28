@@ -101,4 +101,14 @@ databaseLookupUuid ref = do
     where_ (t ^. PropertyUuid ==. val ref)
     limit 1
     return (t ^. PropertyUuid)
-  return Nothing
+  l2 <- select $ from $ \t -> do
+    where_ (t ^. PropertyName ==. val "index" &&. t ^. PropertyValue ==. val ref)
+    limit 1
+    return (t ^. PropertyUuid)
+  case l1 of
+    [Value uuid] -> return $ Just uuid
+    _ ->
+      case l2 of
+        [Value uuid] -> return $ Just uuid
+        _ -> return Nothing
+
