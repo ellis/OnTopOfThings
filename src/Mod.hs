@@ -29,12 +29,12 @@ createModCommandRecord time user uuid args =
       case uuid' of
         Nothing -> return $ Left $ "undefined reference `" ++ ref ++ "`"
         Just uuid ->
-          case preparseArgs args [] of
+          case preparseArgs args' [] of
             Left msg -> return $ Left msg
-            Right args' -> return $ Right $ C.CommandRecord 1 time (T.pack user) (T.pack "mod") (l1 ++ l2) where
-              xs = parseArgs args'
+            Right args'' -> return $ Right $ C.CommandRecord 1 time (T.pack user) (T.pack "mod") (l1 ++ l2) where
+              xs = parseArgs args''
               map1 = makeMap xs
-              l1 = catMaybes $ map (lookupRecordProperty map1) ["type", "title", "stage", "status"]
+              l1 = (T.pack $ "id="++uuid) : (catMaybes $ map (lookupRecordProperty map1) ["type", "title", "stage", "status"])
               l2 = catMaybes $ map (fn "tag") xs ++ map (fn "context") xs
               fn :: String -> Either String (String, String, Maybe String) -> Maybe T.Text
               fn name (Right (name', op, Just value)) = if name' == name then Just (T.pack $ name ++ op ++ value) else Nothing

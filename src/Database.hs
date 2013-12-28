@@ -47,7 +47,18 @@ databaseAddRecord record = do
 
 databaseAddRecords :: [C.CommandRecord] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 databaseAddRecords records = do
-  mapM_ databaseAddRecord records
+  mapM_ insert' records
+  load --records'
+  where
+    insert' record = do
+      let command = recordToCommand record
+      insert command
+      --return command
+    load = do
+      l <- select $ from $ \t -> do
+        orderBy [asc (t ^. CommandTime)]
+        return t
+      mapM_ (processCommand . entityVal) l
 
 databaseUpdateIndexes :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
 databaseUpdateIndexes = do
