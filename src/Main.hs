@@ -15,6 +15,7 @@ import Database.Persist.Sqlite (runSqlite)
 import Add
 import Command
 import List
+import Mod
 import qualified Database as DB
 
 -- ADD
@@ -111,6 +112,7 @@ main = do
         case args of
           "add" : args' -> addHandler args'
           "list" : args' -> listHandler args'
+          "mod" : args' -> modHandler args'
           --"add" : args' -> addHandler args'
           --"show" : args' -> showHandler args'
           [] -> do liftIO $ putStrLn "use one of these commands: add, view"
@@ -127,6 +129,21 @@ addHandler args = do
   chguuid <- liftIO $ U4.nextRandom >>= return . U.toString
   -- 4) parse the command line and create a new command record
   x <- createAddCommandRecord time "default" uuid args
+  case x of
+    Left msg -> do liftIO $ print msg
+    Right record -> do
+      -- 5) convert the new command record to a 'Command' and update the 'property' table
+      DB.databaseAddRecord record
+      liftIO $ print record
+      liftIO $ saveCommandRecord record chguuid
+  return ()
+
+modHandler args = do
+  time <- liftIO $ getCurrentTime
+  uuid <- liftIO $ U4.nextRandom >>= return . U.toString
+  chguuid <- liftIO $ U4.nextRandom >>= return . U.toString
+  -- 4) parse the command line and create a new command record
+  x <- createModCommandRecord time "default" uuid args
   case x of
     Left msg -> do liftIO $ print msg
     Right record -> do

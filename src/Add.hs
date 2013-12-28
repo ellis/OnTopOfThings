@@ -1,6 +1,6 @@
 module Add
-( processAddCommand
-, createAddCommandRecord
+( createAddCommandRecord
+, processAddCommand
 ) where
 
 import DatabaseTables
@@ -17,24 +17,24 @@ import qualified Data.Text as T
 
 createAddCommandRecord :: (PersistQuery m, PersistStore m) => UTCTime -> String -> String -> [String] -> m (Either String C.CommandRecord)
 createAddCommandRecord time user uuid args =
-    case preparseArgs args (Nothing, []) of
-      Left msg -> return $ Left msg
-      Right (Nothing, _) -> return $ Left "you must specify a title"
-      Right (Just title, args') -> return $ Right $ C.CommandRecord 1 time (T.pack user) (T.pack "add") (l1 ++ l2) where
-        xs = parseArgs args'
-        map0 = makeMap xs
-        map1 = M.union map0 (M.fromList [("type", "task"), ("status", "open"), ("stage", "inbox")])
-        l1 = catMaybes
-          [ Just (T.pack $ "id=" ++ uuid)
-          , M.lookup "type" map1 >>= (\x -> Just $ T.pack $ "type=" ++ x)
-          , Just (T.pack $ "title=" ++ title)
-          , M.lookup "stage" map1 >>= (\x -> Just $ T.pack $ "stage=" ++ x)
-          ]
-        l2 = catMaybes $ map (fn "tag") xs ++ map (fn "context") xs
-        fn :: String -> Either String (String, String, Maybe String) -> Maybe T.Text
-        fn name (Right (name', op, Just value)) = if name' == name then Just (T.pack $ name ++ op ++ value) else Nothing
-        fn name (Right (name', "-", Nothing)) = if name' == name then Just (T.pack $ name ++ "-") else Nothing
-        fn _ _ = Nothing
+  case preparseArgs args (Nothing, []) of
+    Left msg -> return $ Left msg
+    Right (Nothing, _) -> return $ Left "you must specify a title"
+    Right (Just title, args') -> return $ Right $ C.CommandRecord 1 time (T.pack user) (T.pack "add") (l1 ++ l2) where
+      xs = parseArgs args'
+      map0 = makeMap xs
+      map1 = M.union map0 (M.fromList [("type", "task"), ("status", "open"), ("stage", "inbox")])
+      l1 = catMaybes
+        [ Just (T.pack $ "id=" ++ uuid)
+        , M.lookup "type" map1 >>= (\x -> Just $ T.pack $ "type=" ++ x)
+        , Just (T.pack $ "title=" ++ title)
+        , M.lookup "stage" map1 >>= (\x -> Just $ T.pack $ "stage=" ++ x)
+        ]
+      l2 = catMaybes $ map (fn "tag") xs ++ map (fn "context") xs
+      fn :: String -> Either String (String, String, Maybe String) -> Maybe T.Text
+      fn name (Right (name', op, Just value)) = if name' == name then Just (T.pack $ name ++ op ++ value) else Nothing
+      fn name (Right (name', "-", Nothing)) = if name' == name then Just (T.pack $ name ++ "-") else Nothing
+      fn _ _ = Nothing
 
 preparseArgs :: [String] -> (Maybe String, [String]) -> Either String (Maybe String, [String])
 preparseArgs l acc = case l of

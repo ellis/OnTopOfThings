@@ -12,13 +12,14 @@ module Database
 , databaseAddRecord
 , databaseAddRecords
 , databaseUpdateIndexes
+, databaseLookupUuid
 ) where
 
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
---import Database.Persist
+import Database.Persist (PersistQuery)
 import Database.Persist.Sql (insert, deleteWhere)
 --import Database.Persist.Sqlite
 import Database.Esqueleto
@@ -92,3 +93,12 @@ processCommand command = do
   where
     time = commandTime command
     Just args = decode (BL.pack $ commandArgs command)
+
+--databaseLookupUuid :: PersistQuery m => String -> m (Maybe String)
+databaseLookupUuid :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Maybe String)
+databaseLookupUuid ref = do
+  l1 <- select $ from $ \t -> do
+    where_ (t ^. PropertyUuid ==. val ref)
+    limit 1
+    return (t ^. PropertyUuid)
+  return Nothing
