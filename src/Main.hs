@@ -83,19 +83,29 @@ showOptions =
   ]
 
 
+-- 1) load the command records from files
+-- 2) convert the command records to and SQL 'command' table
+-- 3) process the 'command' table, producing the 'property' table
+-- 4) parse the command line and create a new command record
+-- 5) convert the new command record to a 'Command' and update the 'property' table
+-- 6) save the command record to disk
+-- 7) print relevant output
 main :: IO ()
 main = do
+  -- 1) load the command records from files
   x <- loadCommandRecords
   case x of
     Right records -> do
       mapM_ (putStrLn . show) records
+      --runSqlite ":memory:" do
+        -- 2) convert the command records to and SQL 'command' table
       DB.processCommandRecords records
     Left msg -> do
       putStrLn msg
 
   args <- getArgs
   case args of
-    "add" : args' -> addHandler args'
+    --"add" : args' -> addHandler args'
     --"show" : args' -> showHandler args'
     [] -> do putStrLn "use one of these commands: add, view"
     _ -> do putStrLn "Unrecognized command"

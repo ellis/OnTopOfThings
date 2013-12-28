@@ -9,13 +9,16 @@
 module Database
 ( Command(..)
 , processCommandRecords
-, processRecord
+, xyz
 ) where
 
-import           Control.Monad.IO.Class  (liftIO)
+import           Control.Monad.IO.Class  (liftIO, MonadIO)
+import Control.Monad.Trans.Control (MonadBaseControl)
 import           Database.Persist
 import           Database.Persist.Sqlite
 import           Database.Persist.TH
+import Control.Monad.Logger (NoLoggingT)
+import Control.Monad.Trans.Resource ( ResourceT)
 
 import Data.Aeson (encode, decode)
 import qualified Data.ByteString.Lazy.Char8 as BL
@@ -26,8 +29,19 @@ import qualified Command as C
 import Add (processAddCommand)
 import DatabaseTables
 
+--processCommandRecords :: (MonadBaseControl IO m, MonadIO m) => [C.CommandRecord] -> m ()
 processCommandRecords :: [C.CommandRecord] -> IO ()
 processCommandRecords records = runSqlite ":memory:" $ do
+  xyz records
+
+databaseBuildCommandTable :: [C.CommandRecord] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+databaseBuildCommandTable records = do
+  runMigration migrateAll
+--  processRecords records
+  mapM_ processRecord records
+
+xyz :: [C.CommandRecord] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+xyz records = do
   runMigration migrateAll
 
   processRecords records
