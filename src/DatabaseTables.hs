@@ -33,10 +33,12 @@ Property
   value String
   deriving Show
 Item
+  uuid String
   ctime UTCTime
   type String
   title String
   status String
+  parent String Maybe
   stage String Maybe
   label String Maybe
   index Int Maybe

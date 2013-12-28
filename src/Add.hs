@@ -107,7 +107,7 @@ processAddCommand time args = do
         fn (Left msg) = liftIO $ putStrLn msg
 
 createItem :: UTCTime -> M.Map String String -> Maybe Item
-createItem time map = Item time <$> M.lookup "type" map <*> M.lookup "title" map <*> M.lookup "status" map <*> Just (M.lookup "stage" map) <*> Just (M.lookup "label" map) <*> Just Nothing
+createItem time map = Item <$> M.lookup "id" map <*> Just time <*> M.lookup "type" map <*> M.lookup "title" map <*> M.lookup "status" map <*> Just (M.lookup "parent" map) <*> Just (M.lookup "stage" map) <*> Just (M.lookup "label" map) <*> Just Nothing
 
 processItem :: (PersistQuery m, PersistStore m) => String -> (String, String, Maybe String) -> m ()
 processItem _ ("id", _, _) = return ()

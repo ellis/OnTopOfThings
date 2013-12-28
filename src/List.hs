@@ -26,17 +26,28 @@ type EntityMap = M.Map String PropertyMap
 
 listHandler :: [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 listHandler args = do
-  items <- select $ from $ \t -> do
+  items0 <- select $ from $ \t -> do
+    where_ (isNothing $ t ^. ItemParent)
     return t
   entities <- select $ from $ \t -> do
     return t
   let properties = map entityVal entities
   let m = fn1' properties
   --mapM_ (\entity -> processCommand (entityVal entity)) l
-  liftIO $ mapM_ (\entity -> print $ ((entityVal entity) :: Item)) $ items
-  liftIO $ mapM_ (\entity -> print $ entityVal entity) $ entities
-  liftIO $ mapM_ (\(uuid, properties) -> putStrLn $ itemToString uuid properties m) $ M.toList m
+  mapM_ (\entity -> printItem m 0 (entityVal entity)) items0
+  --liftIO $ mapM_ (\entity -> print $ entityVal entity) $ entities
+  --liftIO $ mapM_ (\(uuid, properties) -> putStrLn $ itemToString uuid properties m) $ M.toList m
   return ()
+
+--printItem :: EntityMap -> Int -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+printItem entities indent item = do
+  let indent_s = (replicate indent ' ')
+  liftIO $ putStrLn $ indent_s ++ show item
+  liftIO $ putStrLn $ indent_s ++ itemToString' item entities
+  items <- select $ from $ \t -> do
+    where_ (t ^. ItemParent ==. val (Just $ itemUuid item))
+    return t
+  mapM_ (\entity -> printItem entities (indent + 2) (entityVal entity)) items
 
 fn1' :: [Property] -> EntityMap
 fn1' properties = fn1 properties M.empty
@@ -68,6 +79,27 @@ findParentLabel' (Just [uuid]) m acc =
       -- Continuing by search for this items parent
       uuid' = M.lookup "parent" m'
 findParentLabel' _ _ acc = acc
+
+itemToString' :: Item -> EntityMap -> String
+itemToString' item entities = unwords l where
+  path = findParentLabel (itemParent item >>= \x -> Just [x]) entities
+  check :: Maybe String
+  check = case (itemType item, itemStatus item) of
+    ("list", "open") -> Nothing
+    ("list", "closed") -> Just "[x]"
+    ("list", "deleted") -> Just "XXX"
+    ("task", "open") -> Just "- [ ]"
+    (_, "open") -> Just "- "
+    (_, "closed") -> Just "- [x]"
+    (_, "deleted") -> Just "- XXX"
+    _ -> Nothing
+  l :: [String]
+  l = catMaybes $
+    [ check
+    , itemIndex item >>= (\x -> Just ("(" ++ (show x) ++ ")"))
+    , if null path then Nothing else Just $ intercalate "/" path ++ ":"
+    , Just $ itemTitle item
+    ]
 
 itemToString :: String -> PropertyMap -> EntityMap -> String
 itemToString uuid properties entities = unwords l where

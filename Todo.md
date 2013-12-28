@@ -13,7 +13,7 @@
 - [x] List: check off task if it's completed
 - [x] List: use esqueleto
 - [x] Database: create an item table for wide-format data
-- [ ] List: list of lists and their components
+- [x] List: list of lists and their components
 - [ ] Main: 'done' command
 - [ ] Done: Mark a task as completed
 - [ ] List: prefix with start time
