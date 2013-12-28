@@ -1,6 +1,6 @@
 - [x] Command: instead of storing data changes, store commands
 - [x] Database: load command records into database
-- [ ] Add: update database based on a Command
+- [x] Add: update database based on a Command
 - [ ] Main: list tasks
 - [ ] Main: list tasks which have a field matching a string
 - [ ] Main: list tasks with specific fields, i.e. --stage=inbox

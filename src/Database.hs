@@ -9,6 +9,7 @@
 module Database
 ( Command(..)
 , processCommandRecords
+, processRecord
 ) where
 
 import           Control.Monad.IO.Class  (liftIO)
@@ -16,28 +17,14 @@ import           Database.Persist
 import           Database.Persist.Sqlite
 import           Database.Persist.TH
 
-import Data.Aeson (encode)
+import Data.Aeson (encode, decode)
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.Text as T
 import qualified Data.Time.Clock (UTCTime)
 import Data.Time.ISO8601 (formatISO8601Millis)
 import qualified Command as C
-
-share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
-Command
-  format Int
-  time String
-  user String
-  cmd String
-  args String
-  deriving Show
-Property
-  table String
-  uuid String
-  name String
-  value String
-  deriving Show
-|]
+import Add (processAddCommand)
+import DatabaseTables
 
 processCommandRecords :: [C.CommandRecord] -> IO ()
 processCommandRecords records = runSqlite ":memory:" $ do
@@ -47,6 +34,11 @@ processCommandRecords records = runSqlite ":memory:" $ do
   l <- selectList ([] :: [Filter Command]) []
   liftIO $ print (l :: [Entity Command])
 
+  processCommands
+
+  l <- selectList ([] :: [Filter Property]) []
+  liftIO $ mapM_ print (l :: [Entity Property])
+
   where
     processRecords records = case records of
       [] -> return ()
@@ -54,7 +46,26 @@ processCommandRecords records = runSqlite ":memory:" $ do
         processRecord record
         processRecords rest
 
-    processRecord (C.CommandRecord format time user cmd args) =
-      insert $ Command format (formatISO8601Millis time) (T.unpack user) (T.unpack cmd) args' where
-      args' = BL.unpack $ encode args
+--    processRecord (C.CommandRecord format time user cmd args) =
+--      insert $ Command format (formatISO8601Millis time) (T.unpack user) (T.unpack cmd) args' where
+--      args' = BL.unpack $ encode args
 
+processRecord :: PersistStore m => C.CommandRecord -> m ()
+processRecord (C.CommandRecord format time user cmd args) = do
+  insert $ Command format (formatISO8601Millis time) (T.unpack user) (T.unpack cmd) args'
+  return ()
+  where
+    args' = BL.unpack $ encode args
+
+--processCommands :: (PersistQuery m, PersistStore m) => m ()
+processCommands = do
+  l <- selectList ([] :: [Filter Command]) []
+  mapM_ fn l
+  where
+    fn entity = do
+      case commandCmd command of
+        "add" -> do processAddCommand args
+        _ -> return ()
+      where
+        command = entityVal entity
+        Just args = decode (BL.pack $ commandArgs command)
