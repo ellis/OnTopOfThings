@@ -9,8 +9,10 @@ import Control.Monad.Trans.Resource (ResourceT)
 import Data.List (intercalate)
 import Data.Maybe (catMaybes)
 import Data.Time.Clock (UTCTime)
-import Database.Persist
-import Database.Persist.Sqlite
+import Database.Persist (PersistQuery)
+import Database.Persist.Sql (insert, deleteWhere)
+--import Database.Persist.Sqlite
+import Database.Esqueleto
 import Text.Regex (mkRegex, matchRegexAll)
 
 import qualified Data.Map as M
@@ -24,7 +26,9 @@ type EntityMap = M.Map String PropertyMap
 
 listHandler :: [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 listHandler args = do
-  entities <- selectList ([] :: [Filter Property]) []
+  entities :: [Entity Property]
+  entities <- select $ from $ \t -> do
+    return t
   let properties = map entityVal entities
   let m = fn1' properties
   --mapM_ (\entity -> processCommand (entityVal entity)) l

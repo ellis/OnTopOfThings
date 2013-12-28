@@ -98,6 +98,7 @@ processAddCommand time args = do
         fn (Left msg) = liftIO $ putStrLn msg
 
 processItem :: (PersistQuery m, PersistStore m) => String -> (String, String, Maybe String) -> m ()
+processItem _ ("id", _, _) = return ()
 processItem uuid (name, "=", Just value) = do
   deleteWhere [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. name]
   insert $ Property "item" uuid name value

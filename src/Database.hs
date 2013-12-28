@@ -12,7 +12,6 @@ module Database
 , databaseAddRecord
 , databaseAddRecords
 , databaseUpdateIndexes
-, databaseLookupUuid
 ) where
 
 import Control.Monad.IO.Class (liftIO, MonadIO)
@@ -32,6 +31,7 @@ import qualified Data.Time.Clock (UTCTime)
 import Data.Time.ISO8601 (formatISO8601Millis)
 import qualified Command as C
 import Add (processAddCommand)
+import Mod (processModCommand)
 import DatabaseTables
 
 databaseInit :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
@@ -100,26 +100,9 @@ recordToCommand (C.CommandRecord format time user cmd args) =
 processCommand command = do
   case commandCmd command of
     "add" -> do processAddCommand time args
+    "mod" -> do processModCommand time args
     _ -> return ()
   where
     time = commandTime command
     Just args = decode (BL.pack $ commandArgs command)
-
---databaseLookupUuid :: PersistQuery m => String -> m (Maybe String)
-databaseLookupUuid :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Maybe String)
-databaseLookupUuid ref = do
-  l1 <- select $ from $ \t -> do
-    where_ (t ^. PropertyUuid ==. val ref)
-    limit 1
-    return (t ^. PropertyUuid)
-  l2 <- select $ from $ \t -> do
-    where_ (t ^. PropertyName ==. val "index" &&. t ^. PropertyValue ==. val ref)
-    limit 1
-    return (t ^. PropertyUuid)
-  case l1 of
-    [Value uuid] -> return $ Just uuid
-    _ ->
-      case l2 of
-        [Value uuid] -> return $ Just uuid
-        _ -> return Nothing
 

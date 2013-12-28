@@ -8,12 +8,13 @@
 - [x] List: prefix title with parent list name
 - [x] Add: store creation time for item
 - [x] Database: index the tasks which are pending
-- [ ] Main: 'mod' command
-- [ ] Mod: modify item properties
+- [x] Main: 'mod' command
+- [x] Mod: modify item properties
+- [x] List: check off task if it's completed
+- [ ] List: use esqueleto
 - [ ] Main: 'done' command
 - [ ] Done: Mark a task as completed
 - [ ] List: list of lists and their components
-- [ ] List: check off task if it's completed
 - [ ] List: prefix with start time
 - [ ] List: prefix with end time
 - [ ] List: list tasks for a given list

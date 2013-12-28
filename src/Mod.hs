@@ -19,7 +19,7 @@ import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import qualified Command as C
 import qualified Data.Text as T
-import Database
+import DatabaseUtils
 
 createModCommandRecord :: UTCTime -> String -> String -> [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Either String C.CommandRecord)
 createModCommandRecord time user uuid args =
@@ -79,18 +79,13 @@ processModCommand time args = do
   case M.lookup "id" map of
     Nothing -> return ()
     Just uuid -> do
-      -- if this item hasn't been created yet, set the creation time
-      one <- selectList [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. "ctime"] [LimitTo 1]
-      when (null one) $ do
-        insert $ Property "item" uuid "ctime" (formatISO8601Millis time)
-        return ()
-      -- Update the other properties
       mapM_ fn xs
       where
         fn (Right x) = processItem uuid x
         fn (Left msg) = liftIO $ putStrLn msg
 
 processItem :: (PersistQuery m, PersistStore m) => String -> (String, String, Maybe String) -> m ()
+processItem _ ("id", _, _) = return ()
 processItem uuid (name, "=", Just value) = do
   deleteWhere [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. name]
   insert $ Property "item" uuid name value
