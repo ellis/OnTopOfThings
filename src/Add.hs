@@ -91,11 +91,8 @@ processAddCommand time args = do
   case M.lookup "id" map of
     Nothing -> return ()
     Just uuid -> do
-      -- if this item hasn't been created yet, set the creation time
-      one <- selectList [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. "ctime"] [LimitTo 1]
-      when (null one) $ case createItem time map of
+      case createItem time map of
         Just item -> do
-          insert $ Property "item" uuid "ctime" (formatISO8601Millis time)
           insert item
           return ()
         Nothing -> return ()
@@ -106,22 +103,29 @@ processAddCommand time args = do
         fn (Right x) = processItem uuid x
         fn (Left msg) = liftIO $ putStrLn msg
 
+itemFields = ["id", "type", "title", "status", "parent", "stage", "label", "index"]
+
 createItem :: UTCTime -> M.Map String String -> Maybe Item
 createItem time map = Item <$> M.lookup "id" map <*> Just time <*> M.lookup "type" map <*> M.lookup "title" map <*> M.lookup "status" map <*> Just (M.lookup "parent" map) <*> Just (M.lookup "stage" map) <*> Just (M.lookup "label" map) <*> Just Nothing
 
 processItem :: (PersistQuery m, PersistStore m) => String -> (String, String, Maybe String) -> m ()
-processItem _ ("id", _, _) = return ()
-processItem uuid (name, "=", Just value) = do
-  deleteWhere [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. name]
-  insert $ Property "item" uuid name value
-  return ()
-processItem uuid (name, "-", Just value) = do
-  deleteWhere [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. name, PropertyValue ==. value]
-  return ()
-processItem uuid (name, "-", Nothing) = do
-  deleteWhere [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. name]
-  return ()
-processItem uuid (name, "+", Just value) = do
-  insert $ Property "item" uuid name value
-  return ()
+processItem uuid (name, op, value') =
+  if elem name itemFields
+  then return ()
+  else
+    case (op, value') of
+      ("=", Just value) -> do
+        deleteWhere [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. name]
+        insert $ Property "item" uuid name value
+        return ()
+      ("-", Just value) -> do
+        deleteWhere [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. name, PropertyValue ==. value]
+        return ()
+      ("-", Nothing) -> do
+        deleteWhere [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. name]
+        return ()
+      ("+", Just value) -> do
+        insert $ Property "item" uuid name value
+        return ()
+      _ -> return ()
 

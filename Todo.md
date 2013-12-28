@@ -14,9 +14,10 @@
 - [x] List: use esqueleto
 - [x] Database: create an item table for wide-format data
 - [x] List: list of lists and their components
-- [ ] only use Property table for list properties and non-standard properties
-- [ ] Main: 'done' command
-- [ ] Done: Mark a task as completed
+- [x] Database: only set 'index' property on 'Item'
+- [ ] Mod: only use Property table for list properties and non-standard properties
+- [ ] Add: only use Property table for list properties and non-standard properties
+- [ ] Main: 'close' command
 - [ ] List: prefix with start time
 - [ ] List: prefix with end time
 - [ ] List: list tasks for a given list
