@@ -23,7 +23,7 @@ createAddCommandRecord time user uuid args =
       Right (Just title, args') -> return $ Right $ C.CommandRecord 1 time (T.pack user) (T.pack "add") (l1 ++ l2) where
         xs = parseArgs args'
         map0 = makeMap xs
-        map1 = M.union map0 (M.fromList [("type", "task"), ("status", "pending"), ("stage", "inbox")])
+        map1 = M.union map0 (M.fromList [("type", "task"), ("status", "open"), ("stage", "inbox")])
         l1 = catMaybes
           [ Just (T.pack $ "id=" ++ uuid)
           , M.lookup "type" map1 >>= (\x -> Just $ T.pack $ "type=" ++ x)

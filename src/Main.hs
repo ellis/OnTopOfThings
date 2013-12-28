@@ -107,6 +107,7 @@ main = do
         -- 2) convert the command records to and SQL 'command' table
         -- 3) process the 'command' table, producing the 'property' table
         DB.databaseAddRecords records
+        DB.databaseUpdateIndexes
         case args of
           "add" : args' -> addHandler args'
           "list" : args' -> listHandler args'

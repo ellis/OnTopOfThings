@@ -1,4 +1,4 @@
 {
- "format":1, "time":"2013-12-27T09:27:34.909Z", "user":"default", "cmd":"add", "args": ["id=598595da-6bb0-11e3-9d9d-5404a61132f5", "type=list", "label=admin", "title=Administrative IT Tasks"]
+ "format":1, "time":"2013-12-27T09:27:34.909Z", "user":"default", "cmd":"add", "args": ["id=598595da-6bb0-11e3-9d9d-5404a61132f5", "type=list", "label=admin", "title=Administrative IT Tasks","status=open"]
 }
 

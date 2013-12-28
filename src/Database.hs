@@ -11,15 +11,17 @@ module Database
 , databaseInit
 , databaseAddRecord
 , databaseAddRecords
+, databaseUpdateIndexes
 ) where
 
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
-import Database.Persist
-import Database.Persist.Sqlite as S
-import qualified Database.Esqueleto
+--import Database.Persist
+import Database.Persist.Sql (insert)
+--import Database.Persist.Sqlite
+import Database.Esqueleto
 import Database.Persist.TH
 
 import Data.Aeson (encode, decode)
@@ -50,7 +52,11 @@ databaseUpdateIndexes :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
 databaseUpdateIndexes = do
   -- TODO: There's a better way to do this, I'm sure -- something with joins or something.
   -- Get a list of pending tasks
-  entities1 <- selectList [PropertyTable ==. "item", PropertyName ==. "type", PropertyValue ==. "task"] []
+  --entities1 <- selectList [PropertyTable ==. "item", PropertyName ==. "type", PropertyValue ==. "task"] []
+  e <- select $ from $ \(a, b) -> do
+    where_ (a ^. PropertyUuid ==. b ^. PropertyUuid &&. a ^. PropertyName ==. val "type" &&. a ^. PropertyValue ==. val "task" &&. b ^. PropertyName ==. val "status" &&. b ^. PropertyValue ==. val "open")
+    return (a ^. PropertyUuid)
+  liftIO $ print e
   return ()
   --mapM_ choose entities1
   --selectList [PropertyTable ==. "item", PropertyName ==. "type", PropertyValue ==. "task"] []
