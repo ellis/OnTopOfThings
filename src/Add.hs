@@ -1,5 +1,6 @@
 module Add
 ( processAddCommand
+, createAddCommandRecord
 ) where
 
 import DatabaseTables

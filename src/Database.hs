@@ -8,9 +8,9 @@
 
 module Database
 ( Command(..)
-, processCommandRecords
-, xyz
-, databaseBuildCommandTable
+, databaseInit
+, databaseAddRecord
+, databaseAddRecords
 , databaseProcessCommandTable
 ) where
 
@@ -36,11 +36,18 @@ processCommandRecords :: [C.CommandRecord] -> IO ()
 processCommandRecords records = runSqlite ":memory:" $ do
   xyz records
 
-databaseBuildCommandTable :: [C.CommandRecord] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
-databaseBuildCommandTable records = do
+databaseInit :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
+databaseInit =
   runMigration migrateAll
---  processRecords records
+
+databaseAddRecords :: [C.CommandRecord] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+databaseAddRecords records = do
   mapM_ processRecord records
+
+databaseAddRecord :: C.CommandRecord -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+databaseAddRecord record = do
+  processRecord record
+  return ()
 
 databaseProcessCommandTable :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
 databaseProcessCommandTable = do
@@ -65,10 +72,6 @@ xyz records = do
       record : rest -> do
         processRecord record
         processRecords rest
-
---    processRecord (C.CommandRecord format time user cmd args) =
---      insert $ Command format (formatISO8601Millis time) (T.unpack user) (T.unpack cmd) args' where
---      args' = BL.unpack $ encode args
 
 processRecord :: PersistStore m => C.CommandRecord -> m ()
 processRecord (C.CommandRecord format time user cmd args) = do

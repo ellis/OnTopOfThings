@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+import Control.Monad.IO.Class (liftIO)
 import Data.Maybe (catMaybes)
 import Data.Text (Text, pack)
 import Data.Time.Clock (UTCTime, getCurrentTime)
@@ -11,6 +12,7 @@ import System.Exit
 import System.IO
 import Database.Persist.Sqlite (runSqlite)
 
+import Add
 import Change
 import Command
 import qualified Database as DB
@@ -93,31 +95,41 @@ showOptions =
 -- 7) print relevant output
 main :: IO ()
 main = do
+  args <- getArgs
+
   -- 1) load the command records from files
   x <- loadCommandRecords
   case x of
     Right records -> do
       mapM_ (putStrLn . show) records
       runSqlite ":memory:" $ do
+        DB.databaseInit
         -- 2) convert the command records to and SQL 'command' table
-        DB.databaseBuildCommandTable records
+        DB.databaseAddRecords records
         -- 3) process the 'command' table, producing the 'property' table
         DB.databaseProcessCommandTable
-      --DB.processCommandRecords records
+        case args of
+          "add" : args' -> addHandler args'
+          --"add" : args' -> addHandler args'
+          --"show" : args' -> showHandler args'
+          [] -> do liftIO $ putStrLn "use one of these commands: add, view"
+          _ -> do liftIO $ putStrLn "Unrecognized command"
     Left msg -> do
       putStrLn msg
 
-  args <- getArgs
-  case args of
-    --"add" : args' -> addHandler args'
-    --"show" : args' -> showHandler args'
-    [] -> do putStrLn "use one of these commands: add, view"
-    _ -> do putStrLn "Unrecognized command"
-
   putStrLn "Done."
 
-addHandler :: [String] -> IO ()
+--addHandler :: [String] -> IO ()
 addHandler args = do
+  time <- liftIO $ getCurrentTime
+  uuid <- liftIO $ U4.nextRandom >>= return . U.toString
+  chguuid <- liftIO $ U4.nextRandom >>= return . U.toString
+  x <- createAddCommandRecord time "default" uuid args
+  liftIO $ print x
+  return ()
+
+addHandler' :: [String] -> IO ()
+addHandler' args = do
   time <- getCurrentTime
   uuid <- U4.nextRandom >>= return . U.toString
   chguuid <- U4.nextRandom >>= return . U.toString
