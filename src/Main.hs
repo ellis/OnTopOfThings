@@ -13,7 +13,6 @@ import System.IO
 import Database.Persist.Sqlite (runSqlite)
 
 import Add
-import Change
 import Command
 import qualified Database as DB
 
@@ -133,34 +132,3 @@ addHandler args = do
       liftIO $ print record
       liftIO $ saveCommandRecord record chguuid
   return ()
-
-addHandler' :: [String] -> IO ()
-addHandler' args = do
-  time <- getCurrentTime
-  uuid <- U4.nextRandom >>= return . U.toString
-  chguuid <- U4.nextRandom >>= return . U.toString
-  case getOpt Permute addOptions args of
-    (actions, nonOptions, []) -> do
-      opts <- foldl (>>=) (return defaultAddOptions) actions
-      case nonOptions of
-        [] -> do
-          hPutStrLn stderr "You must specify a title for the task."
-          exitWith (ExitFailure 1)
-        words -> do
-          let title = unwords words
-          let record = makeCmd opts title time uuid
-          --putStrLn $ show record
-          saveChangeRecord record chguuid
-    (_, _, errors) -> do
-      hPutStrLn stderr (concat errors ++ usageInfo ("ft add:") addOptions)
-      exitWith (ExitFailure 1)
-  where
-    makeCmd :: AddOptions -> String -> UTCTime -> String -> ChangeRecord
-    makeCmd opts title time uuid = ChangeRecord 1 time [entity] where
-      entity = ChangeEntity "item" (pack uuid) l
-      l = catMaybes
-        [ Just $ ChangeProperty "type" "=" (pack $ addOptType opts)
-        , Just $ ChangeProperty "title" "=" $ pack title
-        , fmap (\x -> ChangeProperty "parent" "=" $ pack x) (addOptParent opts)
-        , fmap (\x -> ChangeProperty "stage" "=" $ pack x) (addOptStage opts)
-        ]
