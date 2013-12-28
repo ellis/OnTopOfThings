@@ -1,6 +1,7 @@
 module Add
 ( createAddCommandRecord
 , processAddCommand
+, processModCommand
 ) where
 
 import Control.Applicative ((<$>), (<*>), empty)
@@ -9,7 +10,6 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
-import DatabaseTables
 import qualified Data.Map as M
 import Database.Persist
 import Database.Persist.Sqlite
@@ -19,6 +19,9 @@ import Data.Time.ISO8601 (formatISO8601Millis)
 import Text.Regex (mkRegex, matchRegexAll)
 import qualified Command as C
 import qualified Data.Text as T
+
+import DatabaseUtils
+import DatabaseTables
 
 createAddCommandRecord :: (PersistQuery m, PersistStore m) => UTCTime -> String -> String -> [String] -> m (Either String C.CommandRecord)
 createAddCommandRecord time user uuid args =
@@ -78,6 +81,17 @@ parse s = case matchRegexAll rx s of
   Just (name, op, "", _) -> Right (name, op, Nothing)
   Just (name, op, value, _) -> Right (name, op, Just value)
   _ -> Left "missing operator"
+
+refsToUuids :: [Either String (String, String, Maybe String)] -> SqlPersistT (NoLoggingT (ResourceT IO)) [Either String (String, String, Maybe String)]
+refsToUuids xs = mapM refToUuid xs
+
+refToUuid :: Either String (String, String, Maybe String) -> SqlPersistT (NoLoggingT (ResourceT IO)) (Either String (String, String, Maybe String))
+refToUuid (Right ("parent", "=", Just ref)) = do
+  uuid' <- databaseLookupUuid ref
+  case uuid' of
+    Nothing -> return (Left "Couldn't find parent ref")
+    Just uuid -> return (Right ("parent", "=", Just uuid))
+refToUuid x = return x
 
 makeMap :: [Either String (String, String, Maybe String)] -> M.Map String String
 makeMap xs = M.fromList $ catMaybes $ map fn xs where

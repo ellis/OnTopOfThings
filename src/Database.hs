@@ -30,8 +30,7 @@ import qualified Data.Text as T
 import qualified Data.Time.Clock (UTCTime)
 import Data.Time.ISO8601 (formatISO8601Millis)
 import qualified Command as C
-import Add (processAddCommand)
-import Mod (processModCommand)
+import Add (processAddCommand, processModCommand)
 import DatabaseTables
 
 databaseInit :: SqlPersistT (NoLoggingT (ResourceT IO)) ()

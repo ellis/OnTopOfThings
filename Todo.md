@@ -15,8 +15,11 @@
 - [x] Database: create an item table for wide-format data
 - [x] List: list of lists and their components
 - [x] Database: only set 'index' property on 'Item'
+- [x] Add: only use Property table for list properties and non-standard properties
+- [ ] Add: find parent by uuid, index, label
+- [ ] Mod: move function to Add.hs and refactor them
+- [ ] List: get parent path by using 'Item' instead of 'Property' table
 - [ ] Mod: only use Property table for list properties and non-standard properties
-- [ ] Add: only use Property table for list properties and non-standard properties
 - [ ] Main: 'close' command
 - [ ] List: prefix with start time
 - [ ] List: prefix with end time
@@ -24,7 +27,7 @@
 - [ ] List: show tags
 - [ ] List: show contexts
 - [ ] List: show age
-- [ ] Add: find parent by label or title
+- [ ] Add: find parent by title too (case insensitive)
 - [ ] Main: list tasks which have a field matching a string
 - [ ] Main: list tasks with specific fields, i.e. --stage=inbox
 - [ ] DatabaseTables: Switch to using UTCTime

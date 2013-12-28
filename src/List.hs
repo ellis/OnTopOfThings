@@ -42,7 +42,7 @@ listHandler args = do
 --printItem :: EntityMap -> Int -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 printItem entities indent item = do
   let indent_s = (replicate indent ' ')
-  liftIO $ putStrLn $ indent_s ++ show item
+  --liftIO $ putStrLn $ indent_s ++ show item
   liftIO $ putStrLn $ indent_s ++ itemToString' item entities
   items <- select $ from $ \t -> do
     where_ (t ^. ItemParent ==. val (Just $ itemUuid item))

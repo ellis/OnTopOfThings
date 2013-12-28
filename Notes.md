@@ -56,10 +56,11 @@
     * critical/penalty [H/M/L/null]
     * urgency [H/M/L/null]
     * description
-    * after (UUID)
+    * after/dependsOn (UUID)
     * stage (inbox, external, pending, next, today, now)
     * status (pending/open, completed/closed, deleted)
     * close reason (for tickets/bugs: fixed, won't fix, not a bug, ...)
+    * close time
     * due
     * defer/ignore/forget/hide/wait/postpone/delay/tickler till date
     * readiness: ready/actionable, waiting/external, needs to be decomposed into smaller steps
@@ -73,9 +74,10 @@
     * end time (especially for events)
     * tags
     * contexts
+    * order in parent, so that the user can manually arrange the items
 * item property interactions
-    * there are lots of interactions between some of the variables (stage, status, close reason); figure this out better
-    * some properties are only relevant for some item types.  E.g., status=pending 
+    * there are lots of interactions between some of the variables (stage, status, close reason, close time); figure this out better
+    * some properties are only relevant for some item types.  E.g., stage generally isn't needed for lists
 * item relations:
     * parent (realm, role, context, outcome, etc)
     * tag

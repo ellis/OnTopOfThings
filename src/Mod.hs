@@ -1,6 +1,5 @@
 module Mod
 ( createModCommandRecord
-, processModCommand
 ) where
 
 import Control.Monad.IO.Class (liftIO, MonadIO)
@@ -71,32 +70,4 @@ makeMap :: [Either String (String, String, Maybe String)] -> M.Map String String
 makeMap xs = M.fromList $ catMaybes $ map fn xs where
   fn (Right (name, "=", Just value)) = Just (name, value)
   fn _ = Nothing
-
-processModCommand :: (PersistQuery m, PersistStore m) => UTCTime -> [String] -> m ()
-processModCommand time args = do
-  let xs = parseArgs args
-  let map = makeMap xs
-  case M.lookup "id" map of
-    Nothing -> return ()
-    Just uuid -> do
-      mapM_ fn xs
-      where
-        fn (Right x) = processItem uuid x
-        fn (Left msg) = liftIO $ putStrLn msg
-
-processItem :: (PersistQuery m, PersistStore m) => String -> (String, String, Maybe String) -> m ()
-processItem _ ("id", _, _) = return ()
-processItem uuid (name, "=", Just value) = do
-  deleteWhere [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. name]
-  insert $ Property "item" uuid name value
-  return ()
-processItem uuid (name, "-", Just value) = do
-  deleteWhere [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. name, PropertyValue ==. value]
-  return ()
-processItem uuid (name, "-", Nothing) = do
-  deleteWhere [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. name]
-  return ()
-processItem uuid (name, "+", Just value) = do
-  insert $ Property "item" uuid name value
-  return ()
 
