@@ -52,13 +52,14 @@ databaseProcessCommandTable = do
 
 recordToCommand :: C.CommandRecord -> Command
 recordToCommand (C.CommandRecord format time user cmd args) =
-  Command format (formatISO8601Millis time) (T.unpack user) (T.unpack cmd) args'
+  Command format time (T.unpack user) (T.unpack cmd) args'
   where
     args' = BL.unpack $ encode args
 
 processCommand command = do
   case commandCmd command of
-    "add" -> do processAddCommand args
+    "add" -> do processAddCommand time args
     _ -> return ()
   where
+    time = commandTime command
     Just args = decode (BL.pack $ commandArgs command)

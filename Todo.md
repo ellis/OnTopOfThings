@@ -6,7 +6,7 @@
 - [x] Main: save CommandRecord to disk
 - [x] Main: list tasks
 - [x] List: prefix title with parent list name
-- [ ] Add: store creation time for item
+- [x] Add: store creation time for item
 - [ ] Database: index the tasks which are pending
 - [ ] Main: 'mod' command
 - [ ] Mod: modify item properties
@@ -17,6 +17,9 @@
 - [ ] List: prefix with start time
 - [ ] List: prefix with end time
 - [ ] List: list tasks for a given list
+- [ ] List: show tags
+- [ ] List: show contexts
+- [ ] List: show age
 - [ ] Add: find parent by label or title
 - [ ] Main: list tasks which have a field matching a string
 - [ ] Main: list tasks with specific fields, i.e. --stage=inbox

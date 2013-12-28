@@ -16,12 +16,12 @@ import           Database.Persist
 import           Database.Persist.Sqlite
 import           Database.Persist.TH
 
-import qualified Data.Time.Clock (UTCTime)
+import Data.Time.Clock (UTCTime)
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 Command
   format Int
-  time String
+  time UTCTime
   user String
   cmd String
   args String
