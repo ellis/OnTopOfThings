@@ -7,8 +7,8 @@
 - [x] Main: Get current time for change records
 - [x] Change: Convert Change* types to JSON
 - [x] Main: Generate UUID for new change records
-- [ ] Change: remove unnecessary elements from JSON output
-- [ ] Main: save change record to disk
+- [x] Change: remove unnecessary elements from JSON output
+- [x] Main: save change record to disk
 - [ ] Main: find parent by title
 - [ ] Main: list tasks
 - [ ] Main: list tasks which have a field matching a string

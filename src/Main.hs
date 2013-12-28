@@ -98,6 +98,7 @@ addHandler :: [String] -> IO ()
 addHandler args = do
   time <- getCurrentTime
   uuid <- U4.nextRandom >>= return . U.toString
+  chguuid <- U4.nextRandom >>= return . U.toString
   case getOpt Permute addOptions args of
     (actions, nonOptions, []) -> do
       opts <- foldl (>>=) (return defaultAddOptions) actions
@@ -108,9 +109,8 @@ addHandler args = do
         words -> do
           let title = unwords words
           let record = makeCmd opts title time uuid
-          putStrLn $ show record
-          saveChangeRecord record
-          --mapM_ (\(cmd, args) -> rawSystem cmd args) cmds
+          --putStrLn $ show record
+          saveChangeRecord record chguuid
     (_, _, errors) -> do
       hPutStrLn stderr (concat errors ++ usageInfo ("ft add:") addOptions)
       exitWith (ExitFailure 1)

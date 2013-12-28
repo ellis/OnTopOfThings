@@ -116,9 +116,12 @@ loadDB = do
     fn (Left msg) _ = Left msg
     fn _ (Left msg) = Left msg
 
-saveChangeRecord :: ChangeRecord -> IO ()
-saveChangeRecord record = do
-  putStrLn $ BL.unpack $ encode record
+saveChangeRecord :: ChangeRecord -> FilePath -> IO ()
+saveChangeRecord record chguuid = do
+  let filepath = joinPath ["testdata", chguuid ++ ".json"]
+  let s  = BL.unpack $ encode record
+  putStrLn s
+  writeFile filepath s
 
 type DB = M.Map (Text, Text, Text) Value
 
