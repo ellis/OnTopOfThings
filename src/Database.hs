@@ -60,31 +60,23 @@ databaseAddRecords records = do
         return t
       mapM_ (processCommand . entityVal) l
 
+-- Set index value on open tasks
 databaseUpdateIndexes :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
 databaseUpdateIndexes = do
-  -- TODO: There's a better way to do this, I'm sure -- something with joins or something.
-  -- Get a list of pending tasks
-  --entities1 <- selectList [PropertyTable ==. "item", PropertyName ==. "type", PropertyValue ==. "task"] []
-  e <- select $ from $ \(a, b, c) -> do
-    where_ (
-      a ^. PropertyUuid ==. b ^. PropertyUuid &&.
-      a ^. PropertyUuid ==. c ^. PropertyUuid &&.
-      a ^. PropertyName ==. val "type" &&. a ^. PropertyValue ==. val "task" &&.
-      b ^. PropertyName ==. val "status" &&. b ^. PropertyValue ==. val "open" &&.
-      c ^. PropertyName ==. val "ctime")
-    orderBy [asc (c ^. PropertyValue)]
-    return (a ^. PropertyUuid)
-  liftIO $ print e
-  mapM_ assignIndex $ zip [1..] e
-  return ()
+  -- Get a list of open tasks (type=task, status=open)
+  entities <- select $ from $ \t -> do
+    where_ (t ^. ItemType ==. val "task" &&. t ^. ItemStatus ==. val "open")
+    orderBy [asc (t ^. ItemCtime)]
+    return t
+  let xs = (zip [1..] entities) :: [(Int, Entity Item)]
+  mapM_ assignIndex xs
   where
-    assignIndex (index, (Value uuid)) = do
-      delete $ from $ \t ->
-        where_ (t ^. PropertyTable ==. val "item" &&. t ^. PropertyUuid ==. val uuid &&. t ^. PropertyName ==. val "index")
-      insert $ Property "item" uuid "index" $ show index
-      liftIO $ print $ Property "item" uuid "index" $ show index
-  --mapM_ choose entities1
-  --selectList [PropertyTable ==. "item", PropertyName ==. "type", PropertyValue ==. "task"] []
+    --assignIndex :: (Int, Entity Item) 
+    assignIndex (index, entity) = do
+      update $ \t -> do
+        set t [ItemIndex =. val (Just index)]
+        --where_ (t ^. ItemId ==. val (entityKey entity)) -- TODO: How to set by key?
+        where_ (t ^. ItemUuid ==. val (itemUuid $ entityVal entity))
 
 --databaseProcessCommandTable :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
 --databaseProcessCommandTable = do
