@@ -121,6 +121,8 @@ For now I'm saving Change Records, but it might be better to save Command Record
 }
 ```
 
+Or in card format:
+
 ```
 F [FORMAT]
 T [TIME]
@@ -132,86 +134,7 @@ L= title [LEN]
 [TEXT OF LENGTH `LEN`]
 ```
 
-## Change Records
-
-See the fossil file format: <http://www.fossil-scm.org/fossil/doc/trunk/www/fileformat.wiki>
-
-### JSON Change Record
-
-Example of changes to a single entity:
-
-```
-{
- format: 1,
- time: "2013-12...",
- id: "UUID",
- properties: ["type=item", "title=improve my repos", "tag+repos"]
-}
-```
-
-Example of changes to two entities:
-
-```
-{
- format: 1,
- time: "2013-12...",
- list: [
-  {
-   id: "UUID",
-   changes: ["type=item", "title=improve my repos", "tag+repos"]
-  },
-  {
-   id: "UUID2",
-   changes: [...]
- ]
-}
-```
-
-### YAML
-
-```
-format: 1
-time: 2013-12...
-id: UUID
-properties:
-- type = list
-- title = admin
----
-format: 1
-time: 2013-12...
-id: UUID
-properties:
-- type=item
-- title=improve my repos
-- tag+repos
-- context+office
-- parent=UUID
----
-format: 1
-time: 2013-12...
-list:
-- id: UUID
-  properties:
-  - something = else
-- id: UUID
-  ...
-```
-
-### Text format
-
-This would be an efficient text format for the change record:
-
-```
-F [FORMAT]
-U [USER]
-T [TIME]
-B [TABLE]
-I [ID]
-= type item
-+ tag repos
-L= title [LEN]
-[TEXT OF LENGTH `LEN`]
-```
+The above format is inspired by the fossil file format: <http://www.fossil-scm.org/fossil/doc/trunk/www/fileformat.wiki>
 
 ## Reports
 

@@ -1,3 +1,5 @@
+# Todos
+
 - [x] Command: instead of storing data changes, store commands
 - [x] Database: load command records into database
 - [x] Add: update database based on a Command
@@ -21,6 +23,7 @@
 - [x] Put git repository on github
 - [x] Mod: move function to Add.hs and refactor them
 - [x] Mod: only use Property table for list properties and non-standard properties
+- [ ] Import: import from task warrior json and save a single file containing all the commands
 - [ ] Add: autogenerate a label for lists if none is given
 - [ ] Utils: create a Validation monad and monoid
 - [ ] Add: think about putting list paths into 'Property' tables for finding lists by path and detecting duplicates
