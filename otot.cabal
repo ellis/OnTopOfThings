@@ -3,11 +3,12 @@
 
 name:                otot
 version:             0.1.0.0
--- synopsis:            
+synopsis:            Task and list management to help you stay On Top Of Things
 -- description:         
--- license:             
+stability:           Experimental
+license:             GPL-3
 license-file:        LICENSE
--- author:              
+author:              Ellis Whitehead <ellis.whitehead@gmail.com>
 -- maintainer:          
 -- copyright:           
 -- category:            
