@@ -76,7 +76,7 @@ parseAddArgs args0 = do
   -- Combine text args into a title
   let args3 = combineText args2
   -- Check for errors
-  return (Right $ concatEithers1 args3)
+  return (concatEithers1 args3)
   where
     args1 = map parseStringToArg args0
     -- Combine text args into a title
@@ -92,11 +92,13 @@ parseModArgs args0 = do
   -- Lookup references
   args2 <- mapM refToUuid' args1
   -- Check for errors
-  let args3 = concatEithers1 args2
-  -- Make sure there are no ArgText args
-  case all validate args3 of
-    True -> return (Right args3)
-    False -> return (Left "unrecognized argument")
+  case concatEithers1 args2 of
+    Left msgs -> return $ Left msgs
+    Right args3 -> do
+      -- Make sure there are no ArgText args
+      case all validate args3 of
+        True -> return (Right args3)
+        False -> return (Left "unrecognized argument")
   where
     args1 = mapM parseStringToArg args0
     validate (ArgText _) = False
