@@ -19,11 +19,12 @@
 - [x] Add: find parent by uuid, index, label
 - [x] Change license to GPL3
 - [x] Put git repository on github
-- [ ] Mod: move function to Add.hs and refactor them
-- [ ] Mod: only use Property table for list properties and non-standard properties
+- [x] Mod: move function to Add.hs and refactor them
+- [x] Mod: only use Property table for list properties and non-standard properties
 - [ ] Add: autogenerate a label for lists if none is given
 - [ ] Utils: create a Validation monad and monoid
-- [ ] List: get parent path by using 'Item' instead of 'Property' table
+- [ ] Add: think about putting list paths into 'Property' tables for finding lists by path and detecting duplicates
+- [ ] List: get parent path by using 'Item' instead of 'Property' table, unless path is stored into Property
 - [ ] Main: 'close' command
 - [ ] Database: add fields for start time, end time, close time, due time, priority
 - [ ] List: prefix with start time
@@ -39,7 +40,6 @@
 - [ ] DatabaseTables: Switch to using UTCTime
 - [ ] Main: when setting parent, prevent cyclic loops -- might want to check this in loadDB too.
 - [ ] Lookup tradeoffs for String, Text, ByteString, as well as the lazy and strict versions.
-- [ ] Database: think about putting list paths into 'Property' tables for finding lists by path and detecting duplicates
 - [ ] Command: save UTCTime with more precision?
 
 Important lists:

@@ -48,7 +48,7 @@ data Arg
   | ArgEqual String String
   | ArgAdd String String
   | ArgUnset String
-  | ArgRemove String String String
+  | ArgRemove String String
   deriving Show
 
 createAddCommandRecord :: UTCTime -> String -> String -> [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Either String C.CommandRecord)
@@ -74,7 +74,7 @@ parseAddArgs args0 = do
   -- Lookup references
   args2 <- mapM refToUuid' args1
   -- Combine text args into a title
-  let args3 = combineText args2
+  let args3 = combineText args2 "" []
   -- Check for errors
   return (concatEithers1 args3)
   where
@@ -82,7 +82,7 @@ parseAddArgs args0 = do
     -- Combine text args into a title
     combineText :: [Either String Arg] -> String -> [Either String Arg] -> [Either String Arg]
     combineText [] "" acc = reverse acc
-    combineText [] title acc = (ArgEqual "title" (strip title)) : (reverse acc)
+    combineText [] title acc = (Right $ ArgEqual "title" (strip title)) : (reverse acc)
     combineText ((Right (ArgText s)):xs) title acc = combineText xs (title ++ " " ++ s) acc
     combineText ((Right (ArgEqual "title" s)):xs) title acc = combineText xs (title ++ " " ++ s) acc
     combineText (x:xs) title acc = combineText xs title (x:acc)
@@ -98,22 +98,22 @@ parseModArgs args0 = do
       -- Make sure there are no ArgText args
       case all validate args3 of
         True -> return (Right args3)
-        False -> return (Left "unrecognized argument")
+        False -> return (Left ["unrecognized argument"])
   where
-    args1 = mapM parseStringToArg args0
+    args1 = map parseStringToArg args0
     validate (ArgText _) = False
     validate _ = True
 
-parseStringToArg :: [String] -> [Either String Arg] -> [Either String Arg]
-parseStringToArg [] acc = reverse acc
-parseStringToArg (arg:rest) acc =
+parseStringToArg :: String -> Either String Arg
+parseStringToArg arg =
   case parseNameOpValue arg of
-    Left _ -> parseStringToArg rest ((ArgText arg):acc)
-    Right (name, "=", Nothing) -> parseStringToArg rest ((ArgNull name):acc)
-    Right (name, "=", Just value) -> parseStringToArg rest ((ArgEqual name value):acc)
-    Right (name, "+", Just value) -> parseStringToArg rest ((ArgAdd name value):acc)
-    Right (name, "-", Nothing) -> parseStringToArg rest ((ArgUnset name):acc)
-    Right (name, "-", Just value) -> parseStringToArg rest ((ArgRemove name value):acc)
+    Left _ -> Right (ArgText arg)
+    Right (name, "=", Nothing) -> Right (ArgNull name)
+    Right (name, "=", Just value) -> Right (ArgEqual name value)
+    Right (name, "+", Just value) -> Right (ArgAdd name value)
+    Right (name, "-", Nothing) -> Right (ArgUnset name)
+    Right (name, "-", Just value) -> Right (ArgRemove name value)
+    _ -> Left ("Invalid argument: "++arg)
 
 refToUuid' (Right arg) = do refToUuid arg
 refToUuid' x = return x
@@ -123,12 +123,12 @@ refToUuid (ArgEqual "parent" ref) = do
   uuid' <- databaseLookupUuid ref
   case uuid' of
     Nothing -> return (Left "Couldn't find parent ref")
-    Just uuid -> return (ArgEqual "parent" uuid)
-refToUuid x = return x
+    Just uuid -> return (Right $ ArgEqual "parent" uuid)
+refToUuid x = return $ Right x
 
 argsToTextList :: [Arg] -> [T.Text]
 argsToTextList args = map (T.pack . fn) args where
-  fn :: Arg -> T.Text
+  fn :: Arg -> String
   fn (ArgEqual name value) = name ++ "=" ++ value
   fn (ArgNull name) = name ++ "="
   fn (ArgAdd name value) = name ++ "+" ++ value
@@ -137,9 +137,11 @@ argsToTextList args = map (T.pack . fn) args where
 
 argsToMap :: [Arg] -> M.Map String (Maybe String)
 argsToMap args = argsToMap' args M.empty where
+  argsToMap' :: [Arg] -> M.Map String (Maybe String) -> M.Map String (Maybe String)
   argsToMap' [] m = m
-  argsToMap' ((ArgEqual name value):rest) m = argsToMap' rest M.insert name (Just value) m
-  argsToMap' ((ArgNull name):rest) m = argsToMap' rest M.insert name Nothing m
+  argsToMap' ((ArgEqual name value):rest) m = argsToMap' rest $ M.insert name (Just value) m
+  argsToMap' ((ArgNull name):rest) m = argsToMap' rest $ M.insert name Nothing m
+  argsToMap' (_:rest) m = argsToMap' rest m
 
 --preparseAddArgs :: [String] -> (Maybe String, [String]) -> Either String (Maybe String, [String])
 --preparseAddArgs l acc = case l of
@@ -206,35 +208,41 @@ addDefaults args = foldl fn args defaults where
 
 processAddCommand :: UTCTime -> [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 processAddCommand time args0 = do
-  case parseAddArgs args0 of
-    Left msgs -> return $ Left $ unwords msgs
+  x <- parseAddArgs args0
+  case x of
+    Left msgs -> do liftIO $ mapM_ print msgs
     Right args1 -> do
       let args = addDefaults args1
-      case createItem args of
-        Left msgs -> liftIO $ map print msgs
-        Right item ->
-          insert item
-          mapM_ saveProperty args
+      let map = argsToMap args
+      case M.lookup "id" map of
+        Just (Just uuid) -> do
+          case createItem time map of
+            Left msgs -> do liftIO $ mapM_ print msgs
+            Right item -> do
+              insert item
+              mapM_ (saveProperty uuid) args
+        Nothing -> do liftIO $ print "Missing `id`"
 
 processModCommand :: UTCTime -> [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 processModCommand time args0 = do
-  case parseAddArgs args0 of
-    Left msgs -> return $ Left $ unwords msgs
+  x <- parseModArgs args0
+  case x of
+    Left msgs -> do liftIO $ mapM_ print msgs
     Right args -> do
       let map = argsToMap args
       case M.lookup "id" map of
-        Nothing -> do liftIO $ putStrLn "Missing `id`"
-        Just uuid -> do
+        Just (Just uuid) -> do
           entity' <- getBy $ ItemUniqUuid uuid
           case entity' of
-            Nothing -> do liftIO $ putStrLn "Could not find item with given id"
+            Nothing -> do liftIO $ print "Could not find item with given id"
             Just entity -> do
               let item0 = entityVal entity
               case updateItem time map item0 of
-                Nothing -> do liftIO $ putStrLn "Couldn't update item"
+                Nothing -> do liftIO $ print "Couldn't update item"
                 Just item -> do
                   replace (entityKey entity) item
-                  mapM_ saveProperty args
+                  mapM_ (saveProperty uuid) args
+        Nothing -> do liftIO $ print "Missing `id`"
 
 itemFields = ["id", "type", "title", "status", "parent", "stage", "label", "index"]
 
@@ -243,7 +251,7 @@ itemFields = ["id", "type", "title", "status", "parent", "stage", "label", "inde
 --  (Right x) >>= f = f x
 --  return = Right
 
-createItem :: UTCTime -> M.Map String String -> Either [String] Item
+createItem :: UTCTime -> M.Map String (Maybe String) -> Either [String] Item
 createItem time map = do
   id <- get "id"
   type_ <- get "type"
@@ -255,13 +263,13 @@ createItem time map = do
   return $ Item id time type_ title status parent stage label Nothing
   where
     get name = case M.lookup name map of
-      Just x -> Right x
-      Nothing -> Left ["missing value for `" ++ name ++ "`"]
+      Just (Just x) -> Right x
+      _ -> Left ["missing value for `" ++ name ++ "`"]
     getMaybe name = case M.lookup name map of
-      Nothing -> Right Nothing
-      Just s -> Right (Just s)
+      Just (Just s) -> Right (Just s)
+      _ -> Right Nothing
 
-updateItem :: UTCTime -> M.Map String String -> Item -> Maybe Item
+updateItem :: UTCTime -> M.Map String (Maybe String) -> Item -> Maybe Item
 updateItem time map item0 =
   Item <$> 
     get "id" itemUuid <*>
@@ -276,32 +284,32 @@ updateItem time map item0 =
   where
     get :: String -> (Item -> String) -> Maybe String
     get name fn = case M.lookup name map of
-      Nothing -> Just (fn item0)
-      Just s -> Just s
+      Just (Just s) -> Just s
+      _ -> Just (fn item0)
 
     getMaybe :: String -> (Item -> Maybe String) -> Maybe (Maybe String)
     getMaybe name fn = case M.lookup name map of
-      Nothing -> Just (fn item0)
-      Just s -> Just (Just s)
+      Just (Just s) -> Just (Just s)
+      _ -> Just (fn item0)
 
-saveProperty :: (PersistQuery m, PersistStore m) => String -> (String, String, Maybe String) -> m ()
-saveProperty uuid (name, op, value') =
-  if elem name itemFields
-  then return ()
-  else
-    case (op, value') of
-      ("=", Just value) -> do
-        deleteWhere [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. name]
-        insert $ Property "item" uuid name value
-        return ()
-      ("-", Just value) -> do
-        deleteWhere [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. name, PropertyValue ==. value]
-        return ()
-      ("-", Nothing) -> do
-        deleteWhere [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. name]
-        return ()
-      ("+", Just value) -> do
-        insert $ Property "item" uuid name value
-        return ()
-      _ -> return ()
+saveProperty :: String -> Arg -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+saveProperty uuid (ArgEqual name value) = do
+  if elem name itemFields then return () else do
+    deleteWhere [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. name]
+    insert $ Property "item" uuid name value
+    return ()
+saveProperty uuid (ArgUnset name) = do
+  if elem name itemFields then return () else do
+    deleteWhere [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. name]
+    return ()
+saveProperty uuid (ArgAdd name value) = do
+  if elem name itemFields then return () else do
+    insert $ Property "item" uuid name value
+    return ()
+saveProperty uuid (ArgRemove name value) = do
+  if elem name itemFields then return () else do
+    deleteWhere [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. name, PropertyValue ==. value]
+    return ()
+saveProperty _ arg = do
+  liftIO $ print $ "Don't know how to handle arg: " ++ (show arg)
 
