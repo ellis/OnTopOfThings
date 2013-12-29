@@ -32,7 +32,6 @@ import Database.Persist.Sqlite (runSqlite)
 import Add
 import Command
 import List
-import Mod
 import qualified Database as DB
 
 -- ADD

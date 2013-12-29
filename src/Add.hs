@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 module Add
 ( createAddCommandRecord
+, createModCommandRecord
 , processAddCommand
 , processModCommand
 ) where
