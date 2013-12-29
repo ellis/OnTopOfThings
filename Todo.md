@@ -16,17 +16,21 @@
 - [x] List: list of lists and their components
 - [x] Database: only set 'index' property on 'Item'
 - [x] Add: only use Property table for list properties and non-standard properties
-- [ ] Add: find parent by uuid, index, label
+- [x] Add: find parent by uuid, index, label
+- [ ] Change license to GPL3
+- [ ] Put git repository on github
 - [ ] Mod: move function to Add.hs and refactor them
-- [ ] List: get parent path by using 'Item' instead of 'Property' table
 - [ ] Mod: only use Property table for list properties and non-standard properties
+- [ ] List: get parent path by using 'Item' instead of 'Property' table
 - [ ] Main: 'close' command
+- [ ] Database: add fields for start time, end time, close time, due time, priority
 - [ ] List: prefix with start time
 - [ ] List: prefix with end time
 - [ ] List: list tasks for a given list
 - [ ] List: show tags
 - [ ] List: show contexts
 - [ ] List: show age
+- [ ] List: show comments
 - [ ] Add: find parent by title too (case insensitive)
 - [ ] Main: list tasks which have a field matching a string
 - [ ] Main: list tasks with specific fields, i.e. --stage=inbox
@@ -34,8 +38,15 @@
 - [ ] Main: when setting parent, prevent cyclic loops -- might want to check this in loadDB too.
 - [ ] Lookup tradeoffs for String, Text, ByteString, as well as the lazy and strict versions.
 
-- [ ] Change license to GPL3
-- [ ] Put git repository on github
+Important lists:
+- [ ] everything
+- [ ] just tasks for a given list/tag/context
+- [ ] all items for a given list/tag/context
+- [ ] pomodoro day report
+- [ ] kanban report
+- [ ] calendar report
+- [ ] goals/beeminder report
+- [ ] urgent/imporant report
 
 ## Old
 - [x] Change: switch to new JSON format

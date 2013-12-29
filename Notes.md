@@ -57,8 +57,8 @@
     * urgency [H/M/L/null]
     * description
     * after/dependsOn (UUID)
-    * stage (inbox, external, pending, next, today, now)
-    * status (pending/open, completed/closed, deleted)
+    * status (open, closed, deleted)
+    * stage (new, external, incubator, queue, today, now, done)
     * close reason (for tickets/bugs: fixed, won't fix, not a bug, ...)
     * close time
     * due
@@ -75,6 +75,7 @@
     * tags
     * contexts
     * order in parent, so that the user can manually arrange the items
+    * severity (for bugs)
 * item property interactions
     * there are lots of interactions between some of the variables (stage, status, close reason, close time); figure this out better
     * some properties are only relevant for some item types.  E.g., stage generally isn't needed for lists
@@ -88,6 +89,9 @@
     * when an item has a due date and a time estimate, show it on the daily list once things start getting tight
     * for tasks with effort estimates and due dates, maybe we can show some useful graph?
     * let user schedule time slots and pomodoros for various days, both today and in advance
+    * link files and URLs to items
+    * use as an RSS reader and for tagging other websites to read or that are noteworthy
+    * scheduled reminders
 * plausibility checks
     * make plausibility checks when setting a date to hide and item till, because hiding is kind of dangerous
     * when a task is marked as done which has incomplete sub-tasks

@@ -30,7 +30,7 @@ createAddCommandRecord time user uuid args =
     Right (Nothing, _) -> return $ Left "you must specify a title"
     Right (Just title, args') -> return $ Right $ C.CommandRecord 1 time (T.pack user) (T.pack "add") l where
       xs = parseArgs args'
-      l = (T.pack $ "id=" ++ uuid) : (catMaybes $ map fn xs)
+      l = (T.pack $ "id=" ++ uuid) : (T.pack $ "title=" ++ title) : (catMaybes $ map fn xs)
       fn :: Either String (String, String, Maybe String) -> Maybe T.Text
       fn (Right (name, op, Just value)) = Just (T.pack $ name ++ op ++ value)
       fn (Right (name, "-", Nothing)) = Just (T.pack $ name ++ "-")
