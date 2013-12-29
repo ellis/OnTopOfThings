@@ -28,21 +28,13 @@ createAddCommandRecord time user uuid args =
   case preparseArgs args (Nothing, []) of
     Left msg -> return $ Left msg
     Right (Nothing, _) -> return $ Left "you must specify a title"
-    Right (Just title, args') -> return $ Right $ C.CommandRecord 1 time (T.pack user) (T.pack "add") (l1 ++ l2) where
+    Right (Just title, args') -> return $ Right $ C.CommandRecord 1 time (T.pack user) (T.pack "add") l where
       xs = parseArgs args'
-      map0 = makeMap xs
-      map1 = M.union map0 (M.fromList [("type", "task"), ("status", "open"), ("stage", "inbox")])
-      l1 = catMaybes
-        [ Just (T.pack $ "id=" ++ uuid)
-        , M.lookup "type" map1 >>= (\x -> Just $ T.pack $ "type=" ++ x)
-        , Just (T.pack $ "title=" ++ title)
-        , M.lookup "stage" map1 >>= (\x -> Just $ T.pack $ "stage=" ++ x)
-        ]
-      l2 = catMaybes $ map (fn "tag") xs ++ map (fn "context") xs
-      fn :: String -> Either String (String, String, Maybe String) -> Maybe T.Text
-      fn name (Right (name', op, Just value)) = if name' == name then Just (T.pack $ name ++ op ++ value) else Nothing
-      fn name (Right (name', "-", Nothing)) = if name' == name then Just (T.pack $ name ++ "-") else Nothing
-      fn _ _ = Nothing
+      l = (T.pack $ "id=" ++ uuid) : (catMaybes $ map fn xs)
+      fn :: Either String (String, String, Maybe String) -> Maybe T.Text
+      fn (Right (name, op, Just value)) = Just (T.pack $ name ++ op ++ value)
+      fn (Right (name, "-", Nothing)) = Just (T.pack $ name ++ "-")
+      fn _ = Nothing
 
 preparseArgs :: [String] -> (Maybe String, [String]) -> Either String (Maybe String, [String])
 preparseArgs l acc = case l of
@@ -98,9 +90,20 @@ makeMap xs = M.fromList $ catMaybes $ map fn xs where
   fn (Right (name, "=", Just value)) = Just (name, value)
   fn _ = Nothing
 
+addDefaults :: M.Map String String -> [Either String (String, String, Maybe String)] -> [Either String (String, String, Maybe String)]
+addDefaults map xs = foldl fn xs defaults where
+  defaults = [("status", "open"), ("stage", "inbox")]
+  --fn :: [Either String (String, String, Maybe String)] -> (String, String) ->
+  fn acc (name, value) = case M.lookup name map of
+    Nothing -> (Right (name, "=", Just value)) : acc
+    Just x -> acc
+
 processAddCommand :: UTCTime -> [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 processAddCommand time args = do
-  let xs = parseArgs args
+  let xs' = parseArgs args
+  xs'' <- refsToUuids xs'
+  let map' = makeMap xs''
+  let xs = addDefaults map' xs''
   let map = makeMap xs
   case M.lookup "id" map of
     Nothing -> liftIO $ putStrLn "Missing `id`"
