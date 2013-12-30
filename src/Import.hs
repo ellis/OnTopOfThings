@@ -92,6 +92,9 @@ convert input =
         createItem' (uuids, records) _ = (uuids, (Left ["Expected object"]) : records)
     --x -> Left ["Expected an array, got" ++ show input]
 
+compareRecordTime :: CommandRecord -> CommandRecord -> Ordering
+compareRecordTime a b = compare (commandTime a) (commandTime b)
+
 convertObject :: Value -> Validation [CommandRecord]
 convertObject (Object m) = case convertObject' m Set.empty Set.empty of
   Left msgs -> Left msgs
