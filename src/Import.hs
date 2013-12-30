@@ -136,7 +136,6 @@ createItem uuids m = do
   let parent = project >>= Just . (T.replace "." "/")
   let args = catMaybes [Just (T.concat ["id=", uuid]), Just "type=task", Just (T.concat ["title=", description]), parent >>= (\x -> Just (T.concat ["parent=", x])), Just (T.concat ["status=", status]), Just "stage=incubator"]
   return (Set.insert uuid uuids, CommandRecord 1 time "default" cmd args)
-  --return (CommandRecord 1 time "default" cmd args)
   where
     getStatus status' = case status' of
       Just "completed" -> "closed"
