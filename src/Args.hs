@@ -19,8 +19,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 module Args where
 
+import Data.Map as M
+import Data.Set as Set
 import System.Console.CmdArgs.Explicit
 
+data Arguments = Arguments
+  { argumentsCmd :: String
+  , argumentsArgs :: [String]
+  , argumentsFlags :: [(String, String)]
+  }
+  deriving (Show)
+
+arguments_empty = Arguments "add" [] []
+
+arguments_add' :: Mode Arguments
+arguments_add' = mode "add" arguments_empty  "add a new item" (flagArg updArgs "TITLE")
+  [ flagReq ["parent", "p"] (upd "parent") "PARENT" "reference to parent of this item"
+  , flagReq ["stage", "s"] (upd "stage") "TYPE" "new|incubator|today. Defaults to new."
+  , flagReq ["type", "t"] (upd "type") "TYPE" "list|task. Defaults to task."
+  --, flagHelpSimple (("help", ""):)
+  ] where
+    updArgs value acc = Right $ acc { argumentsArgs = (argumentsArgs acc ++ [value]) }
+    upd name value acc = Right $ acc { argumentsFlags = argumentsFlags acc ++ [(name, value)] }
 
 arguments_add :: Mode [(String, String)]
 arguments_add = mode "add" [] "add a new item" (flagArg (upd "title") "TITLE")
@@ -31,13 +51,20 @@ arguments_add = mode "add" [] "add a new item" (flagArg (upd "title") "TITLE")
   ] where
     upd name value acc = Right $ (name, value) : acc
 
-arguments_close :: Mode [(String, String)]
-arguments_close = mode "close" [] "close an item" (flagArg (upd "ref") "REF")
+arguments_close :: Mode Arguments
+arguments_close = mode "close" arguments_empty "close an item" (flagArg updArgs "REF")
+  [-- flagHelpSimple (("help", ""):)
+  ] where
+    updArgs value acc = Right $ acc { argumentsArgs = (argumentsArgs acc ++ [value]) }
+    upd name value acc = Right $ acc { argumentsFlags = argumentsFlags acc ++ [(name, value)] }
+
+arguments_close' :: Mode [(String, String)]
+arguments_close' = mode "close" [] "close an item" (flagArg (upd "ref") "REF")
   [ flagHelpSimple (("help", ""):)
   ] where
     upd name value acc = Right $ (name, value) : acc
 
-arguments = modes "otot" [] "OnTopOfThings for managing lists and tasks" [arguments_add, arguments_close]
+arguments = modes "otot" arguments_empty "OnTopOfThings for managing lists and tasks" [arguments_add', arguments_close]
 
 ---myModes :: Mode (CmdArgs MyOptions)
 ---myModes = cmdArgsMode $ modes [arguments_add, arguments_close]

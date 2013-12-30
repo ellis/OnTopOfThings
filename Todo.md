@@ -27,11 +27,11 @@
 - [x] Database: add fields for start time, end time, close time, due time
 - [x] Import: handle close time
 - [x] List: parameter 'from=TIME' hides any items which were closed before the given TIME
+- [ ] Use CmdArgs for 'add', 'close', 'mod'
+- [ ] Simplify creation of CommandRecord so that only index-references are turned into uuids, and use same format as on the command line
 - [ ] Main: 'close' command
 - [ ] Main: 'stage' command
 - [ ] List: display by stage
-- [ ] Find more powerful command line parser
-- [ ] Main: Simplify creation of CommandRecord so that only index-references are turned into uuids
 - [ ] Main: use the 'format' parameter of CommandRecord to choose which function handles the command record
 - [ ] Index all displayed items instead of open tasks?
 - [ ] Add: maybe refToUuid shouldn't be called while constructing the CommandRecord in order to leave labels as they are

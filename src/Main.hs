@@ -47,10 +47,11 @@ import qualified Database as DB
 main :: IO ()
 main = do
   xs <- processArgs arguments
-  if ("help","") `elem` xs
+  if True -- ("help","") `elem` xs
     then print $ helpText [] HelpFormatDefault arguments
-    else print xs
-  mapM_ (putStrLn . show) xs
+    else print $ show xs
+  putStrLn . show $ xs
+  --mapM_ (putStrLn . show) xs
   return ()
 
 main' :: IO ()
