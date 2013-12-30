@@ -52,32 +52,46 @@ import Utils
 
 processImportCommand :: String -> IO ()
 processImportCommand filename = do
-  input <- B.readFile filename
   --s <- getContents
   --mapM_ print $ catMaybes $ map checkLine $ zip [1..] $ lines s
-  print $ convert input
+  input <- B.readFile filename
+  case convert input of
+    Left msgs -> mapM_ print msgs
+    Right l -> mapM_ (putStrLn . BL.unpack . encode) l
 
-checkLine :: (Int, String) -> Maybe Int
-checkLine (i, s) = result where
-  s' = case reverse (strip s) of
-    ',':rest -> reverse rest
-    _ -> s
-  result = case ((decode (BL.pack s')) :: Maybe Value) of
-    Nothing -> Just i
-    _ -> Nothing
+--checkLine :: (Int, String) -> Maybe Int
+--checkLine (i, s) = result where
+--  s' = case reverse (strip s) of
+--    ',':rest -> reverse rest
+--    _ -> s
+--  result = case ((decode (BL.pack s')) :: Maybe Value) of
+--    Nothing -> Just i
+--    _ -> Nothing
 
-convert :: BL.ByteString -> [Validation [CommandRecord]]
+convert :: BL.ByteString -> Validation [CommandRecord]
 convert input =
   case eitherDecode input of
-    Left msg -> [Left [msg]]
-    Right (Array l) -> map convertObject (V.toList l)
-    x -> [Left ["Expected an array, got" ++ show input]]
+    Left msg -> Left [msg]
+    Right (Array l) -> concatEithersN records where
+      (_, records) = foldl createItem' (Set.empty, []) (V.toList l)
+      where
+        createItem'
+          :: (Set.Set T.Text, [Validation CommandRecord])
+          -> Value
+          -> (Set.Set T.Text, [Validation CommandRecord])
+        createItem' (uuids, records) (Object m) = case createItem uuids m of
+          Left msgs -> (uuids, Left msgs : records)
+          Right (uuids', record) -> (uuids', (Right record) : records)
+        createItem' (uuids, records) _ = (uuids, (Left ["Expected object"]) : records)
+    --x -> Left ["Expected an array, got" ++ show input]
 
 convertObject :: Value -> Validation [CommandRecord]
-convertObject (Object m) = convertObject' m Set.empty Set.empty
+convertObject (Object m) = case convertObject' m Set.empty Set.empty of
+  Left msgs -> Left msgs
+  Right (_, _, l) -> Right l
 convertObject _ = Left ["Expected an object"]
 
-convertObject' :: Object -> Set.Set [T.Text] -> Set.Set T.Text -> Validation [CommandRecord]
+convertObject' :: Object -> Set.Set [T.Text] -> Set.Set T.Text -> Validation (Set.Set [T.Text], Set.Set T.Text, [CommandRecord])
 convertObject' m projects uuids = do
   uuid <- get "uuid" m
   entry' <- get "entry" m
@@ -85,17 +99,19 @@ convertObject' m projects uuids = do
   description <- getMaybe "description" m
   status' <- getMaybe "status" m
   time <- (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" (T.unpack entry')) `maybeToValidation` ["Could not parse time"]
-  let projects = createProjects project' time uuid
-  return projects
+  let (projects', projectRecords) = createProjects project' time uuid
+  return (projects', uuids, projectRecords)
   where
-    createProjects :: Maybe T.Text -> UTCTime -> T.Text -> [CommandRecord]
+    createProjects :: Maybe T.Text -> UTCTime -> T.Text -> (Set.Set [T.Text], [CommandRecord])
     createProjects project' time uuid = case project' of
-      Nothing -> []
-      Just label' -> map createProject pathsNew where
+      Nothing -> (projects, [])
+      Just label' -> (projects', records) where
         paths = filter (not . null) $ inits $ T.splitOn "." label'
         pathsNew = filter (\x -> not $ Set.member x projects) paths
-        createProject :: [T.Text] -> CommandRecord
-        createProject path = CommandRecord 1 time "default" "add" args where
+        (projects', recordsR) = foldl createProject (projects, []) pathsNew
+        records = reverse recordsR
+        createProject :: (Set.Set [T.Text], [CommandRecord]) -> [T.Text] -> (Set.Set [T.Text], [CommandRecord])
+        createProject (projects, records) path = (projects', CommandRecord 1 time "default" "add" args : records) where
           parent :: [T.Text]
           parent = init path
           parentLabel :: T.Text
@@ -106,6 +122,27 @@ convertObject' m projects uuids = do
           args = case null parent of
             True -> args0
             False -> (T.concat ["parent=", parentLabel]):args0
+
+createItem :: Set.Set T.Text -> Object -> Validation (Set.Set T.Text, CommandRecord)
+createItem uuids m = do
+  uuid <- get "uuid" m
+  entry' <- get "entry" m
+  description <- get "description" m
+  project <- getMaybe "project" m
+  status' <- getMaybe "status" m
+  time <- (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" (T.unpack entry')) `maybeToValidation` ["Could not parse time"]
+  let cmd = if Set.member uuid uuids then "mod" else "add"
+  let status = getStatus status'
+  let parent = project >>= Just . (T.replace "." "/")
+  let args = catMaybes [Just (T.concat ["id=", uuid]), Just "type=task", Just (T.concat ["title=", description]), parent >>= (\x -> Just (T.concat ["parent=", x])), Just (T.concat ["status=", status]), Just "stage=incubator"]
+  return (Set.insert uuid uuids, CommandRecord 1 time "default" cmd args)
+  --return (CommandRecord 1 time "default" cmd args)
+  where
+    getStatus status' = case status' of
+      Just "completed" -> "closed"
+      Just "deleted" -> "deleted"
+      _ -> "open"
+
 
 get :: T.Text -> HM.HashMap T.Text Value -> Validation T.Text
 get name m = case HM.lookup name m of

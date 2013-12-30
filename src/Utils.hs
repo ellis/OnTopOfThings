@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 module Utils
 ( Validation
 , concatEithers1
+, concatEithersN
 , maybeToEither
 , maybeToValidation
 , strip
@@ -35,6 +36,15 @@ concatEithers1' [] [] bs = Right (reverse bs)
 concatEithers1' [] as _ = Left (reverse as)
 concatEithers1' ((Left a):xs) as bs = concatEithers1' xs (a:as) bs
 concatEithers1' ((Right b):xs) as bs = concatEithers1' xs as (b:bs)
+
+-- Extract errors
+concatEithersN :: [Either [a] b] -> Either [a] [b]
+concatEithersN xs = concatEithersN' xs [] []
+concatEithersN' :: [Either [a] b] -> [a] -> [b] -> Either [a] [b]
+concatEithersN' [] [] bs = Right (reverse bs)
+concatEithersN' [] as _ = Left (reverse as)
+concatEithersN' ((Left as'):xs) as bs = concatEithersN' xs (as'++as) bs
+concatEithersN' ((Right b):xs) as bs = concatEithersN' xs as (b:bs)
 
 maybeToEither = flip maybe Right . Left
 
