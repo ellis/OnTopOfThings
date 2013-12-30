@@ -73,15 +73,17 @@ listHandler' args = do
 
 listTasks :: UTCTime -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 listTasks fromTime = do
+  -- Load all tasks that are open or were closed today
   tasks' <- select $ from $ \t -> do
     where_ (t ^. ItemType ==. val "task" &&. (t ^. ItemStatus ==. val "open" ||. t ^. ItemClosed >. val (Just fromTime)))
     return t
   let tasks = map entityVal tasks'
+  -- Recursively load all parent items
   items <- loadRecursive tasks
-  --let taskUuids = (nub . sort) $ map itemUuid tasks
-  --let parents' = (nub . sort . catMaybes) $ map itemParent tasks
-  
-  liftIO $ mapM_ (putStrLn . itemToString) items
+  --liftIO $ mapM_ (putStrLn . itemToString) items
+  -- Get the lists
+  let lists = filter (\item -> itemType item == "list") items
+  liftIO $ mapM_ (printListAndTasks items) lists
   return ()
 
 loadRecursive :: [Item] -> SqlPersistT (NoLoggingT (ResourceT IO)) [Item]
@@ -106,6 +108,13 @@ loadByUuid uuids = do
         where_ (t ^. ItemUuid ==. val uuid)
         return t
       return $ map entityVal entities
+
+printListAndTasks :: [Item] -> Item -> IO ()
+printListAndTasks items list = do
+  putStrLn ""
+  putStrLn $ itemToString list
+  let items' = filter (\item -> itemParent item == Just (itemUuid list)) items
+  mapM_ (putStrLn . itemToString) items'
 
 --printItem :: EntityMap -> Int -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 printItem entities indent item = do
