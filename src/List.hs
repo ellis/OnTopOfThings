@@ -23,7 +23,7 @@ import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
-import Data.List (intercalate)
+import Data.List (intercalate, nub, sort)
 import Data.Maybe (catMaybes)
 import Data.Time.Clock
 import Data.Time.Format (parseTime, formatTime)
@@ -76,8 +76,22 @@ listTasks fromTime = do
     where_ (t ^. ItemType ==. val "task" &&. (t ^. ItemStatus ==. val "open" ||. t ^. ItemClosed >. val (Just fromTime)))
     return t
   let tasks = map entityVal tasks'
+  let taskUuids = (nub . sort) $ map itemUuid tasks
+  let parents' = (nub . sort . catMaybes) $ map itemParent tasks
+  
   liftIO $ mapM_ (putStrLn . itemToString) tasks
   return ()
+
+--loadByUuid :: [T.Text] -> [Item]
+loadByUuid uuids = do
+  item_ll <- mapM fn uuids
+  return $ concat item_ll
+  where
+    fn uuid = do
+      entities <- select $ from $ \t -> do
+        where_ (t ^. ItemUuid ==. val uuid)
+        return t
+      return $ map entityVal entities
 
 --printItem :: EntityMap -> Int -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 printItem entities indent item = do
