@@ -62,9 +62,21 @@ instance FromJSON CommandRecord where
     args = v .: "args"
   parseJSON _ = empty
 
-readCommandRecord :: String -> IO (Either String CommandRecord)
+readCommandRecord :: String -> IO (Either String [CommandRecord])
 readCommandRecord filename = do
-  (eitherDecode <$> B.readFile filename) :: IO (Either String CommandRecord)
+  content <- B.readFile filename
+  return $ processContent content
+  where
+    processContent content = result where
+      result0 = eitherDecode content :: Either String Value
+      result = case result0 of
+        Left msg -> Left msg
+        Right value@(Object _) -> case fromJSON value :: Result CommandRecord of
+          Error msg -> Left msg
+          Success record -> Right [record]
+        Right value@(Array _) -> case fromJSON value :: Result [CommandRecord] of
+          Error msg -> Left msg
+          Success records -> Right records
 
 loadCommandRecords :: IO (Either String [CommandRecord])
 loadCommandRecords = do
@@ -74,8 +86,8 @@ loadCommandRecords = do
   --files <- FF.find (return False) (FF.extension `FF.==?` ".json") "testdata"
   records <- mapM (\f -> readCommandRecord (joinPath ["testdata", f])) files
   return $ foldl fn (Right [] :: Either String [CommandRecord]) records where
-    fn :: Either String [CommandRecord] -> Either String CommandRecord -> Either String [CommandRecord]
-    fn (Right acc) (Right record) = Right $ record : acc
+    fn :: Either String [CommandRecord] -> Either String [CommandRecord] -> Either String [CommandRecord]
+    fn (Right acc) (Right records) = Right $ acc ++ records
     fn (Left msg) _ = Left msg
     fn _ (Left msg) = Left msg
 
