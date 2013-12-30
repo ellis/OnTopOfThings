@@ -24,7 +24,7 @@ module Import
 import Control.Applicative ((<$>), (<*>), empty)
 import Data.Aeson
 import Data.Aeson.Types (Parser)
-import Data.List (inits, intersperse)
+import Data.List (inits, intersperse, sortBy)
 import Data.Maybe (catMaybes)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (parseTime)
@@ -78,9 +78,10 @@ convert :: BL.ByteString -> Validation [CommandRecord]
 convert input =
   case eitherDecode input of
     Left msg -> Left [msg]
-    Right (Array l) -> concatEithersN records where
-      (_, recordsR) = foldl createItem' (Set.empty, []) (V.toList l)
-      records = sortBy compareRecordTime $ reverse recordsR
+    Right (Array l) -> records where
+      (_, records') = foldl createItem' (Set.empty, []) (V.toList l)
+      records'' = concatEithersN (reverse records')
+      records = records'' >>= \l -> Right $ sortBy compareRecordTime l
       where
         createItem'
           :: (Set.Set T.Text, [Validation CommandRecord])
