@@ -80,7 +80,7 @@ convert input =
     Left msg -> Left [msg]
     Right (Array l) -> concatEithersN records where
       (_, recordsR) = foldl createItem' (Set.empty, []) (V.toList l)
-      records = reverse recordsR
+      records = sortBy compareRecordTime $ reverse recordsR
       where
         createItem'
           :: (Set.Set T.Text, [Validation CommandRecord])
