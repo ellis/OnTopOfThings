@@ -25,11 +25,13 @@ import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
 import Data.List (intercalate)
 import Data.Maybe (catMaybes)
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock
+import Data.Time.Format (parseTime, formatTime)
 import Database.Persist (PersistQuery)
 import Database.Persist.Sql (insert, deleteWhere)
 --import Database.Persist.Sqlite
 import Database.Esqueleto
+import System.Locale (defaultTimeLocale)
 import Text.Regex (mkRegex, matchRegexAll)
 
 import qualified Data.Map as M
@@ -43,6 +45,18 @@ type EntityMap = M.Map String PropertyMap
 
 listHandler :: [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 listHandler args = do
+  -- parse args, for the moment we'll ignore them and pretend "from=today"
+  now <- liftIO $ getCurrentTime
+  let fromTime = (parseTime defaultTimeLocale "%Y%m%d" $ formatTime defaultTimeLocale "%Y%m%d" now) :: Maybe UTCTime
+  case fromTime of
+    Just t -> listTasks t
+    Nothing -> liftIO $ putStrLn "bad time"
+
+listHandler' args = do
+  -- parse args, for the moment we'll ignore them and pretend "from=today"
+  now <- liftIO $ getCurrentTime
+  let fromTime = (parseTime defaultTimeLocale "%Y%m%d" $ formatTime defaultTimeLocale "%Y%m%d" now) :: Maybe UTCTime
+  --
   items0 <- select $ from $ \t -> do
     where_ (isNothing $ t ^. ItemParent)
     return t
@@ -54,6 +68,15 @@ listHandler args = do
   mapM_ (\entity -> printItem m 0 (entityVal entity)) items0
   --liftIO $ mapM_ (\entity -> print $ entityVal entity) $ entities
   --liftIO $ mapM_ (\(uuid, properties) -> putStrLn $ itemToString uuid properties m) $ M.toList m
+  return ()
+
+listTasks :: UTCTime -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+listTasks fromTime = do
+  tasks' <- select $ from $ \t -> do
+    where_ (t ^. ItemType ==. val "task" &&. (t ^. ItemStatus ==. val "open" ||. t ^. ItemClosed >. val (Just fromTime)))
+    return t
+  let tasks = map entityVal tasks'
+  liftIO $ mapM_ (putStrLn . itemToString) tasks
   return ()
 
 --printItem :: EntityMap -> Int -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
@@ -97,6 +120,27 @@ findParentLabel' (Just [uuid]) m acc =
       uuid' = M.lookup "parent" m'
 findParentLabel' _ _ acc = acc
 
+itemToString :: Item -> String
+itemToString item = unwords l where
+  path = [] -- findParentLabel (itemParent item >>= \x -> Just [x]) entities
+  check :: Maybe String
+  check = case (itemType item, itemStatus item) of
+    ("list", "open") -> Nothing
+    ("list", "closed") -> Just "[x]"
+    ("list", "deleted") -> Just "XXX"
+    ("task", "open") -> Just "- [ ]"
+    (_, "open") -> Just "- "
+    (_, "closed") -> Just "- [x]"
+    (_, "deleted") -> Just "- XXX"
+    _ -> Nothing
+  l :: [String]
+  l = catMaybes $
+    [ check
+    , itemIndex item >>= (\x -> Just ("(" ++ (show x) ++ ")"))
+    , if null path then Nothing else Just $ intercalate "/" path ++ ":"
+    , Just $ itemTitle item
+    ]
+
 itemToString' :: Item -> EntityMap -> String
 itemToString' item entities = unwords l where
   path = findParentLabel (itemParent item >>= \x -> Just [x]) entities
@@ -118,21 +162,21 @@ itemToString' item entities = unwords l where
     , Just $ itemTitle item
     ]
 
-itemToString :: String -> PropertyMap -> EntityMap -> String
-itemToString uuid properties entities = unwords l where
-  path = findParentLabel (M.lookup "parent" properties) entities
-  isTask :: Bool
-  isTask = (M.lookup "type" properties) == Just ["task"]
-  check :: String
-  check = case M.lookup "status" properties of
-    Just ["open"] -> if isTask then " [ ]" else ""
-    Just ["closed"] -> " [x]"
-    Just ["deleted"] -> " XXX"
-    _ -> ""
-  l :: [String]
-  l = catMaybes $
-    [ Just $ "-" ++ check
-    , M.lookup "index" properties >>= (\x -> Just ("(" ++ unwords x ++ ")"))
-    , if null path then Nothing else Just $ intercalate "/" path ++ ":"
-    , M.lookup "title" properties >>= Just . unwords
-    ]
+--itemToString :: String -> PropertyMap -> EntityMap -> String
+--itemToString uuid properties entities = unwords l where
+--  path = findParentLabel (M.lookup "parent" properties) entities
+--  isTask :: Bool
+--  isTask = (M.lookup "type" properties) == Just ["task"]
+--  check :: String
+--  check = case M.lookup "status" properties of
+--    Just ["open"] -> if isTask then " [ ]" else ""
+--    Just ["closed"] -> " [x]"
+--    Just ["deleted"] -> " XXX"
+--    _ -> ""
+--  l :: [String]
+--  l = catMaybes $
+--    [ Just $ "-" ++ check
+--    , M.lookup "index" properties >>= (\x -> Just ("(" ++ unwords x ++ ")"))
+--    , if null path then Nothing else Just $ intercalate "/" path ++ ":"
+--    , M.lookup "title" properties >>= Just . unwords
+--    ]
