@@ -27,7 +27,7 @@ import Data.Aeson.Types (Parser)
 import Data.Generics.Aliases (orElse)
 import Data.List (inits, intersperse, sortBy)
 import Data.Maybe (catMaybes, fromMaybe)
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock
 import Data.Time.Format (parseTime)
 import Debug.Hood.Observe
 import Debug.Trace
@@ -80,12 +80,14 @@ convert input =
   case eitherDecode input of
     Left msg -> Left [msg]
     Right (Array l) -> records where
-      (_, projects, records') = foldl createItem' (Set.empty, M.empty, []) (V.toList l)
-      records'' = concatEithersN (reverse records')
-      records = case records'' of
+      (_, projectMap, itemRecords') = foldl createItem' (Set.empty, M.empty, []) (V.toList l)
+      records = case concatEithersN (reverse itemRecords') of
         Left msgs -> Left msgs
-        Right records''' -> Right items where
-          items = sortBy compareRecordTime records'''
+        Right itemRecords'' -> Right l where
+          itemRecords = sortBy compareRecordTime itemRecords''
+          projectRecords = map createProject $ M.toList (trace ("projectMap: " ++ (show projectMap)) projectMap)
+          l = sortBy compareRecordTime (projectRecords ++ itemRecords)
+          --l = sortBy compareRecordTime (projectRecords)
       where
         createItem'
           :: (Set.Set T.Text, M.Map T.Text UTCTime, [Validation CommandRecord])
@@ -159,12 +161,10 @@ createItem uuids projects m = do
       Just "deleted" -> "deleted"
       _ -> "open"
     updateProjects :: Maybe T.Text -> UTCTime -> M.Map T.Text UTCTime
-    updateProjects parent time = fromMaybe projects projects' where
-      projects' = do
-        p <- parent
-        t <- M.lookup p projects
-        if compare time t == LT then return (M.insert p t projects) else Nothing
-
+    updateProjects parent time = case parent of
+      Nothing -> projects
+      Just p -> M.insert p t projects where
+        t = fromMaybe time (M.lookup p projects >>= \t -> Just $ min time t)
 
 get :: T.Text -> HM.HashMap T.Text Value -> Validation T.Text
 get name m = case HM.lookup name m of
@@ -177,6 +177,11 @@ getMaybe name m = case HM.lookup name m of
   Nothing -> Right Nothing
   Just (String text) -> Right $ Just text
   Just _ -> Left ["Field `" ++ (T.unpack name) ++ "` is not text"]
+
+createProject :: (T.Text, UTCTime) -> CommandRecord
+createProject (label, time) = CommandRecord 1 time' "default" "add" args where
+  time' = addUTCTime (-1 :: NominalDiffTime) time
+  args = [T.concat ["id=", label], "type=list", T.concat ["label=", label], T.concat ["title=", label], "status=open"]
 
 --getProjectMap :: [CommandRecord] -> [(Text, UTCTime)]
 --getProjectMap items = l where
