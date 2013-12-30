@@ -157,7 +157,7 @@ addHandler args = do
   return ()
 
 importHandler args = do
-  processImportCommand
+  processImportCommand (head args)
 
 modHandler args = do
   time <- liftIO $ getCurrentTime

@@ -50,17 +50,28 @@ import Utils
 --  Right x >>= f = f x
 --  return x = Right x
 
-processImportCommand :: IO ()
-processImportCommand = do
-  s <- getContents
-  print $ convert (BL.pack s)
+processImportCommand :: String -> IO ()
+processImportCommand filename = do
+  input <- B.readFile filename
+  --s <- getContents
+  --mapM_ print $ catMaybes $ map checkLine $ zip [1..] $ lines s
+  print $ convert input
+
+checkLine :: (Int, String) -> Maybe Int
+checkLine (i, s) = result where
+  s' = case reverse (strip s) of
+    ',':rest -> reverse rest
+    _ -> s
+  result = case ((decode (BL.pack s')) :: Maybe Value) of
+    Nothing -> Just i
+    _ -> Nothing
 
 convert :: BL.ByteString -> [Validation [CommandRecord]]
-convert input = output where
-  l = decode input :: Maybe [Value]
-  output = case l of
-    Just l -> map convertObject l
-    Nothing -> [Left ["Expected an array"]]
+convert input =
+  case eitherDecode input of
+    Left msg -> [Left [msg]]
+    Right (Array l) -> map convertObject (V.toList l)
+    x -> [Left ["Expected an array, got" ++ show input]]
 
 convertObject :: Value -> Validation [CommandRecord]
 convertObject (Object m) = convertObject' m Set.empty Set.empty
@@ -81,7 +92,7 @@ convertObject' m projects uuids = do
     createProjects project' time uuid = case project' of
       Nothing -> []
       Just label' -> map createProject pathsNew where
-        paths = inits $ T.splitOn "." label'
+        paths = filter (not . null) $ inits $ T.splitOn "." label'
         pathsNew = filter (\x -> not $ Set.member x projects) paths
         createProject :: [T.Text] -> CommandRecord
         createProject path = CommandRecord 1 time "default" "add" args where
