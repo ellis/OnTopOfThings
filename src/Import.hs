@@ -24,8 +24,9 @@ module Import
 import Control.Applicative ((<$>), (<*>), empty)
 import Data.Aeson
 import Data.Aeson.Types (Parser)
+import Data.Generics.Aliases (orElse)
 import Data.List (inits, intersperse, sortBy)
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, fromMaybe)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (parseTime)
 import Debug.Hood.Observe
@@ -79,7 +80,7 @@ convert input =
   case eitherDecode input of
     Left msg -> Left [msg]
     Right (Array l) -> records where
-      (_, records') = foldl createItem' (Set.empty, []) (V.toList l)
+      (_, projects, records') = foldl createItem' (Set.empty, M.empty, []) (V.toList l)
       records'' = concatEithersN (reverse records')
       records = case records'' of
         Left msgs -> Left msgs
@@ -87,13 +88,13 @@ convert input =
           items = sortBy compareRecordTime records'''
       where
         createItem'
-          :: (Set.Set T.Text, [Validation CommandRecord])
+          :: (Set.Set T.Text, M.Map T.Text UTCTime, [Validation CommandRecord])
           -> Value
-          -> (Set.Set T.Text, [Validation CommandRecord])
-        createItem' (uuids, records) (Object m) = case createItem uuids m of
-          Left msgs -> (uuids, Left msgs : records)
-          Right (uuids', record) -> (uuids', (Right record) : records)
-        createItem' (uuids, records) _ = (uuids, (Left ["Expected object"]) : records)
+          -> (Set.Set T.Text, M.Map T.Text UTCTime, [Validation CommandRecord])
+        createItem' (uuids, projects, records) (Object m) = case createItem uuids projects m of
+          Left msgs -> (uuids, projects, Left msgs : records)
+          Right (uuids', projects', record) -> (uuids', projects', (Right record) : records)
+        createItem' (uuids, projects, records) _ = (uuids, projects, (Left ["Expected object"]) : records)
     --x -> Left ["Expected an array, got" ++ show input]
 
 compareRecordTime :: CommandRecord -> CommandRecord -> Ordering
@@ -137,9 +138,9 @@ convertObject' m projects uuids = do
             True -> args0
             False -> (T.concat ["parent=", parentLabel]):args0
 
-createItem :: Set.Set T.Text -> Object -> Validation (Set.Set T.Text, CommandRecord)
+createItem :: Set.Set T.Text -> M.Map T.Text UTCTime -> Object -> Validation (Set.Set T.Text, M.Map T.Text UTCTime, CommandRecord)
 --createItem uuids m | trace ("createItem " ++ show uuids) False = undefined
-createItem uuids m = do
+createItem uuids projects m = do
   uuid <- get "uuid" m
   entry' <- get "entry" m
   description <- get "description" m
@@ -150,12 +151,19 @@ createItem uuids m = do
   let status = getStatus status'
   let parent = project >>= Just . (T.replace "." "/")
   let args = catMaybes [Just (T.concat ["id=", uuid]), Just "type=task", Just (T.concat ["title=", description]), parent >>= (\x -> Just (T.concat ["parent=", x])), Just (T.concat ["status=", status]), Just "stage=incubator"]
-  return (Set.insert uuid uuids, CommandRecord 1 time "default" cmd args)
+  let projects' = updateProjects parent time
+  return (Set.insert uuid uuids, projects', CommandRecord 1 time "default" cmd args)
   where
     getStatus status' = case status' of
       Just "completed" -> "closed"
       Just "deleted" -> "deleted"
       _ -> "open"
+    updateProjects :: Maybe T.Text -> UTCTime -> M.Map T.Text UTCTime
+    updateProjects parent time = fromMaybe projects projects' where
+      projects' = do
+        p <- parent
+        t <- M.lookup p projects
+        if compare time t == LT then return (M.insert p t projects) else Nothing
 
 
 get :: T.Text -> HM.HashMap T.Text Value -> Validation T.Text
@@ -170,3 +178,13 @@ getMaybe name m = case HM.lookup name m of
   Just (String text) -> Right $ Just text
   Just _ -> Left ["Field `" ++ (T.unpack name) ++ "` is not text"]
 
+--getProjectMap :: [CommandRecord] -> [(Text, UTCTime)]
+--getProjectMap items = l where
+--  m = foldl getProjectMap' M.empty items
+--  l' = M.toList m
+--  l = sortBy compareTime l'
+--  compareTime a b = compare (snd a) (snd b)
+--
+--getProjectMap' :: M.Map Text UTCTime -> CommandRecord -> M.Map Text UTCTime
+--getProjectMap' m item =
+--  case M.lookup 
