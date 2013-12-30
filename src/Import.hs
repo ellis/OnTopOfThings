@@ -29,6 +29,7 @@ import Data.List (inits, intersperse, sortBy)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Time.Clock
 import Data.Time.Format (parseTime)
+import Data.Time.ISO8601 (formatISO8601Millis)
 import Debug.Hood.Observe
 import Debug.Trace
 import System.Directory (getDirectoryContents)
@@ -148,11 +149,14 @@ createItem uuids projects m = do
   description <- get "description" m
   project <- getMaybe "project" m
   status' <- getMaybe "status" m
-  time <- (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" (T.unpack entry')) `maybeToValidation` ["Could not parse time"]
+  end' <- getMaybe "end" m
+  time <- (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" (T.unpack entry')) `maybeToValidation` ["Could not parse entry time"]
+  --closed <- (end' >>= \end -> (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" (T.unpack end))) `maybeToValidation` ["Could not parse end time"]
+  closed <- getClosed end'
   let cmd = if Set.member uuid uuids then "mod" else "add"
   let status = getStatus status'
   let parent = project >>= Just . (T.replace "." "/")
-  let args = catMaybes [Just (T.concat ["id=", uuid]), Just "type=task", Just (T.concat ["title=", description]), parent >>= (\x -> Just (T.concat ["parent=", x])), Just (T.concat ["status=", status]), Just "stage=incubator"]
+  let args = catMaybes [wrap "id" uuid, Just "type=task", wrap "title" description, wrapMaybe "parent" parent, wrap "status" status, Just "stage=incubator", wrapMaybeTime "closed" closed]
   let projects' = updateProjects parent time
   return (Set.insert uuid uuids, projects', CommandRecord 1 time "default" cmd args)
   where
@@ -160,11 +164,24 @@ createItem uuids projects m = do
       Just "completed" -> "closed"
       Just "deleted" -> "deleted"
       _ -> "open"
+    getClosed :: Maybe T.Text -> Validation (Maybe UTCTime)
+    getClosed closed' = case closed' of
+      Just closed'' ->
+        case parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" (T.unpack closed'') of
+          Nothing -> Left ["Could not parse end time: " ++ (T.unpack closed'')]
+          Just x -> Right (Just x)
+      Nothing -> Right Nothing
     updateProjects :: Maybe T.Text -> UTCTime -> M.Map T.Text UTCTime
     updateProjects parent time = case parent of
       Nothing -> projects
       Just p -> M.insert p t projects where
         t = fromMaybe time (M.lookup p projects >>= \t -> Just $ min time t)
+    wrap :: T.Text -> T.Text -> Maybe T.Text
+    wrap name value = Just (T.concat [name, "=", value])
+    wrapMaybe :: T.Text -> Maybe T.Text -> Maybe T.Text
+    wrapMaybe name value = value >>= (\x -> Just (T.concat [name, "=", x]))
+    wrapMaybeTime :: T.Text -> Maybe UTCTime -> Maybe T.Text
+    wrapMaybeTime name value = value >>= (\x -> Just (T.concat [name, "=", T.pack (formatISO8601Millis x)]))
 
 get :: T.Text -> HM.HashMap T.Text Value -> Validation T.Text
 get name m = case HM.lookup name m of

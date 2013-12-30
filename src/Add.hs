@@ -32,7 +32,7 @@ import Data.Either
 import Data.Maybe (catMaybes, isJust, fromJust)
 import Data.Time.Clock
 import Data.Time.Format (parseTime)
-import Data.Time.ISO8601 (formatISO8601Millis)
+import Data.Time.ISO8601 (formatISO8601Millis, parseISO8601)
 import Database.Persist
 import Database.Persist.Sqlite
 import System.Locale (defaultTimeLocale)
@@ -280,7 +280,7 @@ createItem time map = do
     getMaybeDate :: String -> Validation (Maybe UTCTime)
     getMaybeDate name = case M.lookup name map of
       Just (Just s) ->
-        (parseTime defaultTimeLocale "%Y%m%dT%H%M%S" s) `maybeToValidation` ["Could not parse time"] >>= \time -> Right (Just time)
+        (parseISO8601 s) `maybeToValidation` ["Could not parse time: " ++ s] >>= \time -> Right (Just time)
       _ -> Right Nothing
 
 updateItem :: UTCTime -> M.Map String (Maybe String) -> Item -> Maybe Item
