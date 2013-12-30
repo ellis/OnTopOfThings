@@ -35,8 +35,9 @@ import System.Locale (defaultTimeLocale)
 import Text.Regex (mkRegex, matchRegexAll)
 
 import qualified Data.Map as M
-import qualified Command as C
+import qualified Data.Set as Set
 import qualified Data.Text as T
+import qualified Command as C
 
 import DatabaseTables
 
@@ -76,11 +77,24 @@ listTasks fromTime = do
     where_ (t ^. ItemType ==. val "task" &&. (t ^. ItemStatus ==. val "open" ||. t ^. ItemClosed >. val (Just fromTime)))
     return t
   let tasks = map entityVal tasks'
-  let taskUuids = (nub . sort) $ map itemUuid tasks
-  let parents' = (nub . sort . catMaybes) $ map itemParent tasks
+  items <- loadRecursive tasks
+  --let taskUuids = (nub . sort) $ map itemUuid tasks
+  --let parents' = (nub . sort . catMaybes) $ map itemParent tasks
   
-  liftIO $ mapM_ (putStrLn . itemToString) tasks
+  liftIO $ mapM_ (putStrLn . itemToString) items
   return ()
+
+loadRecursive :: [Item] -> SqlPersistT (NoLoggingT (ResourceT IO)) [Item]
+loadRecursive items = loadParents items uuids items where
+  uuids = Set.fromList $ map itemUuid items
+
+loadParents :: [Item] -> Set.Set String -> [Item] -> SqlPersistT (NoLoggingT (ResourceT IO)) [Item]
+loadParents [] _ itemsAll = return itemsAll
+loadParents itemsCurrent uuidsOld itemsAll = do
+  let parents' = (Set.fromList . catMaybes) $ map itemParent itemsCurrent
+  let uuidsNext = Set.difference parents' uuidsOld
+  itemsNext <- loadByUuid (Set.toList uuidsNext)
+  loadParents itemsNext (Set.union uuidsOld parents') (itemsAll ++ itemsNext)
 
 --loadByUuid :: [T.Text] -> [Item]
 loadByUuid uuids = do
