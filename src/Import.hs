@@ -81,7 +81,10 @@ convert input =
     Right (Array l) -> records where
       (_, records') = foldl createItem' (Set.empty, []) (V.toList l)
       records'' = concatEithersN (reverse records')
-      records = records'' >>= \l -> Right $ sortBy compareRecordTime l
+      records = case records'' of
+        Left msgs -> Left msgs
+        Right records''' -> Right items where
+          items = sortBy compareRecordTime records'''
       where
         createItem'
           :: (Set.Set T.Text, [Validation CommandRecord])
