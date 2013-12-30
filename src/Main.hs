@@ -31,6 +31,7 @@ import Database.Persist.Sqlite (runSqlite)
 
 import Add
 import Command
+import Import
 import List
 import qualified Database as DB
 
@@ -127,6 +128,7 @@ main = do
         DB.databaseUpdateIndexes
         case args of
           "add" : args' -> addHandler args'
+          "import" : args' -> liftIO $ importHandler args'
           "list" : args' -> listHandler args'
           "mod" : args' -> modHandler args'
           --"add" : args' -> addHandler args'
@@ -153,6 +155,9 @@ addHandler args = do
       liftIO $ print record
       liftIO $ saveCommandRecord record chguuid
   return ()
+
+importHandler args = do
+  processImportCommand
 
 modHandler args = do
   time <- liftIO $ getCurrentTime

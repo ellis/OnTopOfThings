@@ -16,12 +16,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 -}
 
 module Utils
-( concatEithers1
+( Validation
+, concatEithers1
 , maybeToEither
+, maybeToValidation
 , strip
 ) where
 
 import qualified Data.Text as T
+
+type Validation a = Either [String] a
 
 -- Extract errors
 concatEithers1 :: [Either a b] -> Either [a] [b]
@@ -33,6 +37,11 @@ concatEithers1' ((Left a):xs) as bs = concatEithers1' xs (a:as) bs
 concatEithers1' ((Right b):xs) as bs = concatEithers1' xs as (b:bs)
 
 maybeToEither = flip maybe Right . Left
+
+maybeToValidation :: Maybe a -> [String] -> Validation a
+maybeToValidation m msgs = case m of
+  Just x -> Right x
+  Nothing -> Left msgs
 
 strip :: String -> String
 strip s = (T.unpack . T.strip . T.pack) s
