@@ -24,13 +24,17 @@
 - [x] Mod: move function to Add.hs and refactor them
 - [x] Mod: only use Property table for list properties and non-standard properties
 - [x] Import: import from task warrior json and save a single file containing all the commands
+- [ ] Database: add fields for start time, end time, close time, due time
+- [ ] Import: handle close time
+- [ ] List: parameter 'from=TIME' hides any items which were closed before the given TIME
+- [ ] Index all displayed items instead of open tasks?
 - [ ] Add: maybe refToUuid shouldn't be called while constructing the CommandRecord in order to leave labels as they are
 - [ ] Add: autogenerate a label for lists if none is given
 - [ ] Utils: create a Validation monad and monoid
 - [ ] Add: think about putting list paths into 'Property' tables for finding lists by path and detecting duplicates
 - [ ] List: get parent path by using 'Item' instead of 'Property' table, unless path is stored into Property
 - [ ] Main: 'close' command
-- [ ] Database: add fields for start time, end time, close time, due time, priority
+- [ ] Database: add fields for priority
 - [ ] List: prefix with start time
 - [ ] List: prefix with end time
 - [ ] List: list tasks for a given list

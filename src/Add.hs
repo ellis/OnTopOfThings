@@ -28,15 +28,17 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
-import qualified Data.Map as M
-import Database.Persist
-import Database.Persist.Sqlite
 import Data.Either
 import Data.Maybe (catMaybes, isJust, fromJust)
-import Data.Time.Clock (UTCTime)
+import Data.Time.Clock
+import Data.Time.Format (parseTime)
 import Data.Time.ISO8601 (formatISO8601Millis)
+import Database.Persist
+import Database.Persist.Sqlite
+import System.Locale (defaultTimeLocale)
 import Text.Regex (mkRegex, matchRegexAll)
 import qualified Command as C
+import qualified Data.Map as M
 import qualified Data.Text as T
 
 import DatabaseUtils
@@ -261,7 +263,13 @@ createItem time map = do
   parent <- getMaybe "parent"
   stage <- getMaybe "stage"
   label <- getMaybe "label"
-  return $ Item id time type_ title status parent stage label Nothing
+  -- index
+  closed <- getMaybeDate "closed"
+  start <- getMaybeDate "start"
+  end <- getMaybeDate "end"
+  due <- getMaybeDate "due"
+  review <- getMaybeDate "review"
+  return $ Item id time type_ title status parent stage label Nothing closed start end due review
   where
     get name = case M.lookup name map of
       Just (Just x) -> Right x
@@ -269,10 +277,15 @@ createItem time map = do
     getMaybe name = case M.lookup name map of
       Just (Just s) -> Right (Just s)
       _ -> Right Nothing
+    getMaybeDate :: String -> Validation (Maybe UTCTime)
+    getMaybeDate name = case M.lookup name map of
+      Just (Just s) ->
+        (parseTime defaultTimeLocale "%Y%m%dT%H%M%S" s) `maybeToValidation` ["Could not parse time"] >>= \time -> Right (Just time)
+      _ -> Right Nothing
 
 updateItem :: UTCTime -> M.Map String (Maybe String) -> Item -> Maybe Item
 updateItem time map item0 =
-  Item <$> 
+  Item <$>
     get "id" itemUuid <*>
     Just (itemCtime item0) <*>
     get "type" itemType <*>
@@ -281,7 +294,12 @@ updateItem time map item0 =
     getMaybe "parent" itemParent <*>
     getMaybe "stage" itemStage <*>
     getMaybe "label" itemLabel <*>
-    Just (itemIndex item0)
+    Just (itemIndex item0) <*>
+    getMaybeDate "closed" itemClosed <*>
+    getMaybeDate "start" itemStart <*>
+    getMaybeDate "end" itemEnd <*>
+    getMaybeDate "due" itemDue <*>
+    getMaybeDate "review" itemReview
   where
     get :: String -> (Item -> String) -> Maybe String
     get name fn = case M.lookup name map of
@@ -291,6 +309,13 @@ updateItem time map item0 =
     getMaybe :: String -> (Item -> Maybe String) -> Maybe (Maybe String)
     getMaybe name fn = case M.lookup name map of
       Just (Just s) -> Just (Just s)
+      _ -> Just (fn item0)
+
+    getMaybeDate :: String -> (Item -> Maybe UTCTime) -> Maybe (Maybe UTCTime)
+    getMaybeDate name fn = case M.lookup name map of
+      Just (Just s) -> case parseTime defaultTimeLocale "%Y%m%dT%H%M%S" s of
+        Just time -> Just (Just time)
+        Nothing -> Nothing
       _ -> Just (fn item0)
 
 saveProperty :: String -> Arg -> SqlPersistT (NoLoggingT (ResourceT IO)) ()

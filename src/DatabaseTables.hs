@@ -60,5 +60,11 @@ Item
   stage String Maybe
   label String Maybe
   index Int Maybe
+  closed UTCTime Maybe
+  start UTCTime Maybe
+  end UTCTime Maybe
+  due UTCTime Maybe
+  review UTCTime Maybe -- When to next review this item (like GTD tickler)
+  --reviewed UTCTime Maybe -- Last time reviewed
   deriving Show
 |]
