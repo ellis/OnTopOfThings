@@ -23,85 +23,18 @@ import Data.Text (Text, pack)
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import qualified Data.UUID as U
 import qualified Data.UUID.V4 as U4
-import System.Console.GetOpt
+import System.Console.CmdArgs.Explicit
 import System.Environment
 import System.Exit
 import System.IO
 import Database.Persist.Sqlite (runSqlite)
 
 import Add
+import Args
 import Command
 import Import
 import List
 import qualified Database as DB
-
--- ADD
-
-data AddOptions = AddOptions
-  { addOptVerbose :: Bool
-  , addOptType :: String
-  , addOptParent :: Maybe String
-  , addOptStage :: Maybe String
-  } deriving Show
-
-defaultAddOptions = AddOptions
-  { addOptVerbose = False
-  , addOptType = "task"
-  , addOptParent = Nothing
-  , addOptStage = Just "inbox"
-  }
-
-addOptions :: [OptDescr (AddOptions -> IO AddOptions)]
-addOptions =
-  [ Option ['v'] ["verbose"]
-    (NoArg (\opts -> return opts { addOptVerbose = True }))
-    "verbose output"
-  , Option [] ["list"]
-    (NoArg (\opts -> return opts { addOptType = "list" }))
-    "add a new list"
-  , Option ['p'] ["parent"]
-    (ReqArg (\uuid opts -> return opts { addOptParent = Just uuid }) "UUID")
-    "specify parent UUID of item"
-  , Option ['h'] ["help"]
-    (NoArg (\_ -> do
-      prg <- getProgName
-      hPutStrLn stderr (usageInfo (prg++" add [OPTION...] title") addOptions)
-      exitWith ExitSuccess))
-    "Show help"
-  ]
-
--- SHOW
-
-data ShowOptions = ShowOptions
-  { showOptVerbose :: Bool
-  , showOptType :: String
-  , showOptParent :: Maybe String
-  } deriving Show
-
-defaultShowOptions = ShowOptions
-  { showOptVerbose = False
-  , showOptType = "task"
-  , showOptParent = Nothing
-  }
-
-showOptions :: [OptDescr (ShowOptions -> IO ShowOptions)]
-showOptions =
-  [ Option ['v'] ["verbose"]
-    (NoArg (\opts -> return opts { showOptVerbose = True }))
-    "verbose output"
-  , Option [] ["list"]
-    (NoArg (\opts -> return opts { showOptType = "list" }))
-    "show a new list"
-  , Option ['p'] ["parent"]
-    (ReqArg (\uuid opts -> return opts { showOptParent = Just uuid }) "UUID")
-    "specify parent UUID of item"
-  , Option ['h'] ["help"]
-    (NoArg (\_ -> do
-      prg <- getProgName
-      hPutStrLn stderr (usageInfo (prg++" show [OPTION...] title") showOptions)
-      exitWith ExitSuccess))
-    "Show help"
-  ]
 
 
 -- 1) load the command records from files
@@ -113,8 +46,16 @@ showOptions =
 -- 7) print relevant output
 main :: IO ()
 main = do
-  args <- getArgs
+  xs <- processArgs arguments
+  if ("help","") `elem` xs
+    then print $ helpText [] HelpFormatDefault arguments
+    else print xs
+  mapM_ (putStrLn . show) xs
+  return ()
 
+main' :: IO ()
+main' = do
+  args <- getArgs
   -- 1) load the command records from files
   x <- loadCommandRecords
   case x of

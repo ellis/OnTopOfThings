@@ -26,14 +26,19 @@
 - [x] Import: import from task warrior json and save a single file containing all the commands
 - [x] Database: add fields for start time, end time, close time, due time
 - [x] Import: handle close time
-- [ ] List: parameter 'from=TIME' hides any items which were closed before the given TIME
+- [x] List: parameter 'from=TIME' hides any items which were closed before the given TIME
+- [ ] Main: 'close' command
+- [ ] Main: 'stage' command
+- [ ] List: display by stage
+- [ ] Find more powerful command line parser
+- [ ] Main: Simplify creation of CommandRecord so that only index-references are turned into uuids
+- [ ] Main: use the 'format' parameter of CommandRecord to choose which function handles the command record
 - [ ] Index all displayed items instead of open tasks?
 - [ ] Add: maybe refToUuid shouldn't be called while constructing the CommandRecord in order to leave labels as they are
 - [ ] Add: autogenerate a label for lists if none is given
 - [ ] Utils: create a Validation monad and monoid
 - [ ] Add: think about putting list paths into 'Property' tables for finding lists by path and detecting duplicates
 - [ ] List: get parent path by using 'Item' instead of 'Property' table, unless path is stored into Property
-- [ ] Main: 'close' command
 - [ ] Database: add fields for priority
 - [ ] List: prefix with start time
 - [ ] List: prefix with end time
