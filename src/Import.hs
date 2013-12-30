@@ -28,6 +28,8 @@ import Data.List (inits, intersperse)
 import Data.Maybe (catMaybes)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (parseTime)
+import Debug.Hood.Observe
+import Debug.Trace
 import System.Directory (getDirectoryContents)
 import System.FilePath (takeExtension, joinPath)
 import System.Locale (defaultTimeLocale)
@@ -57,7 +59,11 @@ processImportCommand filename = do
   input <- B.readFile filename
   case convert input of
     Left msgs -> mapM_ print msgs
-    Right l -> mapM_ (putStrLn . BL.unpack . encode) l
+    Right records -> do
+      putStrLn "["
+      mapM_ (\record -> putStrLn $ ((BL.unpack . encode) record ++ ",")) (init records)
+      putStrLn $ (BL.unpack . encode) (last records)
+      putStrLn "]"
 
 --checkLine :: (Int, String) -> Maybe Int
 --checkLine (i, s) = result where
@@ -73,7 +79,8 @@ convert input =
   case eitherDecode input of
     Left msg -> Left [msg]
     Right (Array l) -> concatEithersN records where
-      (_, records) = foldl createItem' (Set.empty, []) (V.toList l)
+      (_, recordsR) = foldl createItem' (Set.empty, []) (V.toList l)
+      records = reverse recordsR
       where
         createItem'
           :: (Set.Set T.Text, [Validation CommandRecord])
@@ -124,6 +131,7 @@ convertObject' m projects uuids = do
             False -> (T.concat ["parent=", parentLabel]):args0
 
 createItem :: Set.Set T.Text -> Object -> Validation (Set.Set T.Text, CommandRecord)
+--createItem uuids m | trace ("createItem " ++ show uuids) False = undefined
 createItem uuids m = do
   uuid <- get "uuid" m
   entry' <- get "entry" m
