@@ -25,6 +25,7 @@ module OnTopOfThings.Commands.Add
 import Control.Applicative ((<$>), (<*>), empty)
 import Data.Maybe
 import Data.Monoid
+import Debug.Trace
 import System.Console.CmdArgs.Explicit
 import qualified Data.Map as M
 import qualified Data.Set as Set
@@ -64,6 +65,7 @@ mode_add = Mode
   , modeArgs = ([flagArg updArgs "TITLE"], Nothing)
   , modeGroupFlags = toGroup
     [ flagReq ["parent", "p"] (upd "parent") "ID" "reference to parent of this item"
+    , flagReq ["id"] (upd "id") "ID" "A unique ID for this item. (NOT FOR NORMAL USE!)"
     , flagReq ["label", "l"] (upd "label") "LABEL" "A unique label for this item."
     , flagReq ["stage", "s"] (upd "stage") "STAGE" "new|incubator|today. (default=new)"
     , flagReq ["tag", "t"] (upd "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
@@ -82,19 +84,22 @@ optsProcess1_add args = do
     getArgs uuid flags' =
       case concatEithers1 flags' of
         Left msgs -> Left msgs
-        Right flags'' -> Right $ args { optionsFlags = flags''' } where
-          flags''' :: [(String, String)]
-          flags''' = ("id", uuid) : flags''
+        Right flags'' ->
+          case upd "id" uuid (args { optionsFlags = flags'' }) of
+            Left msg -> Left [msg]
+            Right opts' -> Right opts'
 
 optsProcess2_add :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
 optsProcess2_add opts = return (Right opts') where
   defaults = [("status", "open"), ("stage", "new")]
-  map' = foldl setDefault (optionsMap opts) defaults where
-  opts' = opts { optionsMap = map' }
+  opts' = foldl setDefault opts defaults where
   -- Function to add a default value if no value was already set
-  setDefault :: M.Map String (Maybe String) -> (String, String) -> M.Map String (Maybe String)
-  setDefault acc (name, value) = case M.lookup name acc of
-    Nothing -> M.insert name (Just value) acc
+  setDefault :: Options -> (String, String) -> Options
+  setDefault acc (name, value) = case M.lookup name (optionsMap acc) of
+    Nothing ->
+      case upd name value acc of
+        Left msg -> acc
+        Right acc' -> acc'
     Just x -> acc
 
 optsRun_add :: CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
@@ -144,6 +149,7 @@ itemFields = ["id", "type", "title", "status", "parent", "stage", "label", "inde
 --  return = Right
 
 createItem :: UTCTime -> Options -> Validation Item
+createItem _ opts | trace ("createItem: "++(show opts)) False = undefined
 createItem time opts = do
   id <- get "id"
   type_ <- get "type"

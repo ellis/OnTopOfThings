@@ -131,7 +131,7 @@ handleOptions opts mode optsProcess1 optsProcess2 optsRun = do
               Left msgs -> return (Left msgs)
               Right opts'' -> do
                 -- Update items and properties
-                x_ <- optsRun record opts
+                x_ <- optsRun record opts''
                 case x_ of
                   Left msgs -> return (Left msgs)
                   Right _ -> return (Right record)

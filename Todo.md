@@ -27,6 +27,7 @@
 - [x] Database: add fields for start time, end time, close time, due time
 - [x] Import: handle close time
 - [x] List: parameter 'from=TIME' hides any items which were closed before the given TIME
+- [ ] Set type and title in optsProcess2_add
 - [ ] Rename Args.hs to Modes.hs
 - [ ] Use CmdArgs for 'add', 'close', 'mod'
 - [ ] Simplify creation of CommandRecord so that only index-references are turned into uuids, and use same format as on the command line
