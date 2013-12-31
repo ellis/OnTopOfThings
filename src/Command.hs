@@ -40,6 +40,8 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as M
 import qualified Data.Vector as V
 
+import Utils
+
 
 data CommandRecord = CommandRecord
   { commandFormat :: Int
@@ -62,7 +64,7 @@ instance FromJSON CommandRecord where
     args = v .: "args"
   parseJSON _ = empty
 
-readCommandRecord :: String -> IO (Either String [CommandRecord])
+readCommandRecord :: String -> IO (Validation [CommandRecord])
 readCommandRecord filename = do
   content <- B.readFile filename
   return $ processContent content
@@ -70,23 +72,23 @@ readCommandRecord filename = do
     processContent content = result where
       result0 = eitherDecode content :: Either String Value
       result = case result0 of
-        Left msg -> Left msg
+        Left msg -> Left [msg]
         Right value@(Object _) -> case fromJSON value :: Result CommandRecord of
-          Error msg -> Left msg
+          Error msg -> Left [msg]
           Success record -> Right [record]
         Right value@(Array _) -> case fromJSON value :: Result [CommandRecord] of
-          Error msg -> Left msg
+          Error msg -> Left [msg]
           Success records -> Right records
 
-loadCommandRecords :: IO (Either String [CommandRecord])
+loadCommandRecords :: IO (Validation [CommandRecord])
 loadCommandRecords = do
   --let files = ["testdata/command001.json", "testdata/command002.json"]
   files' <- getDirectoryContents "testdata"
   let files = filter (\f -> takeExtension f == ".json") files'
   --files <- FF.find (return False) (FF.extension `FF.==?` ".json") "testdata"
   records <- mapM (\f -> readCommandRecord (joinPath ["testdata", f])) files
-  return $ foldl fn (Right [] :: Either String [CommandRecord]) records where
-    fn :: Either String [CommandRecord] -> Either String [CommandRecord] -> Either String [CommandRecord]
+  return $ foldl fn (Right [] :: Validation [CommandRecord]) records where
+    fn :: Validation [CommandRecord] -> Validation [CommandRecord] -> Validation [CommandRecord]
     fn (Right acc) (Right records) = Right $ acc ++ records
     fn (Left msg) _ = Left msg
     fn _ (Left msg) = Left msg

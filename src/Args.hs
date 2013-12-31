@@ -20,12 +20,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 module Args
 ( Options(..)
 , Mod(..)
---, mode_empty
-, mode_add
+, ModeInfo(..)
+, options_empty
 , mode_close
-, mode_rebuild
-, mode_root
 , reform
+, upd
+, updArgs
+, updHelp
 ) where
 
 import Control.Monad.IO.Class (liftIO)
@@ -41,6 +42,7 @@ import qualified Data.Set as Set
 import qualified Data.UUID as U
 import qualified Data.UUID.V4 as U4
 
+import Command (CommandRecord)
 import DatabaseUtils
 import Utils
 
@@ -62,112 +64,21 @@ data Mod
   | ModRemove String String
   deriving Show
 
+type ModeInfo =
+  ( String,
+    ( Mode Options
+    , Maybe (Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options))
+    , Maybe (Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options))
+    , Maybe (CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ()))
+    )
+  )
+
 options_empty :: String -> Options
 options_empty name = Options name [] [] False [] M.empty
-
-modeInfo
-:: M.Map
-  String
-  ( Mode
-  , Maybe (Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options))
-  , Maybe (Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options))
-  , Maybe (CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options))
-  )
-modeInfo = M.fromList
-  [ ("add", mode_add, Just optsProcess1_add, Just optsProcess2_add, Just optsRun_add)
-  , ("close", mode_close, Nothing)
-  , ("rebuild", mode_rebuild, Nothing, Just optsRun_rebuild)
-  ]
-
-mode_add = Mode
-  { modeGroupModes = mempty
-  , modeNames = ["add"]
-  , modeValue = options_empty "add"
-  , modeCheck = Right
-  , modeReform = Just . reform
-  , modeExpandAt = True
-  , modeHelp = "Add a new task"
-  , modeHelpSuffix = ["Add a new task and be a dude"]
-  , modeArgs = ([flagArg updArgs "TITLE"], Nothing)
-  , modeGroupFlags = toGroup
-    [ flagReq ["parent", "p"] (upd "parent") "ID" "reference to parent of this item"
-    , flagReq ["label", "l"] (upd "label") "LABEL" "A unique label for this item."
-    , flagReq ["stage", "s"] (upd "stage") "STAGE" "new|incubator|today. (default=new)"
-    , flagReq ["tag", "t"] (upd "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
-    , flagReq ["type"] (upd "type") "TYPE" "list|task. (default=task)"
-    , flagHelpSimple updHelp
-    ]
-  }
-
-optsProcess1_add :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
-optsProcess1_add args = do
-  uuid <- liftIO $ U4.nextRandom >>= return . U.toString
-  flags' <- mapM refToUuid (optionsFlags args)
-  return $ getArgs uuid flags'
-  where
-    getArgs :: String -> [Either String (String, String)] -> Validation Options
-    getArgs uuid flags' =
-      case concatEithers1 flags' of
-        Left msgs -> Left msgs
-        Right flags'' -> Right $ args { optionsFlags = flags''' } where
-          flags''' :: [(String, String)]
-          flags''' = ("id", uuid) : flags''
-
-optsProcess2_add :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
-optsProcess2_add opts = return (Right opts') where
-  defaults = [("status", "open"), ("stage", "new")]
-  map' = foldl setDefault (optionsMap opts) defaults where
-  opts' = opts { optionsMap = map' }
-  -- Function to add a default value if no value was already set
-  setDefault :: M.Map String (Maybe String) -> (String, String) -> M.Map String (Maybe String)
-  setDefault acc (name, value) = case M.lookup name acc of
-    Nothing -> M.insert name (Just value) acc
-    Just x -> acc
-
-optsRun_add :: CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
-optsRun_add record opts = do
-  case createItem (commandTime record) opts of
-    Left msgs -> return (Left msgs)
-    Right item -> do
-      insert item
-      mapM_ (saveProperty uuid) args
-      return $ Right ()
 
 mode_close = mode "close" (options_empty "") "close an item" (flagArg updArgs "REF")
   [-- flagHelpSimple (("help", ""):)
   ]
-
-mode_rebuild = Mode
-  { modeGroupModes = mempty
-  , modeNames = ["rebuild"]
-  , modeValue = options_empty "rebuild"
-  , modeCheck = Right
-  , modeReform = Just . reform
-  , modeExpandAt = True
-  , modeHelp = "Rebuild the Sqlite database."
-  , modeHelpSuffix = []
-  , modeArgs = ([], Nothing)
-  , modeGroupFlags = toGroup
-    [ flagHelpSimple updHelp
-    ]
-  }
-
-optsRun_rebuild _ opts = do
-  -- 1) load the command records from files
-  x <- loadCommandRecords
-  case x of
-    Right records -> do
-      -- TODO: only show this if --verbose
-      mapM_ (putStrLn . show) records
-      runSqlite "otot.db" $ do
-        DB.databaseInit
-        -- 2) convert the command records to and SQL 'command' table
-        -- 3) process the 'command' table, producing the 'property' table
-        DB.databaseAddRecords records
-        DB.databaseUpdateIndexes
-
-mode_root = modes "otot" (options_empty "") "OnTopOfThings for managing lists and tasks"
-  [mode_add, mode_close, mode_rebuild]
 
 updArgs value opts = Right opts' where
   args' = optionsArgs opts ++ [value]
@@ -181,14 +92,6 @@ upd name value opts = Right opts' where
   opts' = opts { optionsFlags = flags', optionsMods = mods', optionsMap = map' }
 
 updHelp opts = opts { optionsHelp = True }
-
---refToUuid :: (String, String) -> SqlPersistT (NoLoggingT (ResourceT IO)) (Either String (String, String))
-refToUuid ("parent", ref) = do
-  uuid' <- databaseLookupUuid ref
-  case uuid' of
-    Nothing -> return (Left "Couldn't find parent ref")
-    Just uuid -> return (Right $ ("parent", uuid))
-refToUuid x = return $ Right x
 
 reform :: Options -> [String]
 reform args = l where

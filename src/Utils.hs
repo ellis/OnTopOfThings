@@ -22,8 +22,10 @@ module Utils
 , maybeToEither
 , maybeToValidation
 , strip
+, toStdErr
 ) where
 
+import System.IO (hPutStrLn, stderr)
 import qualified Data.Text as T
 
 type Validation a = Either [String] a
@@ -55,3 +57,5 @@ maybeToValidation m msgs = case m of
 
 strip :: String -> String
 strip s = (T.unpack . T.strip . T.pack) s
+
+toStdErr x = hPutStrLn stderr $ show x

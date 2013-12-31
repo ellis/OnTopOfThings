@@ -48,7 +48,6 @@ import qualified Data.Text as T
 import qualified Data.Time.Clock (UTCTime)
 import Data.Time.ISO8601 (formatISO8601Millis)
 import qualified Command as C
-import Add (processCommand_add, processCommand_mod)
 import DatabaseTables
 import Utils
 
@@ -109,10 +108,10 @@ recordToCommand (C.CommandRecord format time user cmd args) =
 processCommand :: Command -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
 processCommand command = do
   case commandCmd command of
-    "add" -> processCommand_add time args
-    "mod" -> processCommand_mod time args
+    --"add" -> processCommand_add time args
+    --"mod" -> processCommand_mod time args
     cmd -> return $ Left ["processCommand: Unknown command `"++cmd++"`"]
   where
     time = commandTime command
-    Just args = decode (BL.pack $ commandArgs command)
+    --Just args = decode (BL.pack $ commandArgs command)
 
