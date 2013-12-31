@@ -17,7 +17,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module Args where
+module Args
+( Arguments(..)
+--, arguments_empty
+, arguments_add
+, arguments_close
+, arguments
+) where
 
 import Data.Map as M
 import Data.Set as Set
@@ -27,44 +33,32 @@ data Arguments = Arguments
   { argumentsCmd :: String
   , argumentsArgs :: [String]
   , argumentsFlags :: [(String, String)]
+  , argumentsHelp :: Bool
   }
   deriving (Show)
 
-arguments_empty = Arguments "add" [] []
+arguments_empty name = Arguments name [] [] False
 
-arguments_add' :: Mode Arguments
-arguments_add' = mode "add" arguments_empty  "add a new item" (flagArg updArgs "TITLE")
+arguments_add :: Mode Arguments
+arguments_add = mode "add" (arguments_empty "add") "add a new item" (flagArg updArgs "TITLE")
   [ flagReq ["parent", "p"] (upd "parent") "PARENT" "reference to parent of this item"
-  , flagReq ["stage", "s"] (upd "stage") "TYPE" "new|incubator|today. Defaults to new."
-  , flagReq ["type", "t"] (upd "type") "TYPE" "list|task. Defaults to task."
-  --, flagHelpSimple (("help", ""):)
-  ] where
-    updArgs value acc = Right $ acc { argumentsArgs = (argumentsArgs acc ++ [value]) }
-    upd name value acc = Right $ acc { argumentsFlags = argumentsFlags acc ++ [(name, value)] }
-
-arguments_add :: Mode [(String, String)]
-arguments_add = mode "add" [] "add a new item" (flagArg (upd "title") "TITLE")
-  [ flagReq ["parent", "p"] (upd "parent") "PARENT" "reference to parent of this item"
-  , flagReq ["stage", "s"] (upd "stage") "TYPE" "new|incubator|today. Defaults to new."
-  , flagReq ["type", "t"] (upd "type") "TYPE" "list|task. Defaults to task."
-  , flagHelpSimple (("help", ""):)
-  ] where
-    upd name value acc = Right $ (name, value) : acc
+  , flagReq ["stage", "s"] (upd "stage") "STAGE" "new|incubator|today. Defaults to new."
+  , flagReq ["status"] (upd "status") "STATUS" "open|closed|deleted. Defaults to open."
+  , flagReq ["tag", "t"] (upd "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
+  , flagReq ["type"] (upd "type") "TYPE" "list|task. Defaults to task."
+  , flagHelpSimple updHelp
+  ]
 
 arguments_close :: Mode Arguments
-arguments_close = mode "close" arguments_empty "close an item" (flagArg updArgs "REF")
+arguments_close = mode "close" (arguments_empty "") "close an item" (flagArg updArgs "REF")
   [-- flagHelpSimple (("help", ""):)
-  ] where
-    updArgs value acc = Right $ acc { argumentsArgs = (argumentsArgs acc ++ [value]) }
-    upd name value acc = Right $ acc { argumentsFlags = argumentsFlags acc ++ [(name, value)] }
+  ]
 
-arguments_close' :: Mode [(String, String)]
-arguments_close' = mode "close" [] "close an item" (flagArg (upd "ref") "REF")
-  [ flagHelpSimple (("help", ""):)
-  ] where
-    upd name value acc = Right $ (name, value) : acc
+arguments = modes "otot" (arguments_empty "") "OnTopOfThings for managing lists and tasks" [arguments_add, arguments_close]
 
-arguments = modes "otot" arguments_empty "OnTopOfThings for managing lists and tasks" [arguments_add', arguments_close]
+updArgs value acc = Right $ acc { argumentsArgs = (argumentsArgs acc ++ [value]) }
+upd name value acc = Right $ acc { argumentsFlags = argumentsFlags acc ++ [(name, value)] }
+updHelp acc = acc { argumentsHelp = True }
 
 ---myModes :: Mode (CmdArgs MyOptions)
 ---myModes = cmdArgsMode $ modes [arguments_add, arguments_close]
