@@ -46,12 +46,21 @@ import qualified Database as DB
 -- 7) print relevant output
 main :: IO ()
 main = do
-  xs <- processArgs arguments
+  args <- processArgs arguments
   if True -- ("help","") `elem` xs
     then print $ helpText [] HelpFormatDefault arguments
-    else print $ show xs
-  putStrLn . show $ xs
+    else print $ show args
+  putStrLn . show $ args
   --mapM_ (putStrLn . show) xs
+  time <- liftIO $ getCurrentTime
+  uuid <- liftIO $ U4.nextRandom >>= return . U.toString
+  chguuid <- liftIO $ U4.nextRandom >>= return . U.toString
+  case argumentsCmd args of
+    "" -> return ()
+    "add" -> do
+      let record = argumentsToRecord time "default" args
+      putStrLn . show $ record
+    "close" -> return ()
   return ()
 
 main' :: IO ()
@@ -116,7 +125,7 @@ modHandler args = do
       liftIO $ saveCommandRecord record chguuid
   return ()
 
-argumentsToRecord :: UTCTime -> Arguments -> CommandRecord
-argumentsToRecord time args = CommandRecord 1 time "default" (pack $ argumentsCmd args) args'' where
+argumentsToRecord :: UTCTime -> Text -> Arguments -> CommandRecord
+argumentsToRecord time user args = CommandRecord 1 time user (pack $ argumentsCmd args) args'' where
   args' = reform args
   args'' = map pack args'
