@@ -18,22 +18,27 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 {-# LANGUAGE OverloadedStrings #-}
 
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Logger (NoLoggingT)
+import Control.Monad.Trans.Control (MonadBaseControl)
+import Control.Monad.Trans.Resource (ResourceT)
 import Data.Maybe (catMaybes)
 import Data.Text (Text, pack)
 import Data.Time.Clock (UTCTime, getCurrentTime)
-import qualified Data.UUID as U
-import qualified Data.UUID.V4 as U4
 import System.Console.CmdArgs.Explicit
 import System.Environment
 import System.Exit
 import System.IO
-import Database.Persist.Sqlite (runSqlite)
+import Database.Persist.Sqlite (SqlPersistT, runSqlite)
+import qualified Data.UUID as U
+import qualified Data.UUID.V4 as U4
 
 import Add
 import Args
 import Command
+import DatabaseUtils
 import Import
 import List
+import Utils
 import qualified Database as DB
 
 
@@ -47,7 +52,7 @@ import qualified Database as DB
 main :: IO ()
 main = do
   args <- processArgs arguments
-  print args
+  toStdErr args
   case argumentsCmd args of
     "" ->
       print $ helpText [] HelpFormatDefault arguments
@@ -55,16 +60,13 @@ main = do
       if (argumentsHelp args) || (null (argumentsArgs args) && null (argumentsFlags args))
         then print $ helpText [] HelpFormatDefault arguments_add
         else do
-          time <- liftIO $ getCurrentTime
-          uuid <- liftIO $ U4.nextRandom >>= return . U.toString
-          chguuid <- liftIO $ U4.nextRandom >>= return . U.toString
-          let args' = args { argumentsFlags = ("id", uuid) : (argumentsFlags args) }
-          let record = argumentsToRecord time "default" args'
-          putStrLn . show $ record
-          -- 5) convert the new command record to a 'Command' and update the 'property' table
-          --DB.databaseAddRecord record
-          --liftIO $ print record
-          --liftIO $ saveCommandRecord record chguuid
+          time <- getCurrentTime
+          record' <- run_add args time
+          case record' of
+            Left msgs -> print msgs
+            Right record -> do
+              chguuid <- U4.nextRandom >>= return . U.toString
+              saveCommandRecord record chguuid
     "close" -> return ()
     "rebuild" -> do
       -- 1) load the command records from files
@@ -79,6 +81,46 @@ main = do
             DB.databaseAddRecords records
             DB.databaseUpdateIndexes
   return ()
+
+toStdErr x = hPutStrLn stderr $ show x
+
+validateArgs_add :: Arguments -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Arguments)
+validateArgs_add args = do
+  uuid <- liftIO $ U4.nextRandom >>= return . U.toString
+  flags' <- mapM refToUuid (argumentsFlags args)
+  return $ getArgs uuid flags'
+  where
+    getArgs :: String -> [Either String (String, String)] -> Validation Arguments
+    getArgs uuid flags' =
+      case concatEithers1 flags' of
+        Left msgs -> Left msgs
+        Right flags'' -> Right $ args { argumentsFlags = flags''' } where
+          flags''' :: [(String, String)]
+          flags''' = ("id", uuid) : flags''
+
+--refToUuid :: (String, String) -> SqlPersistT (NoLoggingT (ResourceT IO)) (Either String (String, String))
+refToUuid ("parent", ref) = do
+  uuid' <- databaseLookupUuid ref
+  case uuid' of
+    Nothing -> return (Left "Couldn't find parent ref")
+    Just uuid -> return (Right $ ("parent", uuid))
+refToUuid x = return $ Right x
+
+run_add :: Arguments -> UTCTime -> IO (Validation CommandRecord)
+run_add args time = do
+  runSqlite "otot.db" $ do
+    x <- validateArgs_add args
+    -- 4) parse the command line and create a new command record
+    case x of
+      Left msgs -> return (Left msgs)
+      Right args' -> do
+        let record = argumentsToRecord time "default" args'
+        liftIO $ toStdErr record
+        -- 5) convert the new command record to a 'Command' and update the 'property' table
+        x <- DB.databaseAddRecord record
+        case x of
+          Left msgs -> return (Left msgs)
+          Right () -> return (Right record)
 
 main' :: IO ()
 main' = do

@@ -47,19 +47,19 @@ import qualified Data.Text as T
 import qualified Data.Time.Clock (UTCTime)
 import Data.Time.ISO8601 (formatISO8601Millis)
 import qualified Command as C
-import Add (processAddCommand, processModCommand)
+import Add (processCommand_add, processCommand_mod)
 import DatabaseTables
+import Utils
 
 databaseInit :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
 databaseInit =
   runMigration migrateAll
 
-databaseAddRecord :: C.CommandRecord -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+databaseAddRecord :: C.CommandRecord -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
 databaseAddRecord record = do
   let command = recordToCommand record
   insert command
   processCommand command
-  return ()
 
 databaseAddRecords :: [C.CommandRecord] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 databaseAddRecords records = do
@@ -105,11 +105,12 @@ recordToCommand (C.CommandRecord format time user cmd args) =
   where
     args' = BL.unpack $ encode args
 
+processCommand :: Command -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
 processCommand command = do
   case commandCmd command of
-    "add" -> do processAddCommand time args
-    "mod" -> do processModCommand time args
-    _ -> return ()
+    "add" -> processCommand_add time args
+    "mod" -> processCommand_mod time args
+    cmd -> return $ Left ["processCommand: Unknown command `"++cmd++"`"]
   where
     time = commandTime command
     Just args = decode (BL.pack $ commandArgs command)

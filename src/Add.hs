@@ -18,8 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 module Add
 ( createAddCommandRecord
 , createModCommandRecord
-, processAddCommand
-, processModCommand
+, processCommand_add
+, processCommand_mod
 ) where
 
 import Control.Applicative ((<$>), (<*>), empty)
@@ -210,43 +210,45 @@ addDefaults args = foldl fn args defaults where
     Just x -> acc
 
 
-processAddCommand :: UTCTime -> [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
-processAddCommand time args0 = do
+processCommand_add :: UTCTime -> [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+processCommand_add time args0 = do
   x <- parseAddArgs args0
   case x of
-    Left msgs -> do liftIO $ mapM_ print msgs
+    Left msgs -> return (Left msgs)
     Right args1 -> do
       let args = addDefaults args1
       let map = argsToMap args
       case M.lookup "id" map of
         Just (Just uuid) -> do
           case createItem time map of
-            Left msgs -> do liftIO $ mapM_ print msgs
+            Left msgs -> return (Left msgs)
             Right item -> do
               insert item
               mapM_ (saveProperty uuid) args
-        Nothing -> do liftIO $ print "Missing `id`"
+              return $ Right ()
+        Nothing -> return (Left ["Missing `id`"])
 
-processModCommand :: UTCTime -> [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
-processModCommand time args0 = do
+processCommand_mod :: UTCTime -> [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+processCommand_mod time args0 = do
   x <- parseModArgs args0
   case x of
-    Left msgs -> do liftIO $ mapM_ print msgs
+    Left msgs -> return (Left msgs)
     Right args -> do
       let map = argsToMap args
       case M.lookup "id" map of
         Just (Just uuid) -> do
           entity' <- getBy $ ItemUniqUuid uuid
           case entity' of
-            Nothing -> do liftIO $ print "Could not find item with given id"
+            Nothing -> return (Left ["Could not find item with given id"])
             Just entity -> do
               let item0 = entityVal entity
               case updateItem time map item0 of
-                Nothing -> do liftIO $ print "Couldn't update item"
+                Nothing -> return (Left ["Couldn't update item"])
                 Just item -> do
                   replace (entityKey entity) item
                   mapM_ (saveProperty uuid) args
-        Nothing -> do liftIO $ print "Missing `id`"
+                  return (Right ())
+        Nothing -> return (Left ["Missing `id`"])
 
 itemFields = ["id", "type", "title", "status", "parent", "stage", "label", "index"]
 
