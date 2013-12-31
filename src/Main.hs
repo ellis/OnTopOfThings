@@ -135,7 +135,7 @@ handleOptions opts mode optsProcess1 optsProcess2 optsRun = do
               Left msgs -> return (Left msgs)
               Right () -> return (Right record)
       case record' of
-        Left msgs -> return (Left msgs)
+        Left msgs -> print msgs
         Right record -> do
           saveCommandRecord record chguuid
 
