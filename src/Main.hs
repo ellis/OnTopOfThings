@@ -47,20 +47,37 @@ import qualified Database as DB
 main :: IO ()
 main = do
   args <- processArgs arguments
-  if True -- ("help","") `elem` xs
-    then print $ helpText [] HelpFormatDefault arguments
-    else print $ show args
-  putStrLn . show $ args
-  --mapM_ (putStrLn . show) xs
-  time <- liftIO $ getCurrentTime
-  uuid <- liftIO $ U4.nextRandom >>= return . U.toString
-  chguuid <- liftIO $ U4.nextRandom >>= return . U.toString
+  print args
   case argumentsCmd args of
-    "" -> return ()
+    "" ->
+      print $ helpText [] HelpFormatDefault arguments
     "add" -> do
-      let record = argumentsToRecord time "default" args
-      putStrLn . show $ record
+      if (argumentsHelp args) || (null (argumentsArgs args) && null (argumentsFlags args))
+        then print $ helpText [] HelpFormatDefault arguments_add
+        else do
+          time <- liftIO $ getCurrentTime
+          uuid <- liftIO $ U4.nextRandom >>= return . U.toString
+          chguuid <- liftIO $ U4.nextRandom >>= return . U.toString
+          let args' = args { argumentsFlags = ("id", uuid) : (argumentsFlags args) }
+          let record = argumentsToRecord time "default" args'
+          putStrLn . show $ record
+          -- 5) convert the new command record to a 'Command' and update the 'property' table
+          --DB.databaseAddRecord record
+          --liftIO $ print record
+          --liftIO $ saveCommandRecord record chguuid
     "close" -> return ()
+    "rebuild" -> do
+      -- 1) load the command records from files
+      x <- loadCommandRecords
+      case x of
+        Right records -> do
+          mapM_ (putStrLn . show) records
+          runSqlite "otot.db" $ do
+            DB.databaseInit
+            -- 2) convert the command records to and SQL 'command' table
+            -- 3) process the 'command' table, producing the 'property' table
+            DB.databaseAddRecords records
+            DB.databaseUpdateIndexes
   return ()
 
 main' :: IO ()

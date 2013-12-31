@@ -65,6 +65,16 @@ Important lists:
 - [ ] goals/beeminder report
 - [ ] urgent/imporant report
 
+## Incubator tasks
+
+- [ ] 'command undo' command deleting the last local command from the history
+- [ ] 'command history' command to list all commands given so far (perhaps filtering out old closed items)
+- [ ] 'command ignore' command for ignoring a command when rebuilding the database
+- [ ] repl
+- [ ] interactive mode to handle ambiguities
+- [ ] interactive mode possibly for adding new item
+- [ ] web UI
+
 ## Old
 - [x] Change: switch to new JSON format
 - [x] Change: Give clearer names to the Change* types

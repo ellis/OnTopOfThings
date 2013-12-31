@@ -56,9 +56,9 @@ arguments_add = Mode
   , modeGroupFlags = toGroup
     [ flagReq ["parent", "p"] (upd "parent") "ID" "reference to parent of this item"
     , flagReq ["label", "l"] (upd "label") "LABEL" "A unique label for this item."
-    , flagReq ["stage", "s"] (upd "stage") "STAGE" "new|incubator|today. Defaults to new."
+    , flagReq ["stage", "s"] (upd "stage") "STAGE" "new|incubator|today. (default=new)"
     , flagReq ["tag", "t"] (upd "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
-    , flagReq ["type"] (upd "type") "TYPE" "list|task. Defaults to task."
+    , flagReq ["type"] (upd "type") "TYPE" "list|task. (default=task)"
     , flagHelpSimple updHelp
     ]
   }
@@ -68,7 +68,23 @@ arguments_close = mode "close" (arguments_empty "") "close an item" (flagArg upd
   [-- flagHelpSimple (("help", ""):)
   ]
 
-arguments = modes "otot" (arguments_empty "") "OnTopOfThings for managing lists and tasks" [arguments_add, arguments_close]
+arguments_rebuild = Mode
+  { modeGroupModes = mempty
+  , modeNames = ["rebuild"]
+  , modeValue = arguments_empty "rebuild"
+  , modeCheck = Right
+  , modeReform = Just . reform
+  , modeExpandAt = True
+  , modeHelp = "Rebuild the Sqlite database."
+  , modeHelpSuffix = []
+  , modeArgs = ([], Nothing)
+  , modeGroupFlags = toGroup
+    [ flagHelpSimple updHelp
+    ]
+  }
+
+arguments = modes "otot" (arguments_empty "") "OnTopOfThings for managing lists and tasks"
+  [arguments_add, arguments_close, arguments_rebuild]
 
 updArgs value acc = Right $ acc { argumentsArgs = (argumentsArgs acc ++ [value]) }
 upd name value acc = Right $ acc { argumentsFlags = argumentsFlags acc ++ [(name, value)] }
