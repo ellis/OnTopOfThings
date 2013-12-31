@@ -25,9 +25,11 @@ module Args
 , arguments
 ) where
 
-import Data.Map as M
-import Data.Set as Set
+import Data.Monoid
 import System.Console.CmdArgs.Explicit
+
+import qualified Data.Map as M
+import qualified Data.Set as Set
 
 data Arguments = Arguments
   { argumentsCmd :: String
@@ -40,14 +42,25 @@ data Arguments = Arguments
 arguments_empty name = Arguments name [] [] False
 
 arguments_add :: Mode Arguments
-arguments_add = mode "add" (arguments_empty "add") "add a new item" (flagArg updArgs "TITLE")
-  [ flagReq ["parent", "p"] (upd "parent") "PARENT" "reference to parent of this item"
-  , flagReq ["stage", "s"] (upd "stage") "STAGE" "new|incubator|today. Defaults to new."
-  , flagReq ["status"] (upd "status") "STATUS" "open|closed|deleted. Defaults to open."
-  , flagReq ["tag", "t"] (upd "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
-  , flagReq ["type"] (upd "type") "TYPE" "list|task. Defaults to task."
-  , flagHelpSimple updHelp
-  ]
+arguments_add = Mode
+  { modeGroupModes = mempty
+  , modeNames = ["add"]
+  , modeValue = arguments_empty "add"
+  , modeCheck = Right
+  , modeReform = (const Nothing)
+  , modeExpandAt = True
+  , modeHelp = "Add a new task"
+  , modeHelpSuffix = ["Add a new task and be a dude"]
+  , modeArgs = ([flagArg updArgs "TITLE"], Nothing)
+  , modeGroupFlags = toGroup
+    [ flagReq ["parent", "p"] (upd "parent") "ID" "reference to parent of this item"
+    , flagReq ["label", "l"] (upd "label") "LABEL" "A unique label for this item."
+    , flagReq ["stage", "s"] (upd "stage") "STAGE" "new|incubator|today. Defaults to new."
+    , flagReq ["tag", "t"] (upd "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
+    , flagReq ["type"] (upd "type") "TYPE" "list|task. Defaults to task."
+    , flagHelpSimple updHelp
+    ]
+  }
 
 arguments_close :: Mode Arguments
 arguments_close = mode "close" (arguments_empty "") "close an item" (flagArg updArgs "REF")

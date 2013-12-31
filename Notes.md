@@ -130,8 +130,10 @@ U [USER]
 C [COMMAND]
 = type item
 + tag repos
-L= title [LEN]
-[TEXT OF LENGTH `LEN`]
+= longtext
+  MY LONG TEXT
+  AND MORE OF IT
+  AND SO ON
 ```
 
 The above format is inspired by the fossil file format: <http://www.fossil-scm.org/fossil/doc/trunk/www/fileformat.wiki>
