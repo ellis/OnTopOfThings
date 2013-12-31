@@ -74,8 +74,9 @@ main = do
   let cmd = optionsCmd opts
   let (mode, optsProcess1_, optsProcess2_, optsRun_) = case M.lookup cmd modeInfo of { Nothing -> (mode_root, Nothing, Nothing, Nothing); Just x -> x }
   case (cmd, optsProcess1_, optsProcess2_, optsRun_) of
-    (_, Just optsProcess1, Just optsProcess2, Just optsRun) ->
+    (_, Just optsProcess1, Just optsProcess2, Just optsRun) -> do
       handleOptions opts mode optsProcess1 optsProcess2 optsRun
+      return ()
     ("rebuild", _, _, _) -> do
       -- 1) load the command records from files
       x <- loadCommandRecords
@@ -88,6 +89,7 @@ main = do
             -- 3) process the 'command' table, producing the 'property' table
             DB.databaseAddRecords records
             DB.databaseUpdateIndexes
+            return ()
     _ ->
       print $ helpText [] HelpFormatDefault mode
   return ()
@@ -127,17 +129,17 @@ handleOptions opts mode optsProcess1 optsProcess2 optsRun = do
             opts__ <- optsProcess2 opts'
             case opts__ of
               Left msgs -> return (Left msgs)
-              Right opts'' ->
+              Right opts'' -> do
                 -- Update items and properties
-                optsRun record opts
-            x <- DB.databaseAddRecord record
-            case x of
-              Left msgs -> return (Left msgs)
-              Right () -> return (Right record)
+                x_ <- optsRun record opts
+                case x_ of
+                  Left msgs -> return (Left msgs)
+                  Right _ -> return (Right record)
       case record' of
         Left msgs -> print msgs
         Right record -> do
           saveCommandRecord record chguuid
+          return ()
 
 --handleRecord record optsProcess2 = do
 --  liftIO $ toStdErr record

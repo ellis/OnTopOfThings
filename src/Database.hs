@@ -26,7 +26,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 module Database
 ( Command(..)
 , databaseInit
-, databaseAddRecord
 , databaseAddRecords
 , databaseUpdateIndexes
 , recordToCommand
@@ -54,12 +53,6 @@ import Utils
 databaseInit :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
 databaseInit =
   runMigration migrateAll
-
-databaseAddRecord :: C.CommandRecord -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
-databaseAddRecord record = do
-  let command = recordToCommand record
-  insert command
-  processCommand command
 
 databaseAddRecords :: [C.CommandRecord] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 databaseAddRecords records = do
