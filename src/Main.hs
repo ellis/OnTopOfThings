@@ -51,24 +51,18 @@ import qualified Database as DB
 -- 7) print relevant output
 main :: IO ()
 main = do
-  args <- processArgs arguments
-  toStdErr args
-  case argumentsCmd args of
-    "" ->
-      print $ helpText [] HelpFormatDefault arguments
-    "add" -> do
-      if (argumentsHelp args) || (null (argumentsArgs args) && null (argumentsFlags args))
-        then print $ helpText [] HelpFormatDefault arguments_add
-        else do
-          time <- getCurrentTime
-          record' <- run_add args time
-          case record' of
-            Left msgs -> print msgs
-            Right record -> do
-              chguuid <- U4.nextRandom >>= return . U.toString
-              saveCommandRecord record chguuid
-    "close" -> return ()
-    "rebuild" -> do
+  -- Options read by CmdArgs
+  opts <- processArgs mode_root
+  toStdErr opts
+  -- find info for the chosen command mode
+  let cmd = optionsCmd opts
+  let (mode, optsProcess1', optsProcess2') = case M.lookup cmd modeInfo of
+    Nothing -> (mode_root, Nothing, Nothing)
+    Just x -> x
+  case (cmd, optsProcess1', optsProcess2') of
+    (_, Just optsProcess1, Just optsProcess2) ->
+      handleOptions opts mode optsProcess1 optsProcess2
+    ("rebuild", _, _) -> do
       -- 1) load the command records from files
       x <- loadCommandRecords
       case x of
@@ -80,9 +74,102 @@ main = do
             -- 3) process the 'command' table, producing the 'property' table
             DB.databaseAddRecords records
             DB.databaseUpdateIndexes
+    _ ->
+      print $ helpText [] HelpFormatDefault mode
   return ()
 
 toStdErr x = hPutStrLn stderr $ show x
+
+--handleOptions :: Options -> Mode -> (IO ()
+handleOptions opts mode optsProcess1 optsProcess2 optsRun = do
+  -- If help is selected or there are neither arguments nor flags:
+  if (optionsHelp args) || (null (optionsArgs args) && null (optionsFlags args))
+    -- print help for the given mode
+    then print $ helpText [] HelpFormatDefault mode
+    else do
+      time <- getCurrentTime
+      chguuid <- U4.nextRandom >>= return . U.toString
+      record' <- runSqlite "otot.db" $ do
+        -- Validate options and add parameters required for the new command record
+        opts_ <- optsProcess1 opts
+        case opts_ of
+          Left msgs -> return (Left msgs)
+          Right opts' -> do
+            -- Convert Options to CommandRecord
+            let record = optsToCommandRecord time "default" opts'
+            liftIO $ toStdErr record
+            -- TODO: Save CommandRecord to temporary file
+            -- TODO: CommandRecord read in from file
+            -- TODO: Verify that CommandRecords are equal
+            -- Convert CommandRecord to Command
+            let command = DB.recordToCommand record
+            -- Command saved to DB
+            insert command
+            -- TODO: Command loaded from DB
+            -- TODO: Verify that Commands are equal
+            -- TODO: Command converted to a CommandRecord
+            -- TODO: Verify that CommandRecords are equal
+            -- TODO: CommandRecord converted to Options
+            -- TODO: Verify that Options are equal
+            -- Options are validated and processed for modification of DB 'item' and 'property' tables
+            let opts__ = optsProcess2 opts'
+            case opts__ of
+              Left msgs -> return (Left msgs)
+              Right opts'' ->
+                ...
+            x <- DB.databaseAddRecord record
+            case x of
+              Left msgs -> return (Left msgs)
+              Right () -> return (Right record)
+      case record' of
+        Left msgs -> print msgs
+        Right record -> do
+          saveCommandRecord record chguuid
+
+optionsToCommand :: Options -> Command
+optionsToCommand opts =
+  Command format time (T.unpack user) (T.unpack cmd) args'
+  where
+    args' = BL.unpack $ encode args
+
+handleRecord record optsProcess2 = do
+  liftIO $ toStdErr record
+  -- 5) convert the new command record to a 'Command' and update the 'property' table
+  insert record
+  let opts'' = optsProcess2 opts'
+  x <- DB.databaseAddRecord record
+  case x of
+    Left msgs -> return (Left msgs)
+    Right () -> return (Right record)
+
+handleOptions_add :: Options -> IO ()
+handleOptions_add opts = do
+  -- If help is selected or there are neither arguments nor flags:
+  if (optionsHelp args) || (null (optionsArgs args) && null (optionsFlags args))
+    -- print help for the given mode
+    then print $ helpText [] HelpFormatDefault mode_add
+    else do
+      time <- getCurrentTime
+      record' <- runSqlite "otot.db" $ do
+        -- Validate options and add parameters required for the new command record
+        opts' <- optsProcess1_add opts
+        case opts' of
+          Left msgs -> return (Left msgs)
+          Right opts' -> do
+            let record = optsToCommandRecord time "default" opts'
+            liftIO $ toStdErr record
+            -- 5) convert the new command record to a 'Command' and update the 'property' table
+            insert record
+            let opts'' = 
+            x <- DB.databaseAddRecord record
+            case x of
+              Left msgs -> return (Left msgs)
+              Right () -> return (Right record)
+      case record' of
+        Left msgs -> print msgs
+        Right record -> do
+          chguuid <- U4.nextRandom >>= return . U.toString
+          saveCommandRecord record chguuid
 
 validateArgs_add :: Arguments -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Arguments)
 validateArgs_add args = do
@@ -106,21 +193,8 @@ refToUuid ("parent", ref) = do
     Just uuid -> return (Right $ ("parent", uuid))
 refToUuid x = return $ Right x
 
-run_add :: Arguments -> UTCTime -> IO (Validation CommandRecord)
-run_add args time = do
-  runSqlite "otot.db" $ do
-    x <- validateArgs_add args
-    -- 4) parse the command line and create a new command record
-    case x of
-      Left msgs -> return (Left msgs)
-      Right args' -> do
-        let record = argumentsToRecord time "default" args'
-        liftIO $ toStdErr record
-        -- 5) convert the new command record to a 'Command' and update the 'property' table
-        x <- DB.databaseAddRecord record
-        case x of
-          Left msgs -> return (Left msgs)
-          Right () -> return (Right record)
+run_add :: Options -> UTCTime -> IO (Validation CommandRecord)
+run_add opts time = do
 
 main' :: IO ()
 main' = do
@@ -184,7 +258,7 @@ modHandler args = do
       liftIO $ saveCommandRecord record chguuid
   return ()
 
-argumentsToRecord :: UTCTime -> Text -> Arguments -> CommandRecord
-argumentsToRecord time user args = CommandRecord 1 time user (pack $ argumentsCmd args) args'' where
+optsToCommandRecord :: UTCTime -> Text -> Arguments -> CommandRecord
+optsToCommandRecord time user args = CommandRecord 1 time user (pack $ argumentsCmd args) args'' where
   args' = reform args
   args'' = map pack args'

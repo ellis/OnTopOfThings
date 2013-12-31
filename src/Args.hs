@@ -18,35 +18,71 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 {-# LANGUAGE OverloadedStrings #-}
 
 module Args
-( Arguments(..)
---, arguments_empty
-, arguments_add
-, arguments_close
-, arguments
+( Options(..)
+, Mod(..)
+--, mode_empty
+, mode_add
+, mode_close
+, mode_rebuild
+, mode_root
 , reform
 ) where
 
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Logger (NoLoggingT)
+import Control.Monad.Trans.Control (MonadBaseControl)
+import Control.Monad.Trans.Resource (ResourceT)
+import Data.Maybe
 import Data.Monoid
+import Database.Persist.Sqlite
 import System.Console.CmdArgs.Explicit
-
 import qualified Data.Map as M
 import qualified Data.Set as Set
+import qualified Data.UUID as U
+import qualified Data.UUID.V4 as U4
 
-data Arguments = Arguments
-  { argumentsCmd :: String
-  , argumentsArgs :: [String]
-  , argumentsFlags :: [(String, String)]
-  , argumentsHelp :: Bool
+import DatabaseUtils
+import Utils
+
+data Options = Options
+  { optionsCmd :: String
+  , optionsArgs :: [String]
+  , optionsFlags :: [(String, String)]
+  , optionsHelp :: Bool
+  , optionsMods :: [Mod]
+  , optionsMap :: M.Map String (Maybe String)
   }
   deriving (Show)
 
-arguments_empty name = Arguments name [] [] False
+data Mod
+  = ModNull String
+  | ModEqual String String
+  | ModAdd String String
+  | ModUnset String
+  | ModRemove String String
+  deriving Show
 
-arguments_add :: Mode Arguments
-arguments_add = Mode
+options_empty :: String -> Options
+options_empty name = Options name [] [] False [] M.empty
+
+modeInfo
+:: M.Map
+  String
+  ( Mode
+  , Maybe (Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options))
+  , Maybe (Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options))
+  , Maybe (CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options))
+  )
+modeInfo = M.fromList
+  [ ("add", mode_add, Just optsProcess1_add, Just optsProcess2_add, Just optsRun_add)
+  , ("close", mode_close, Nothing)
+  , ("rebuild", mode_rebuild, Nothing, Just optsRun_rebuild)
+  ]
+
+mode_add = Mode
   { modeGroupModes = mempty
   , modeNames = ["add"]
-  , modeValue = arguments_empty "add"
+  , modeValue = options_empty "add"
   , modeCheck = Right
   , modeReform = Just . reform
   , modeExpandAt = True
@@ -63,15 +99,48 @@ arguments_add = Mode
     ]
   }
 
-arguments_close :: Mode Arguments
-arguments_close = mode "close" (arguments_empty "") "close an item" (flagArg updArgs "REF")
+optsProcess1_add :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
+optsProcess1_add args = do
+  uuid <- liftIO $ U4.nextRandom >>= return . U.toString
+  flags' <- mapM refToUuid (optionsFlags args)
+  return $ getArgs uuid flags'
+  where
+    getArgs :: String -> [Either String (String, String)] -> Validation Options
+    getArgs uuid flags' =
+      case concatEithers1 flags' of
+        Left msgs -> Left msgs
+        Right flags'' -> Right $ args { optionsFlags = flags''' } where
+          flags''' :: [(String, String)]
+          flags''' = ("id", uuid) : flags''
+
+optsProcess2_add :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
+optsProcess2_add opts = return (Right opts') where
+  defaults = [("status", "open"), ("stage", "new")]
+  map' = foldl setDefault (optionsMap opts) defaults where
+  opts' = opts { optionsMap = map' }
+  -- Function to add a default value if no value was already set
+  setDefault :: M.Map String (Maybe String) -> (String, String) -> M.Map String (Maybe String)
+  setDefault acc (name, value) = case M.lookup name acc of
+    Nothing -> M.insert name (Just value) acc
+    Just x -> acc
+
+optsRun_add :: CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
+optsRun_add record opts = do
+  case createItem (commandTime record) opts of
+    Left msgs -> return (Left msgs)
+    Right item -> do
+      insert item
+      mapM_ (saveProperty uuid) args
+      return $ Right ()
+
+mode_close = mode "close" (options_empty "") "close an item" (flagArg updArgs "REF")
   [-- flagHelpSimple (("help", ""):)
   ]
 
-arguments_rebuild = Mode
+mode_rebuild = Mode
   { modeGroupModes = mempty
   , modeNames = ["rebuild"]
-  , modeValue = arguments_empty "rebuild"
+  , modeValue = options_empty "rebuild"
   , modeCheck = Right
   , modeReform = Just . reform
   , modeExpandAt = True
@@ -83,21 +152,52 @@ arguments_rebuild = Mode
     ]
   }
 
-arguments = modes "otot" (arguments_empty "") "OnTopOfThings for managing lists and tasks"
-  [arguments_add, arguments_close, arguments_rebuild]
+optsRun_rebuild _ opts = do
+  -- 1) load the command records from files
+  x <- loadCommandRecords
+  case x of
+    Right records -> do
+      -- TODO: only show this if --verbose
+      mapM_ (putStrLn . show) records
+      runSqlite "otot.db" $ do
+        DB.databaseInit
+        -- 2) convert the command records to and SQL 'command' table
+        -- 3) process the 'command' table, producing the 'property' table
+        DB.databaseAddRecords records
+        DB.databaseUpdateIndexes
 
-updArgs value acc = Right $ acc { argumentsArgs = (argumentsArgs acc ++ [value]) }
-upd name value acc = Right $ acc { argumentsFlags = argumentsFlags acc ++ [(name, value)] }
-updHelp acc = acc { argumentsHelp = True }
+mode_root = modes "otot" (options_empty "") "OnTopOfThings for managing lists and tasks"
+  [mode_add, mode_close, mode_rebuild]
 
-reform :: Arguments -> [String]
+updArgs value opts = Right opts' where
+  args' = optionsArgs opts ++ [value]
+  opts' = opts { optionsArgs = args' }
+
+upd :: String -> String -> Options -> Either String Options
+upd name value opts = Right opts' where
+  flags' = optionsFlags opts ++ [(name, value)]
+  mods' = optionsMods opts ++ (catMaybes [if null value then Nothing else Just (ModEqual name value)])
+  map' = M.insert name (Just value) (optionsMap opts)
+  opts' = opts { optionsFlags = flags', optionsMods = mods', optionsMap = map' }
+
+updHelp opts = opts { optionsHelp = True }
+
+--refToUuid :: (String, String) -> SqlPersistT (NoLoggingT (ResourceT IO)) (Either String (String, String))
+refToUuid ("parent", ref) = do
+  uuid' <- databaseLookupUuid ref
+  case uuid' of
+    Nothing -> return (Left "Couldn't find parent ref")
+    Just uuid -> return (Right $ ("parent", uuid))
+refToUuid x = return $ Right x
+
+reform :: Options -> [String]
 reform args = l where
-  l1 = map doFlag (argumentsFlags args)
-  l = l1 ++ (argumentsArgs args)
+  l1 = map doFlag (optionsFlags args)
+  l = l1 ++ (optionsArgs args)
   doFlag (name, value) = if null value then ("--"++name) else ("--"++name++"="++value)
 
 ---myModes :: Mode (CmdArgs MyOptions)
----myModes = cmdArgsMode $ modes [arguments_add, arguments_close]
+---myModes = cmdArgsMode $ modes [options_add, options_close]
 ---    &= verbosityArgs [explicit, name "Verbose", name "V"] []
 ---    &= versionArg [explicit, name "version", name "v", summary _PROGRAM_INFO]
 ---    &= summary (_PROGRAM_INFO ++ ", " ++ _COPYRIGHT)

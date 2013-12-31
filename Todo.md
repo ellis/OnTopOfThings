@@ -27,6 +27,7 @@
 - [x] Database: add fields for start time, end time, close time, due time
 - [x] Import: handle close time
 - [x] List: parameter 'from=TIME' hides any items which were closed before the given TIME
+- [ ] Rename Args.hs to Modes.hs
 - [ ] Use CmdArgs for 'add', 'close', 'mod'
 - [ ] Simplify creation of CommandRecord so that only index-references are turned into uuids, and use same format as on the command line
 - [ ] Main: 'close' command
@@ -54,6 +55,27 @@
 - [ ] Main: when setting parent, prevent cyclic loops -- might want to check this in loadDB too.
 - [ ] Lookup tradeoffs for String, Text, ByteString, as well as the lazy and strict versions.
 - [ ] Command: save UTCTime with more precision?
+
+When creating a new item from the commandline:
+
+- [x] Options read by CmdArgs
+- [x] Options are validated and processed
+- [x] Options convert to CommandRecord
+- [ ] CommandRecord saved to a temporary file
+- [ ] CommandRecord read in from file
+- [ ] Verify that CommandRecords are equal
+- [x] CommandRecord converted to Command
+- [x] Command saved to DB
+- [ ] Command loaded from DB
+- [ ] Verify that Commands are equal
+- [ ] Command converted to a CommandRecord
+- [ ] Verify that CommandRecords are equal
+- [ ] CommandRecord converted to Options
+- [ ] Verify that Options are equal
+- [x] Options are validated and processed for modification of DB 'item' and 'property' tables
+- [ ] items and properties are updated
+- [ ] if anything went wrong, remove the Command entry and rebuild
+- [ ] if everything went well, move the CommandRecord file to the appropriate path
 
 Important lists:
 - [ ] everything

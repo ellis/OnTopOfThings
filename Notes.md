@@ -111,6 +111,46 @@
     * Vivia OnTop (vot)
     * Vivia OnTopOfThings
 
+## Flow from command line to database
+
+* Options: command line options and arguments, current parsed by CmdArgs
+* CommandRecord: command line options stored on a file, currently using Aeson JSON
+* Command: command record stored in the database, currently using Persistent Sqlite
+
+When creating a new item from the commandline:
+
+* Options
+* Options are validated and processed
+* Options convert to CommandRecord
+* CommandRecord saved to a temporary file
+* CommandRecord read in from file
+* Verify that CommandRecords are equal
+* CommandRecord converted to Command
+* Command saved to DB
+* Command loaded from DB
+* Verify that Commands are equal
+* Command converted to a CommandRecord
+* Verify that CommandRecords are equal
+* CommandRecord converted to Options
+* Verify that Options are equal
+* Options are validated and processed for modification of DB 'item' and 'property' tables
+* items and properties are updated
+* if anything went wrong, remove the Command entry and rebuild
+* if everything went well, move the CommandRecord file to the appropriate path
+
+When building DB from files:
+
+* CommandRecord read in from file
+* CommandRecord converted to Command
+* Command saved to DB
+* Do that for all CommandRecord files
+* Then for all Commands:
+* Command loaded from DB
+* Command converted to a CommandRecord
+* CommandRecord converted to Options
+* Options are validated and processed for modification of DB 'item' and 'property' tables
+* items and properties are updated
+
 ## Command Records
 
 For now I'm saving Change Records, but it might be better to save Command Records instead.

@@ -29,6 +29,7 @@ module Database
 , databaseAddRecord
 , databaseAddRecords
 , databaseUpdateIndexes
+, recordToCommand
 ) where
 
 import Control.Monad.IO.Class (liftIO, MonadIO)

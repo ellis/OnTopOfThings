@@ -40,6 +40,7 @@ import Text.Regex (mkRegex, matchRegexAll)
 import qualified Command as C
 import qualified Data.Map as M
 import qualified Data.Text as T
+import qualified System.Console.CmdArgs.Explicit as CmdArgs
 
 import Args
 import DatabaseUtils
@@ -212,11 +213,12 @@ addDefaults args = foldl fn args defaults where
 
 processCommand_add :: UTCTime -> [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
 processCommand_add time args0 = do
+  args <- liftIO $ CmdArgs.process args0
   x <- parseAddArgs args0
   case x of
     Left msgs -> return (Left msgs)
     Right args1 -> do
-      let args = addDefaults args1
+      let args = addDefaults' args1
       let map = argsToMap args
       case M.lookup "id" map of
         Just (Just uuid) -> do
@@ -227,6 +229,16 @@ processCommand_add time args0 = do
               mapM_ (saveProperty uuid) args
               return $ Right ()
         Nothing -> return (Left ["Missing `id`"])
+
+addDefaults' :: Options -> Options
+addDefaults' args = args' where
+  defaults = [("status", "open"), ("stage", "new")]
+  flags' = foldl fn (argumentsFlags args) defaults where
+  map = argsToMap args
+  fn :: [Arg] -> (String, String) -> [Arg]
+  fn acc (name, value) = case M.lookup name map of
+    Nothing -> (ArgEqual name value) : acc
+    Just x -> acc
 
 processCommand_mod :: UTCTime -> [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
 processCommand_mod time args0 = do
