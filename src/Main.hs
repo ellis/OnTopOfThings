@@ -128,13 +128,14 @@ handleOptions opts mode optsProcess1 optsProcess2 optsRun = do
             case opts__ of
               Left msgs -> return (Left msgs)
               Right opts'' ->
+                -- Update items and properties
                 optsRun record opts
             x <- DB.databaseAddRecord record
             case x of
               Left msgs -> return (Left msgs)
               Right () -> return (Right record)
       case record' of
-        Left msgs -> print msgs
+        Left msgs -> return (Left msgs)
         Right record -> do
           saveCommandRecord record chguuid
 
