@@ -115,3 +115,8 @@ modHandler args = do
       liftIO $ print record
       liftIO $ saveCommandRecord record chguuid
   return ()
+
+argumentsToRecord :: UTCTime -> Arguments -> CommandRecord
+argumentsToRecord time args = CommandRecord 1 time "default" (pack $ argumentsCmd args) args'' where
+  args' = reform args
+  args'' = map pack args'

@@ -23,6 +23,7 @@ module Args
 , arguments_add
 , arguments_close
 , arguments
+, reform
 ) where
 
 import Data.Monoid
@@ -47,7 +48,7 @@ arguments_add = Mode
   , modeNames = ["add"]
   , modeValue = arguments_empty "add"
   , modeCheck = Right
-  , modeReform = (const Nothing)
+  , modeReform = Just . reform
   , modeExpandAt = True
   , modeHelp = "Add a new task"
   , modeHelpSuffix = ["Add a new task and be a dude"]
@@ -72,6 +73,12 @@ arguments = modes "otot" (arguments_empty "") "OnTopOfThings for managing lists 
 updArgs value acc = Right $ acc { argumentsArgs = (argumentsArgs acc ++ [value]) }
 upd name value acc = Right $ acc { argumentsFlags = argumentsFlags acc ++ [(name, value)] }
 updHelp acc = acc { argumentsHelp = True }
+
+reform :: Arguments -> [String]
+reform args = l where
+  l1 = map doFlag (argumentsFlags args)
+  l = l1 ++ (argumentsArgs args)
+  doFlag (name, value) = if null value then ("--"++name) else ("--"++name++"="++value)
 
 ---myModes :: Mode (CmdArgs MyOptions)
 ---myModes = cmdArgsMode $ modes [arguments_add, arguments_close]
