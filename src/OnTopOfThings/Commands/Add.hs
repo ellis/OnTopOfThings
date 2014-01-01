@@ -23,6 +23,7 @@ module OnTopOfThings.Commands.Add
 ) where
 
 import Control.Applicative ((<$>), (<*>), empty)
+import Control.Monad (mplus)
 import Data.Maybe
 import Data.Monoid
 import Debug.Trace
@@ -74,33 +75,32 @@ mode_add = Mode
     ]
   }
 
+-- move the argument to the 'title' field
 optsProcess1_add :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
-optsProcess1_add args = do
+optsProcess1_add opts = do
   uuid <- liftIO $ U4.nextRandom >>= return . U.toString
-  flags' <- mapM refToUuid (optionsFlags args)
-  return $ getArgs uuid flags'
+  -- replace references with uuids where necessary,
+  flags_l_ <- mapM refToUuid (optionsFlags opts)
+  return $ getArgs uuid flags_l_
   where
     getArgs :: String -> [Either String (String, String)] -> Validation Options
-    getArgs uuid flags' =
-      case concatEithers1 flags' of
-        Left msgs -> Left msgs
-        Right flags'' ->
-          case upd "id" uuid (args { optionsFlags = flags'' }) of
-            Left msg -> Left [msg]
-            Right opts' -> Right opts'
+    getArgs uuid flags_l_ = do
+      flags' <- concatEithers1 flags_l_
+      -- Get the title field
+      let title1_ = M.lookup "title" (optionsMap opts) >>= \x -> x -- title set in flags
+      let title2_ = listToMaybe (optionsArgs opts) -- title as first argument
+      title <- maybeToEither ["A title must be supplied"] (title1_ `mplus` title2_)
+      -- Add 'id' and 'title'
+      let flags = [("id", uuid), ("title", title)] ++ flags'
+      let options_empty' = options_empty (optionsCmd opts)
+      case foldl (\acc_ (name, value) -> acc_ >>= \acc -> upd name value acc) (Right options_empty') flags of
+        Left msg -> Left [msg]
+        Right x -> Right x
 
 optsProcess2_add :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
 optsProcess2_add opts = return (Right opts') where
-  defaults = [("status", "open"), ("stage", "new")]
-  opts' = foldl setDefault opts defaults where
-  -- Function to add a default value if no value was already set
-  setDefault :: Options -> (String, String) -> Options
-  setDefault acc (name, value) = case M.lookup name (optionsMap acc) of
-    Nothing ->
-      case upd name value acc of
-        Left msg -> acc
-        Right acc' -> acc'
-    Just x -> acc
+  defaults = [("type", "task"), ("status", "open"), ("stage", "new")]
+  opts' = foldl optionsSetDefault opts defaults where
 
 optsRun_add :: CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
 optsRun_add record opts = do

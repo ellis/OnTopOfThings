@@ -23,6 +23,7 @@ module Args
 , ModeInfo(..)
 , options_empty
 , mode_close
+, optionsSetDefault
 , reform
 , upd
 , updArgs
@@ -92,6 +93,16 @@ upd name value opts = Right opts' where
   opts' = opts { optionsFlags = flags', optionsMods = mods', optionsMap = map' }
 
 updHelp opts = opts { optionsHelp = True }
+
+-- Function to add a default flag value if no value was already set
+-- TODO: this function won't work correctly if a value isn't in 'optionsMap'.
+optionsSetDefault :: Options -> (String, String) -> Options
+optionsSetDefault acc (name, value) = case M.lookup name (optionsMap acc) of
+  Nothing ->
+    case upd name value acc of
+      Left msg -> acc
+      Right acc' -> acc'
+  Just x -> acc
 
 reform :: Options -> [String]
 reform args = l where

@@ -84,6 +84,7 @@
     * tag
     * user
     * list
+    * relative priorities? For indicating that one task is more important than another?
 * more features
     * items somehow inherit properties from their parents, if the properies are not set on the items
     * when an item has a due date and a time estimate, show it on the daily list once things start getting tight
