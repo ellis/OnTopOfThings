@@ -42,6 +42,7 @@ import Import
 import List
 import Utils
 import OnTopOfThings.Commands.Add
+import OnTopOfThings.Commands.Close
 import OnTopOfThings.Commands.Rebuild
 import qualified Database as DB
 
@@ -49,7 +50,7 @@ import qualified Database as DB
 modeInfo_l :: [ModeInfo]
 modeInfo_l =
   [ modeInfo_add
-  --, ("close", mode_close, Nothing)
+  , modeInfo_close
   , modeInfo_rebuild
   ]
 modeInfo = M.fromList modeInfo_l

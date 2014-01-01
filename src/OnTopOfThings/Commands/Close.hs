@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 module OnTopOfThings.Commands.Close
 ( modeInfo_close
+, mode_close
 ) where
 
 import Control.Applicative ((<$>), (<*>), empty)
@@ -78,18 +79,16 @@ optsProcess1_close opts = do
   ids_ <- mapM refToUuid (optionsArgs opts)
   return $ do
     ids <- concatEithersN ids_
-    return $ opts { optionsArgs ids }
+    return $ opts { optionsArgs = ids }
 
 optsProcess2_close :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
-optsProcess2_close opts = return (Right opts') where
-  defaults = [("type", "task"), ("status", "open"), ("stage", "new")]
-  opts' = foldl optionsSetDefault opts defaults where
+optsProcess2_close opts = return (Right opts)
 
 optsRun_close :: CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
 optsRun_close record opts = do
-  case createItem (Command.commandTime record) opts of
-    Left msgs -> return (Left msgs)
-    Right item -> do
-      insert item
-      mapM_ (saveProperty (itemUuid item)) (optionsMods opts)
-      return $ Right ()
+  mapM close (optionsArgs opts)
+  return (Right ())
+  where
+    time = Command.commandTime record
+    close uuid = do
+      updateWhere [ItemUuid ==. uuid] [ItemStatus =. "closed", ItemClosed =. Just time]

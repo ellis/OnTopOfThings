@@ -18,7 +18,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 {-# LANGUAGE OverloadedStrings #-}
 
 module OnTopOfThings.Commands.Utils
-( createItem
+( refToUuid
+, createItem
 , updateItem
 , saveProperty
 ) where
@@ -56,7 +57,7 @@ refToUuid :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Strin
 refToUuid ref = do
   uuid' <- databaseLookupUuid ref
   case uuid' of
-    Nothing -> return (Left $ "Couldn't find ref: "++ref)
+    Nothing -> return (Left ["Couldn't find ref: "++ref])
     Just uuid -> return (Right uuid)
 
 --instance Monad (Either e) where

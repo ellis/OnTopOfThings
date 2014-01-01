@@ -22,7 +22,6 @@ module Args
 , Mod(..)
 , ModeInfo(..)
 , options_empty
-, mode_close
 , optionsSetDefault
 , reform
 , upd
@@ -76,10 +75,6 @@ type ModeInfo =
 
 options_empty :: String -> Options
 options_empty name = Options name [] [] False [] M.empty
-
-mode_close = mode "close" (options_empty "") "close an item" (flagArg updArgs "REF")
-  [-- flagHelpSimple (("help", ""):)
-  ]
 
 updArgs value opts = Right opts' where
   args' = optionsArgs opts ++ [value]

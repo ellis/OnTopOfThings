@@ -28,10 +28,14 @@
 - [x] Import: handle close time
 - [x] List: parameter 'from=TIME' hides any items which were closed before the given TIME
 - [x] Set type and title in optsProcess2_add
+- [x] Implement 'close' command
 - [ ] Use CmdArgs for 'add', 'close', 'mod'
 - [ ] Simplify creation of CommandRecord so that only index-references are turned into uuids, and use same format as on the command line
-- [ ] Main: 'close' command
 - [ ] For the CmdArgs modes, consider creating two for each command: one for standard parameter plus command-line-only parameters, and one with standard parameters plus internal-only parameters (e.g. 'id')
+- [ ] Import
+   - [ ] update Import.hs for new use of CmdArgs
+   - [ ] create CmdArgs Options
+   - [ ] update Main.hs
 - [ ] Main: 'stage' command
 - [ ] List: display by stage
 - [ ] Main: use the 'format' parameter of CommandRecord to choose which function handles the command record
@@ -76,7 +80,7 @@ When creating a new item from the commandline:
 - [ ] CommandRecord converted to Options
 - [ ] Verify that Options are equal
 - [x] Options are validated and processed for modification of DB 'item' and 'property' tables
-- [ ] items and properties are updated
+- [x] items and properties are updated
 - [ ] if anything went wrong, remove the Command entry and rebuild
 - [ ] if everything went well, move the CommandRecord file to the appropriate path
 
@@ -89,6 +93,15 @@ Important lists:
 - [ ] calendar report
 - [ ] goals/beeminder report
 - [ ] urgent/imporant report
+
+Config file:
+- [ ] Create a YAML config file
+- [ ] Default arguments for commands, such as the default stage for new tasks
+- [ ] Customized stages
+- [ ] Directories for data
+- [ ] Directory to place local data
+- [ ] Username
+- [ ] Temporary directory
 
 ## Incubator tasks
 

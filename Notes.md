@@ -58,7 +58,8 @@
     * description
     * after/dependsOn (UUID)
     * status (open, closed, deleted)
-    * stage (new, external, incubator, queue, today, now, done)
+    * stage (new, external, maybe, incubator/standby/hold/limbo/gestation/backlog, queue, today, now, done)
+    * stage (new, external, review, queue, today, now, done)
     * close reason (for tickets/bugs: fixed, won't fix, not a bug, ...)
     * close time
     * due
@@ -79,6 +80,7 @@
 * item property interactions
     * there are lots of interactions between some of the variables (stage, status, close reason, close time); figure this out better
     * some properties are only relevant for some item types.  E.g., stage generally isn't needed for lists
+    * what about typical bug status, such as 'accepted'?  I suppose that's a stage?
 * item relations:
     * parent (realm, role, context, outcome, etc)
     * tag
