@@ -30,9 +30,10 @@
 - [x] Set type and title in optsProcess2_add
 - [x] Implement 'close' command
 - [ ] Import
-   - [ ] update Import.hs for new use of CmdArgs
-   - [ ] create CmdArgs Options
-   - [ ] update Main.hs
+   - [x] update Import.hs for new use of CmdArgs
+   - [x] create CmdArgs Options
+   - [x] update Main.hs
+   - [ ] test it
 - [ ] List
    - [ ] update List.hs for new use of CmdArgs
    - [ ] create CmdArgs Options
@@ -40,10 +41,7 @@
 - [ ] Use CmdArgs for 'mod'
 - [ ] Simplify creation of CommandRecord so that only index-references are turned into uuids, and use same format as on the command line
 - [ ] For the CmdArgs modes, consider creating two for each command: one for standard parameter plus command-line-only parameters, and one with standard parameters plus internal-only parameters (e.g. 'id')
-- [ ] Import
-   - [ ] update Import.hs for new use of CmdArgs
-   - [ ] create CmdArgs Options
-   - [ ] update Main.hs
+- [ ] Close: don't close an already closed item
 - [ ] Main: 'stage' command
 - [ ] List: display by stage
 - [ ] Main: use the 'format' parameter of CommandRecord to choose which function handles the command record

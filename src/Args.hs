@@ -68,7 +68,7 @@ data Mod
 data ModeRun
   = ModeRunDB
     { modeRunProcess1 :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
-    , modeRunProcess1 :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
+    , modeRunProcess2 :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
     , modeRunDB :: CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
     }
   | ModeRunIO

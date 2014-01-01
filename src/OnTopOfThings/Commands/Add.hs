@@ -51,8 +51,7 @@ import DatabaseUtils
 import Utils
 
 modeInfo_add :: ModeInfo
-modeInfo_add =
-  ("add", (mode_add, Just optsProcess1_add, Just optsProcess2_add, Just optsRun_add))
+modeInfo_add = (mode_add, ModeRunDB optsProcess1_add optsProcess2_add optsRun_add)
 
 mode_add = Mode
   { modeGroupModes = mempty

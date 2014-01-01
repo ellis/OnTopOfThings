@@ -57,8 +57,9 @@ modeInfo_l =
 modeInfo :: M.Map String ModeInfo
 modeInfo = M.fromList $ map (\x@(mode, _) -> (head (modeNames mode), x)) modeInfo_l
 
+mode_root :: Mode Options
 mode_root = modes "otot" (options_empty "") "OnTopOfThings for managing lists and tasks"
-  (M.fromList $ map (\(mode, _) -> mode) modeInfo_l)
+  (map (\(mode, _) -> mode) modeInfo_l)
 
 
 -- 1) load the command records from files
@@ -75,26 +76,24 @@ main = do
   toStdErr opts
   -- find info for the chosen command mode
   let cmd = optionsCmd opts
-  let (mode, optsProcess1_, optsProcess2_, optsRun_) = case M.lookup cmd modeInfo of { Nothing -> (mode_root, Nothing, Nothing, Nothing); Just x -> x }
-  case (cmd, optsProcess1_, optsProcess2_, optsRun_) of
-    (_, Just optsProcess1, Just optsProcess2, Just optsRun) -> do
-      handleOptions opts mode optsProcess1 optsProcess2 optsRun
-      return ()
-    ("rebuild", _, _, _) -> do
-      -- 1) load the command records from files
-      x <- loadCommandRecords
-      case x of
-        Right records -> do
-          mapM_ (putStrLn . show) records
-          runSqlite "otot.db" $ do
-            DB.databaseInit
-            -- 2) convert the command records to and SQL 'command' table
-            -- 3) process the 'command' table, producing the 'property' table
-            DB.databaseAddRecords records
-            DB.databaseUpdateIndexes
-            return ()
-    _ ->
-      print $ helpText [] HelpFormatDefault mode
+  case M.lookup cmd modeInfo of
+    Nothing -> do
+      print $ helpText [] HelpFormatDefault mode_root
+    Just (mode, run) -> do
+      -- If help is selected or there are neither arguments nor flags:
+      if (optionsHelp opts) || (null (optionsArgs opts) && null (optionsFlags opts))
+        -- print help for the given mode
+        then print $ helpText [] HelpFormatDefault mode
+        else
+          case run of
+            ModeRunDB optsProcess1 optsProcess2 optsRunDB -> do
+              handleOptions opts mode optsProcess1 optsProcess2 optsRunDB
+              return ()
+            ModeRunIO optsRunIO -> do
+              x <- optsRunIO opts
+              case x of
+                Left msgs -> mapM_ putStrLn msgs
+                _ -> return ()
   return ()
 
 --handleOptions :: Options -> Mode -> (IO ()

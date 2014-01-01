@@ -43,7 +43,7 @@ import Utils
 import qualified Database as DB
 
 modeInfo_rebuild :: ModeInfo
-modeInfo_rebuild = ("rebuild", (mode_rebuild, Nothing, Nothing, Nothing))
+modeInfo_rebuild = (mode_rebuild, ModeRunIO optsRun_rebuild)
 
 mode_rebuild = Mode
   { modeGroupModes = mempty
@@ -59,3 +59,18 @@ mode_rebuild = Mode
     [ flagHelpSimple updHelp
     ]
   }
+
+optsRun_rebuild :: Options -> IO (Validation ())
+optsRun_rebuild opts = do
+      x <- loadCommandRecords
+      case x of
+        Left msgs -> return (Left msgs)
+        Right records -> do
+          mapM_ (putStrLn . show) records
+          runSqlite "otot.db" $ do
+            DB.databaseInit
+            -- 2) convert the command records to and SQL 'command' table
+            -- 3) process the 'command' table, producing the 'property' table
+            DB.databaseAddRecords records
+            DB.databaseUpdateIndexes
+            return (Right ())

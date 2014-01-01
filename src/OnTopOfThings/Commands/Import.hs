@@ -27,13 +27,16 @@ import Data.Aeson.Types (Parser)
 import Data.Generics.Aliases (orElse)
 import Data.List (inits, intersperse, sortBy)
 import Data.Maybe (catMaybes, fromMaybe)
+import Data.Monoid (mempty)
 import Data.Time.Clock
 import Data.Time.Format (parseTime)
 import Data.Time.ISO8601 (formatISO8601Millis)
 import Debug.Hood.Observe
 import Debug.Trace
+import System.Console.CmdArgs.Explicit
 import System.Directory (getDirectoryContents)
 import System.FilePath (takeExtension, joinPath)
+import System.IO
 import System.Locale (defaultTimeLocale)
 --import qualified System.FilePath.Find as FF
 import Text.Regex (mkRegex, matchRegexAll)
@@ -45,6 +48,7 @@ import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.Vector as V
 
+import Args
 import Command (CommandRecord(..))
 import Utils
 
@@ -72,14 +76,17 @@ optsRun_import opts = do
   --mapM_ print $ catMaybes $ map checkLine $ zip [1..] $ lines s
   input <- B.readFile filename
   let map = (optionsMap opts)
-  let h = fromJust stdout (M.lookup "output" map >>= \f -> openFile f WriteMode)
+  h <- case M.lookup "output" map of
+    Just (Just f) -> openFile f WriteMode
+    _ -> return stdout
   case convert input of
-    Left msgs -> mapM_ print msgs
+    Left msgs -> return (Left msgs)
     Right records -> do
       hPutStrLn h "["
       mapM_ (\record -> putStrLn $ ((BL.unpack . encode) record ++ ",")) (init records)
       hPutStrLn h $ (BL.unpack . encode) (last records)
       hPutStrLn h "]"
+      return (Right ())
 
 --checkLine :: (Int, String) -> Maybe Int
 --checkLine (i, s) = result where
