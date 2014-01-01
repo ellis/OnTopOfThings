@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 module Args
 ( Options(..)
 , Mod(..)
+, ModeRun(..)
 , ModeInfo(..)
 , options_empty
 , optionsSetDefault
@@ -64,14 +65,17 @@ data Mod
   | ModRemove String String
   deriving Show
 
+data ModeRun
+  = ModeRunDB
+    { modeRunProcess1 :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
+    , modeRunProcess1 :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
+    , modeRunDB :: CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+    }
+  | ModeRunIO
+    { modeRunIO :: Options -> IO (Validation ()) }
+
 type ModeInfo =
-  ( String,
-    ( Mode Options
-    , Maybe (Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options))
-    , Maybe (Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options))
-    , Maybe (CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ()))
-    )
-  )
+  ( Mode Options, ModeRun )
 
 options_empty :: String -> Options
 options_empty name = Options name [] [] False [] M.empty

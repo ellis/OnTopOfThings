@@ -38,11 +38,11 @@ import Args
 import Command
 import DatabaseTables
 import DatabaseUtils
-import Import
 import List
 import Utils
 import OnTopOfThings.Commands.Add
 import OnTopOfThings.Commands.Close
+import OnTopOfThings.Commands.Import
 import OnTopOfThings.Commands.Rebuild
 import qualified Database as DB
 
@@ -51,12 +51,14 @@ modeInfo_l :: [ModeInfo]
 modeInfo_l =
   [ modeInfo_add
   , modeInfo_close
+  , modeInfo_import
   , modeInfo_rebuild
   ]
-modeInfo = M.fromList modeInfo_l
+modeInfo :: M.Map String ModeInfo
+modeInfo = M.fromList $ map (\x@(mode, _) -> (head (modeNames mode), x)) modeInfo_l
 
 mode_root = modes "otot" (options_empty "") "OnTopOfThings for managing lists and tasks"
-  [mode_add, mode_close, mode_rebuild]
+  (M.fromList $ map (\(mode, _) -> mode) modeInfo_l)
 
 
 -- 1) load the command records from files

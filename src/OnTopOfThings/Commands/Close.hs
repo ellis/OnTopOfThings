@@ -52,8 +52,7 @@ import Utils
 import OnTopOfThings.Commands.Utils
 
 modeInfo_close :: ModeInfo
-modeInfo_close =
-  ("close", (mode_close, Just optsProcess1_close, Just optsProcess2_close, Just optsRun_close))
+modeInfo_close = (mode_close, ModeRunDB optsProcess1_close, optsProcess2_close, optsRun_close))
 
 mode_close = Mode
   { modeGroupModes = mempty

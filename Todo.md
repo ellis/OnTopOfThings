@@ -29,7 +29,15 @@
 - [x] List: parameter 'from=TIME' hides any items which were closed before the given TIME
 - [x] Set type and title in optsProcess2_add
 - [x] Implement 'close' command
-- [ ] Use CmdArgs for 'add', 'close', 'mod'
+- [ ] Import
+   - [ ] update Import.hs for new use of CmdArgs
+   - [ ] create CmdArgs Options
+   - [ ] update Main.hs
+- [ ] List
+   - [ ] update List.hs for new use of CmdArgs
+   - [ ] create CmdArgs Options
+   - [ ] update Main.hs
+- [ ] Use CmdArgs for 'mod'
 - [ ] Simplify creation of CommandRecord so that only index-references are turned into uuids, and use same format as on the command line
 - [ ] For the CmdArgs modes, consider creating two for each command: one for standard parameter plus command-line-only parameters, and one with standard parameters plus internal-only parameters (e.g. 'id')
 - [ ] Import

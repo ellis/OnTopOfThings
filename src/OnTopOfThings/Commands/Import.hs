@@ -17,8 +17,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module Import
-( processImportCommand
+module OnTopOfThings.Commands.Import
+( modeInfo_import
 ) where
 
 import Control.Applicative ((<$>), (<*>), empty)
@@ -45,27 +45,41 @@ import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.Vector as V
 
---import Add (createAddCommandRecord)
 import Command (CommandRecord(..))
 import Utils
 
---instance Monad Validation where
---  Left msg >>= f = Left msg
---  Right x >>= f = f x
---  return x = Right x
+modeInfo_import :: ModeInfo
+modeInfo_import = (mode_import, ModeRunIO optsRun_import)
 
-processImportCommand :: String -> IO ()
-processImportCommand filename = do
-  --s <- getContents
+mode_import = Mode
+  { modeGroupModes = mempty
+  , modeNames = ["import"]
+  , modeValue = options_empty "import"
+  , modeCheck = Right
+  , modeReform = Just . reform
+  , modeExpandAt = True
+  , modeHelp = "Import task warrior JSON"
+  , modeHelpSuffix = []
+  , modeArgs = ([flagArg updArgs "ID"], Nothing)
+  , modeGroupFlags = toGroup
+    [ flagHelpSimple updHelp
+    ]
+  }
+
+optsRun_import :: Options -> IO (Validation ())
+optsRun_import opts = do
+  let filename = head (optionsArgs opts)
   --mapM_ print $ catMaybes $ map checkLine $ zip [1..] $ lines s
   input <- B.readFile filename
+  let map = (optionsMap opts)
+  let h = fromJust stdout (M.lookup "output" map >>= \f -> openFile f WriteMode)
   case convert input of
     Left msgs -> mapM_ print msgs
     Right records -> do
-      putStrLn "["
+      hPutStrLn h "["
       mapM_ (\record -> putStrLn $ ((BL.unpack . encode) record ++ ",")) (init records)
-      putStrLn $ (BL.unpack . encode) (last records)
-      putStrLn "]"
+      hPutStrLn h $ (BL.unpack . encode) (last records)
+      hPutStrLn h "]"
 
 --checkLine :: (Int, String) -> Maybe Int
 --checkLine (i, s) = result where
