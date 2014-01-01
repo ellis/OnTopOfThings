@@ -28,14 +28,16 @@
 - [x] Import: handle close time
 - [x] List: parameter 'from=TIME' hides any items which were closed before the given TIME
 - [x] Set type and title in optsProcess2_add
-- [ ] Rename Args.hs to Modes.hs
 - [ ] Use CmdArgs for 'add', 'close', 'mod'
 - [ ] Simplify creation of CommandRecord so that only index-references are turned into uuids, and use same format as on the command line
 - [ ] Main: 'close' command
+- [ ] For the CmdArgs modes, consider creating two for each command: one for standard parameter plus command-line-only parameters, and one with standard parameters plus internal-only parameters (e.g. 'id')
 - [ ] Main: 'stage' command
 - [ ] List: display by stage
 - [ ] Main: use the 'format' parameter of CommandRecord to choose which function handles the command record
 - [ ] Index all displayed items instead of open tasks?
+- [ ] Rename Args.hs to Modes.hs or Options.hs
+- [ ] Move source files into appropriate module hierarchy
 - [ ] Add: maybe refToUuid shouldn't be called while constructing the CommandRecord in order to leave labels as they are
 - [ ] Add: autogenerate a label for lists if none is given
 - [ ] Utils: create a Validation monad and monoid
