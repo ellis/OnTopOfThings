@@ -137,17 +137,6 @@ printListAndTasks items list = do
   let items' = filter (\item -> itemParent item == Just (itemUuid list)) items
   mapM_ (putStrLn . itemToString) items'
 
-fn1' :: [Property] -> EntityMap
-fn1' properties = fn1 properties M.empty
-
-fn1 :: [Property] -> EntityMap -> EntityMap
-fn1 [] acc = acc
-fn1 ((Property table uuid name value) : rest) acc = fn1 rest acc' where
-  acc' = case M.lookup uuid acc of
-    Nothing -> M.insert uuid M.empty acc
-    Just m -> M.insert uuid m' acc where
-      m' = M.insert name [value] m
-
 findParentLabel :: Maybe [String] -> EntityMap -> [String]
 findParentLabel uuid m = findParentLabel' uuid m []
 
@@ -189,42 +178,3 @@ itemToString item = unwords l where
     , Just $ itemTitle item
     ]
 
-itemToString' :: Item -> EntityMap -> String
-itemToString' item entities = unwords l where
-  path = findParentLabel (itemParent item >>= \x -> Just [x]) entities
-  check :: Maybe String
-  check = case (itemType item, itemStatus item) of
-    ("list", "open") -> Nothing
-    ("list", "closed") -> Just "[x]"
-    ("list", "deleted") -> Just "XXX"
-    ("task", "open") -> Just "- [ ]"
-    (_, "open") -> Just "- "
-    (_, "closed") -> Just "- [x]"
-    (_, "deleted") -> Just "- XXX"
-    _ -> Nothing
-  l :: [String]
-  l = catMaybes $
-    [ check
-    , itemIndex item >>= (\x -> Just ("(" ++ (show x) ++ ")"))
-    , if null path then Nothing else Just $ intercalate "/" path ++ ":"
-    , Just $ itemTitle item
-    ]
-
---itemToString :: String -> PropertyMap -> EntityMap -> String
---itemToString uuid properties entities = unwords l where
---  path = findParentLabel (M.lookup "parent" properties) entities
---  isTask :: Bool
---  isTask = (M.lookup "type" properties) == Just ["task"]
---  check :: String
---  check = case M.lookup "status" properties of
---    Just ["open"] -> if isTask then " [ ]" else ""
---    Just ["closed"] -> " [x]"
---    Just ["deleted"] -> " XXX"
---    _ -> ""
---  l :: [String]
---  l = catMaybes $
---    [ Just $ "-" ++ check
---    , M.lookup "index" properties >>= (\x -> Just ("(" ++ unwords x ++ ")"))
---    , if null path then Nothing else Just $ intercalate "/" path ++ ":"
---    , M.lookup "title" properties >>= Just . unwords
---    ]
