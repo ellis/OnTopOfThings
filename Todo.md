@@ -37,13 +37,14 @@
 - [x] Lookup tradeoffs for String, Text, ByteString, as well as the lazy and strict versions.
 - [x] List: get it working again with CmdArgs
 - [x] Main: shouldn't print help when no args or flags are given; individual commands could do that though
-- [ ] Rebuild: check it again, with the newly imported test data
-- [ ] Index all displayed items instead of open tasks
+- [x] Rebuild: check it again, with the newly imported test data
+- [ ] List: assign indexes to non-list items and save these in the db
+- [ ] List: display label and title of lists
 - [ ] Main: 'stage' command
 - [ ] List: display by stage
 - [ ] Use CmdArgs for 'mod'
 - [ ] Simplify creation of CommandRecord so that only index-references are turned into uuids, and use same format as on the command line
-- [ ] Switch from String to Text
+- [ ] Switch from String to Text and make sure umlauts are printed correctly
 - [ ] For the CmdArgs modes, consider creating two for each command: one for standard parameter plus command-line-only parameters, and one with standard parameters plus internal-only parameters (e.g. 'id')
 - [ ] Close: don't close an already closed item
 - [ ] Main: use the 'format' parameter of CommandRecord to choose which function handles the command record

@@ -83,15 +83,6 @@ optsRun_list opts = do
 optsValidate :: Options -> Validation ()
 optsValidate opts = Right ()
 
-listHandler :: [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
-listHandler args = do
-  -- parse args, for the moment we'll ignore them and pretend "from=today"
-  now <- liftIO $ getCurrentTime
-  let fromTime = (parseTime defaultTimeLocale "%Y%m%d" $ formatTime defaultTimeLocale "%Y%m%d" now) :: Maybe UTCTime
-  case fromTime of
-    Just t -> listTasks t
-    Nothing -> liftIO $ putStrLn "bad time"
-
 listTasks :: UTCTime -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 listTasks fromTime = do
   -- Load all tasks that are open or were closed today
@@ -103,9 +94,19 @@ listTasks fromTime = do
   items <- loadRecursive tasks
   --liftIO $ mapM_ (putStrLn . itemToString) items
   -- Get the lists
-  let lists = filter (\item -> itemType item == "list") items
-  liftIO $ mapM_ (printListAndTasks items) lists
+  let lists = (filter (\item -> itemType item == "list") items) :: [Item]
+  -- Get the items in the order they'll be printed
+  let ordered = concat $ map (\parent -> parent : (filterChildren items parent)) lists
+  mapM_ fn (zip [1..] ordered)
   return ()
+  where
+    fn (index, item) =
+      case itemType item of
+        "list" -> do
+          liftIO $ putStrLn ""
+          liftIO $ putStrLn $ "(" ++ (show index) ++ ")  " ++ (itemToString item)
+        _ ->
+          liftIO $ putStrLn $ "(" ++ (show index) ++ ")  " ++ (itemToString item)
 
 loadRecursive :: [Item] -> SqlPersistT (NoLoggingT (ResourceT IO)) [Item]
 loadRecursive items = loadParents items uuids items where
@@ -130,32 +131,30 @@ loadByUuid uuids = do
         return t
       return $ map entityVal entities
 
-printListAndTasks :: [Item] -> Item -> IO ()
-printListAndTasks items list = do
-  putStrLn ""
-  putStrLn $ itemToString list
-  let items' = filter (\item -> itemParent item == Just (itemUuid list)) items
-  mapM_ (putStrLn . itemToString) items'
+-- Get the children of the given 'parent' from the 'items'
+filterChildren :: [Item] -> Item -> [Item]
+filterChildren items parent =
+  filter (\item -> itemParent item == Just (itemUuid parent)) items
 
-findParentLabel :: Maybe [String] -> EntityMap -> [String]
-findParentLabel uuid m = findParentLabel' uuid m []
+--findParentLabel :: Maybe [String] -> EntityMap -> [String]
+--findParentLabel uuid m = findParentLabel' uuid m []
 
-findParentLabel' :: Maybe [String] -> EntityMap -> [String] -> [String]
-findParentLabel' (Just [uuid]) m acc =
-  -- See whether entity exists
-  case M.lookup uuid m of
-    Nothing -> acc
-    Just m' -> findParentLabel' uuid' m acc' where
-      -- Update acc with label or title
-      acc' = case M.lookup "label" m' of
-        Nothing ->
-          case M.lookup "title" m' of
-            Nothing -> acc
-            Just title -> acc ++ title
-        Just label -> acc ++ label
-      -- Continuing by search for this items parent
-      uuid' = M.lookup "parent" m'
-findParentLabel' _ _ acc = acc
+--findParentLabel' :: Maybe [String] -> EntityMap -> [String] -> [String]
+--findParentLabel' (Just [uuid]) m acc =
+--  -- See whether entity exists
+--  case M.lookup uuid m of
+--    Nothing -> acc
+--    Just m' -> findParentLabel' uuid' m acc' where
+--      -- Update acc with label or title
+--      acc' = case M.lookup "label" m' of
+--        Nothing ->
+--          case M.lookup "title" m' of
+--            Nothing -> acc
+--            Just title -> acc ++ title
+--        Just label -> acc ++ label
+--      -- Continuing by search for this items parent
+--      uuid' = M.lookup "parent" m'
+--findParentLabel' _ _ acc = acc
 
 itemToString :: Item -> String
 itemToString item = unwords l where
