@@ -66,10 +66,13 @@ mode_add = Mode
   , modeArgs = ([flagArg updArgs "TITLE"], Nothing)
   , modeGroupFlags = toGroup
     [ flagReq ["parent", "p"] (upd "parent") "ID" "reference to parent of this item"
+    , flagReq ["closed"] (upd "closed") "TIME" "Time that this item was closed."
     , flagReq ["id"] (upd "id") "ID" "A unique ID for this item. (NOT FOR NORMAL USE!)"
     , flagReq ["label", "l"] (upd "label") "LABEL" "A unique label for this item."
     , flagReq ["stage", "s"] (upd "stage") "STAGE" "new|incubator|today. (default=new)"
+    , flagReq ["status"] (upd "status") "STATUS" "open|closed|deleted. (default=open)"
     , flagReq ["tag", "t"] (upd "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
+    , flagReq ["title"] (upd "title") "TITLE" "Title of the item."
     , flagReq ["type"] (upd "type") "TYPE" "list|task. (default=task)"
     , flagHelpSimple updHelp
     ]

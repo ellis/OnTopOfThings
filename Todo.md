@@ -33,7 +33,7 @@
    - [x] update Import.hs for new use of CmdArgs
    - [x] create CmdArgs Options
    - [x] update Main.hs
-   - [ ] test it
+   - [x] test it
 - [ ] List
    - [ ] update List.hs for new use of CmdArgs
    - [ ] create CmdArgs Options
@@ -69,6 +69,7 @@
 - [ ] Main: when setting parent, prevent cyclic loops -- might want to check this in loadDB too.
 - [ ] Lookup tradeoffs for String, Text, ByteString, as well as the lazy and strict versions.
 - [ ] Command: save UTCTime with more precision?
+- [ ] Instead of `IO (Validation ())`, should I use `Validation (IO ())` or make a `ValidationT`?
 
 When creating a new item from the commandline:
 

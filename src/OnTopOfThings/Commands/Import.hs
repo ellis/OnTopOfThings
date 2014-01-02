@@ -23,6 +23,7 @@ module OnTopOfThings.Commands.Import
 ) where
 
 import Control.Applicative ((<$>), (<*>), empty)
+import Control.Monad
 import Data.Aeson
 import Data.Aeson.Types (Parser)
 import Data.Generics.Aliases (orElse)
@@ -73,23 +74,32 @@ mode_import = Mode
     ]
   }
 
+optsValidate :: Options -> Validation ()
+optsValidate opts = do
+  when (null $ optionsArgs opts) (Left ["You must supply a filename"])
+  Right ()
+
 optsRun_import :: Options -> IO (Validation ())
 optsRun_import opts = do
-  let filename = head (optionsArgs opts)
-  --mapM_ print $ catMaybes $ map checkLine $ zip [1..] $ lines s
-  input <- B.readFile filename
-  let map = (optionsMap opts)
-  h <- case M.lookup "output" map of
-    Just (Just f) -> openFile f WriteMode
-    _ -> return stdout
-  case convert input of
+  case optsValidate opts of
     Left msgs -> return (Left msgs)
-    Right records -> do
-      hPutStrLn h "["
-      mapM_ (\record -> putStrLn $ ((BL.unpack . encode) record ++ ",")) (init records)
-      hPutStrLn h $ (BL.unpack . encode) (last records)
-      hPutStrLn h "]"
-      return (Right ())
+    Right () -> do
+      let filename = head (optionsArgs opts)
+      --mapM_ print $ catMaybes $ map checkLine $ zip [1..] $ lines s
+      input <- B.readFile filename
+      let map = (optionsMap opts)
+      h <- case M.lookup "output" map of
+        Just (Just f) -> openFile f WriteMode
+        _ -> return stdout
+      case convert input of
+        Left msgs -> return (Left msgs)
+        Right records -> do
+          hPutStrLn h "["
+          mapM_ (\record -> hPutStrLn h $ ((BL.unpack . encode) record ++ ",")) (init records)
+          hPutStrLn h $ (BL.unpack . encode) (last records)
+          hPutStrLn h "]"
+          hClose h
+          return (Right ())
 
 --checkLine :: (Int, String) -> Maybe Int
 --checkLine (i, s) = result where
@@ -180,7 +190,7 @@ createItem uuids projects m = do
   let cmd = if Set.member (T.pack uuid) uuids then "mod" else "add"
   let status = getStatus status'
   let parent = project >>= Just . (substituteInList '.' '/')
-  let args = catMaybes [wrap "id" uuid, wrap "type" "type", wrap "title" description, wrapMaybe "parent" parent, wrap "status" status, wrap "stage" "incubator", wrapMaybeTime "closed" closed]
+  let args = catMaybes [wrap "id" uuid, wrap "title" description, wrapMaybe "parent" parent, wrapMaybe "status" status, wrapMaybeTime "closed" closed]
   let projects' = updateProjects (fmap T.pack parent) time
   opts0 <- eitherStringToValidation $ process mode_add args
   --opts1 <- optsProcess1_add opts0
@@ -189,9 +199,9 @@ createItem uuids projects m = do
   return (uuids', projects', record)
   where
     getStatus status' = case status' of
-      Just "completed" -> "closed"
-      Just "deleted" -> "deleted"
-      _ -> "open"
+      Just "completed" -> Just "closed"
+      Just "deleted" -> Just "deleted"
+      _ -> Nothing
     getClosed :: Maybe String -> Validation (Maybe UTCTime)
     getClosed closed' = case closed' of
       Just closed'' ->
