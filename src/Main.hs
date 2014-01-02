@@ -38,11 +38,11 @@ import Args
 import Command
 import DatabaseTables
 import DatabaseUtils
-import List
 import Utils
 import OnTopOfThings.Commands.Add
 import OnTopOfThings.Commands.Close
 import OnTopOfThings.Commands.Import
+import OnTopOfThings.Commands.List
 import OnTopOfThings.Commands.Rebuild
 import qualified Database as DB
 
@@ -52,6 +52,7 @@ modeInfo_l =
   [ modeInfo_add
   , modeInfo_close
   , modeInfo_import
+  , modeInfo_list
   , modeInfo_rebuild
   ]
 modeInfo :: M.Map String ModeInfo
