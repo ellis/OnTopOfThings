@@ -53,6 +53,7 @@
 - [ ] Move source files into appropriate module hierarchy
 - [ ] Add: maybe refToUuid shouldn't be called while constructing the CommandRecord in order to leave labels as they are
 - [ ] Add: autogenerate a label for lists if none is given
+- [ ] Refactor.  See what can be merged among Main, Import, and Rebuild.
 - [ ] Utils: create a Validation monad and monoid
 - [ ] Add: think about putting list paths into 'Property' tables for finding lists by path and detecting duplicates
 - [ ] List: get parent path by using 'Item' instead of 'Property' table, unless path is stored into Property
