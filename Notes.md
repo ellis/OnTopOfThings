@@ -77,6 +77,7 @@
     * contexts
     * order in parent, so that the user can manually arrange the items
     * severity (for bugs)
+    * flagged: the item has been flagged by some event, such as an external item coming back or a timer
 * item property interactions
     * there are lots of interactions between some of the variables (stage, status, close reason, close time); figure this out better
     * some properties are only relevant for some item types.  E.g., stage generally isn't needed for lists

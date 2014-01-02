@@ -44,7 +44,8 @@
 - [x] List: display label and title of lists
 - [x] List: assign indexes to non-list items and save these in the db
 - [x] Mod: get it to work from the cli
-- [ ] List: display by stage
+- [x] List: display by stage
+- [x] List: display by status
 - [ ] List: list tasks for a given list
 - [ ] create parser for item indexes with commas and dashes
 - [ ] Let 'mod' accept multiple references

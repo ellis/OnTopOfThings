@@ -26,6 +26,7 @@ import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
 import Data.List (intercalate, nub, sort)
+import Data.List.Split (splitOn)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Monoid
 import Data.Time.Clock
@@ -65,6 +66,8 @@ mode_list = Mode
   , modeArgs = ([], Nothing)
   , modeGroupFlags = toGroup
     [ flagReq ["from"] (upd "from") "TIME" "Starting time for the listing. (default=today)"
+    , flagReq ["stage"] (upd "stage") "STAGE" "Stage to restrict display to.  May contain a comma-separated list."
+    , flagReq ["status"] (upd "status") "STATUS" "Status to restrict display to.  May contain a comma-separated list."
     , flagHelpSimple updHelp
     ]
   }
@@ -77,17 +80,35 @@ optsRun_list opts = do
     Nothing -> return (Left ["bad time"])
     Just t -> do
       runSqlite "otot.db" $ do
-        listTasks t
+        listTasks opts t
       return (Right ())
 
 optsValidate :: Options -> Validation ()
 optsValidate opts = Right ()
 
-listTasks :: UTCTime -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
-listTasks fromTime = do
+expr' opts fromTime t = expr2 where
+  m = optionsMap opts
+  expr0 = (t ^. ItemType ==. val "task" &&. (t ^. ItemStatus ==. val "open" ||. t ^. ItemClosed >. val (Just fromTime)))
+  expr1 = case split (M.lookup "status" m) of
+    [] -> expr0
+    l -> expr0 &&. (in_ (t ^. ItemStatus) (valList l)) where
+  expr2 = case splitMaybe (M.lookup "stage" m) of
+    [] -> expr1
+    l -> expr1 &&. (in_ (t ^. ItemStage) (valList l)) where
+  split :: Maybe (Maybe String) -> [String]
+  split (Just (Just s)) = splitOn "," s
+  split _ = []
+  splitMaybe :: Maybe (Maybe String) -> [Maybe String]
+  splitMaybe (Just (Just s)) = l where
+    l' = splitOn "," s
+    l = map Just l'
+  splitMaybe _ = []
+
+listTasks :: Options -> UTCTime -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+listTasks opts fromTime = do
   -- Load all tasks that are open or were closed today
   tasks' <- select $ from $ \t -> do
-    where_ (t ^. ItemType ==. val "task" &&. (t ^. ItemStatus ==. val "open" ||. t ^. ItemClosed >. val (Just fromTime)))
+    where_ (expr' opts fromTime t)
     return t
   let tasks = map entityVal tasks'
   --liftIO $ print tasks
