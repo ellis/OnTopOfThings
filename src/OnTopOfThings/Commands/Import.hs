@@ -137,46 +137,8 @@ convert input =
 compareRecordTime :: CommandRecord -> CommandRecord -> Ordering
 compareRecordTime a b = compare (commandTime a) (commandTime b)
 
-convertObject :: Value -> Validation [CommandRecord]
-convertObject (Object m) = case convertObject' m Set.empty Set.empty of
-  Left msgs -> Left msgs
-  Right (_, _, l) -> Right l
-convertObject _ = Left ["Expected an object"]
-
-convertObject' :: Object -> Set.Set [T.Text] -> Set.Set T.Text -> Validation (Set.Set [T.Text], Set.Set T.Text, [CommandRecord])
-convertObject' m projects uuids = do
-  uuid <- get "uuid" m
-  entry' <- get "entry" m
-  project' <- getMaybe "project" m
-  description <- getMaybe "description" m
-  status' <- getMaybe "status" m
-  time <- (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" entry') `maybeToValidation` ["Could not parse time"]
-  let (projects', projectRecords) = createProjects (fmap T.pack project') time (T.pack uuid)
-  return (projects', uuids, projectRecords)
-  where
-    createProjects :: Maybe T.Text -> UTCTime -> T.Text -> (Set.Set [T.Text], [CommandRecord])
-    createProjects project' time uuid = case project' of
-      Nothing -> (projects, [])
-      Just label' -> (projects', records) where
-        paths = filter (not . null) $ inits $ T.splitOn "." label'
-        pathsNew = filter (\x -> not $ Set.member x projects) paths
-        (projects', recordsR) = foldl createProject (projects, []) pathsNew
-        records = reverse recordsR
-        createProject :: (Set.Set [T.Text], [CommandRecord]) -> [T.Text] -> (Set.Set [T.Text], [CommandRecord])
-        createProject (projects, records) path = (projects', CommandRecord 1 time "default" "add" args : records) where
-          parent :: [T.Text]
-          parent = init path
-          parentLabel :: T.Text
-          parentLabel = T.intercalate "/" parent
-          args0 :: [T.Text]
-          args0 = ["type=list", T.concat ["title=", last path], T.concat ["label=", T.intercalate "/" path]]
-          args :: [T.Text]
-          args = case null parent of
-            True -> args0
-            False -> (T.concat ["parent=", parentLabel]):args0
-
 createItem :: Set.Set T.Text -> M.Map T.Text UTCTime -> Object -> Validation (Set.Set T.Text, M.Map T.Text UTCTime, CommandRecord)
---createItem uuids m | trace ("createItem " ++ show uuids) False = undefined
+createItem uuids projects m | trace ("createItem " ++ show uuids) False = undefined
 createItem uuids projects m = do
   uuid <- get "uuid" m
   entry' <- get "entry" m
