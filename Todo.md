@@ -40,6 +40,7 @@
    - [ ] update Main.hs
 - [ ] Use CmdArgs for 'mod'
 - [ ] Simplify creation of CommandRecord so that only index-references are turned into uuids, and use same format as on the command line
+- [ ] Switch from String to Text
 - [ ] For the CmdArgs modes, consider creating two for each command: one for standard parameter plus command-line-only parameters, and one with standard parameters plus internal-only parameters (e.g. 'id')
 - [ ] Close: don't close an already closed item
 - [ ] Main: 'stage' command

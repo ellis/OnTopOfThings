@@ -19,9 +19,12 @@ module Utils
 ( Validation
 , concatEithers1
 , concatEithersN
+, eitherStringToValidation
 , maybeToEither
 , maybeToValidation
 , strip
+, substitute
+, substituteInList
 , toStdErr
 ) where
 
@@ -48,6 +51,10 @@ concatEithersN' [] as _ = Left (reverse as)
 concatEithersN' ((Left as'):xs) as bs = concatEithersN' xs (as'++as) bs
 concatEithersN' ((Right b):xs) as bs = concatEithersN' xs as (b:bs)
 
+eitherStringToValidation :: Either String a => Validation a
+eitherStringToValidation (Left msg) = Left [msg]
+eitherStringToValidation (Right x) = Right x
+
 maybeToEither = flip maybe Right . Left
 
 maybeToValidation :: Maybe a -> [String] -> Validation a
@@ -57,5 +64,14 @@ maybeToValidation m msgs = case m of
 
 strip :: String -> String
 strip s = (T.unpack . T.strip . T.pack) s
+
+substitute :: (Eq a) => a -> a -> a -> a
+substitute needle new actual =
+  if needle == actual
+    then new
+    else actual
+
+substituteInList :: (Eq a) => a -> a -> [a] -> [a]
+substituteInList needle new l = map (substitute needle new) l
 
 toStdErr x = hPutStrLn stderr $ show x

@@ -269,7 +269,3 @@ handleOptions opts mode optsProcess1 optsProcess2 optsRun = do
 --      liftIO $ saveCommandRecord record chguuid
 --  return ()
 --
-optsToCommandRecord :: UTCTime -> T.Text -> Options -> CommandRecord
-optsToCommandRecord time user opts = CommandRecord 1 time user (T.pack $ optionsCmd opts) opts'' where
-  opts' = reform opts
-  opts'' = map T.pack opts'

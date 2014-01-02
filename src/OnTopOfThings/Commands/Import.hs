@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 module OnTopOfThings.Commands.Import
 ( modeInfo_import
+, optsToCommandRecord
 ) where
 
 import Control.Applicative ((<$>), (<*>), empty)
@@ -51,6 +52,7 @@ import qualified Data.Vector as V
 import Args
 import Command (CommandRecord(..))
 import Utils
+import OnTopOfThings.Commands.Add
 
 modeInfo_import :: ModeInfo
 modeInfo_import = (mode_import, ModeRunIO optsRun_import)
@@ -66,7 +68,8 @@ mode_import = Mode
   , modeHelpSuffix = []
   , modeArgs = ([flagArg updArgs "ID"], Nothing)
   , modeGroupFlags = toGroup
-    [ flagHelpSimple updHelp
+    [ flagReq ["output", "o"] (upd "output") "FILE" "file to use for output"
+    , flagHelpSimple updHelp
     ]
   }
 
@@ -137,8 +140,8 @@ convertObject' m projects uuids = do
   project' <- getMaybe "project" m
   description <- getMaybe "description" m
   status' <- getMaybe "status" m
-  time <- (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" (T.unpack entry')) `maybeToValidation` ["Could not parse time"]
-  let (projects', projectRecords) = createProjects project' time uuid
+  time <- (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" entry') `maybeToValidation` ["Could not parse time"]
+  let (projects', projectRecords) = createProjects (fmap T.pack project') time (T.pack uuid)
   return (projects', uuids, projectRecords)
   where
     createProjects :: Maybe T.Text -> UTCTime -> T.Text -> (Set.Set [T.Text], [CommandRecord])
@@ -171,25 +174,29 @@ createItem uuids projects m = do
   project <- getMaybe "project" m
   status' <- getMaybe "status" m
   end' <- getMaybe "end" m
-  time <- (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" (T.unpack entry')) `maybeToValidation` ["Could not parse entry time"]
+  time <- (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" entry') `maybeToValidation` ["Could not parse entry time"]
   --closed <- (end' >>= \end -> (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" (T.unpack end))) `maybeToValidation` ["Could not parse end time"]
   closed <- getClosed end'
-  let cmd = if Set.member uuid uuids then "mod" else "add"
+  let cmd = if Set.member (T.pack uuid) uuids then "mod" else "add"
   let status = getStatus status'
-  let parent = project >>= Just . (T.replace "." "/")
-  let args = catMaybes [wrap "id" uuid, Just "type=task", wrap "title" description, wrapMaybe "parent" parent, wrap "status" status, Just "stage=incubator", wrapMaybeTime "closed" closed]
-  let projects' = updateProjects parent time
-  return (Set.insert uuid uuids, projects', CommandRecord 1 time "default" cmd args)
+  let parent = project >>= Just . (substituteInList '.' '/')
+  let args = catMaybes [wrap "id" uuid, wrap "type" "type", wrap "title" description, wrapMaybe "parent" parent, wrap "status" status, wrap "stage" "incubator", wrapMaybeTime "closed" closed]
+  let projects' = updateProjects (fmap T.pack parent) time
+  opts0 <- eitherStringToValidation $ process mode_add args
+  --opts1 <- optsProcess1_add opts0
+  let record = optsToCommandRecord time "default" opts0
+  let uuids' = Set.insert (T.pack uuid) uuids
+  return (uuids', projects', record)
   where
     getStatus status' = case status' of
       Just "completed" -> "closed"
       Just "deleted" -> "deleted"
       _ -> "open"
-    getClosed :: Maybe T.Text -> Validation (Maybe UTCTime)
+    getClosed :: Maybe String -> Validation (Maybe UTCTime)
     getClosed closed' = case closed' of
       Just closed'' ->
-        case parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" (T.unpack closed'') of
-          Nothing -> Left ["Could not parse end time: " ++ (T.unpack closed'')]
+        case parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" closed'' of
+          Nothing -> Left ["Could not parse end time: " ++ closed'']
           Just x -> Right (Just x)
       Nothing -> Right Nothing
     updateProjects :: Maybe T.Text -> UTCTime -> M.Map T.Text UTCTime
@@ -197,29 +204,29 @@ createItem uuids projects m = do
       Nothing -> projects
       Just p -> M.insert p t projects where
         t = fromMaybe time (M.lookup p projects >>= \t -> Just $ min time t)
-    wrap :: T.Text -> T.Text -> Maybe T.Text
-    wrap name value = Just (T.concat [name, "=", value])
-    wrapMaybe :: T.Text -> Maybe T.Text -> Maybe T.Text
-    wrapMaybe name value = value >>= (\x -> Just (T.concat [name, "=", x]))
-    wrapMaybeTime :: T.Text -> Maybe UTCTime -> Maybe T.Text
-    wrapMaybeTime name value = value >>= (\x -> Just (T.concat [name, "=", T.pack (formatISO8601Millis x)]))
+    wrap :: String -> String -> Maybe String
+    wrap name value = Just (concat ["--", name, "=", value])
+    wrapMaybe :: String -> Maybe String -> Maybe String
+    wrapMaybe name value = value >>= (\x -> Just (concat ["--", name, "=", x]))
+    wrapMaybeTime :: String -> Maybe UTCTime -> Maybe String
+    wrapMaybeTime name value = value >>= (\x -> Just (concat ["--", name, "=", formatISO8601Millis x]))
 
-get :: T.Text -> HM.HashMap T.Text Value -> Validation T.Text
+get :: T.Text -> HM.HashMap T.Text Value -> Validation String
 get name m = case HM.lookup name m of
   Nothing -> Left ["Missing `" ++ (T.unpack name) ++ "`"]
-  Just (String text) -> Right text
+  Just (String text) -> Right (T.unpack text)
   Just _ -> Left ["Field `" ++ (T.unpack name) ++ "` is not text"]
 
-getMaybe :: T.Text -> Object -> Validation (Maybe T.Text)
+getMaybe :: T.Text -> Object -> Validation (Maybe String)
 getMaybe name m = case HM.lookup name m of
   Nothing -> Right Nothing
-  Just (String text) -> Right $ Just text
+  Just (String text) -> Right $ Just (T.unpack text)
   Just _ -> Left ["Field `" ++ (T.unpack name) ++ "` is not text"]
 
 createProject :: (T.Text, UTCTime) -> CommandRecord
 createProject (label, time) = CommandRecord 1 time' "default" "add" args where
   time' = addUTCTime (-1 :: NominalDiffTime) time
-  args = [T.concat ["id=", label], "type=list", T.concat ["label=", label], T.concat ["title=", label], "status=open"]
+  args = [T.concat ["--id=", label], "--type=list", T.concat ["--label=", label], T.concat ["--title=", label]]
 
 --getProjectMap :: [CommandRecord] -> [(Text, UTCTime)]
 --getProjectMap items = l where
@@ -231,3 +238,8 @@ createProject (label, time) = CommandRecord 1 time' "default" "add" args where
 --getProjectMap' :: M.Map Text UTCTime -> CommandRecord -> M.Map Text UTCTime
 --getProjectMap' m item =
 --  case M.lookup 
+
+optsToCommandRecord :: UTCTime -> T.Text -> Options -> CommandRecord
+optsToCommandRecord time user opts = CommandRecord 1 time user (T.pack $ optionsCmd opts) opts'' where
+  opts' = reform opts
+  opts'' = map T.pack opts'
