@@ -26,7 +26,7 @@ import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
 import Data.List (intercalate, nub, sort)
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, fromMaybe)
 import Data.Monoid
 import Data.Time.Clock
 import Data.Time.Format (parseTime, formatTime)
@@ -90,23 +90,46 @@ listTasks fromTime = do
     where_ (t ^. ItemType ==. val "task" &&. (t ^. ItemStatus ==. val "open" ||. t ^. ItemClosed >. val (Just fromTime)))
     return t
   let tasks = map entityVal tasks'
+  liftIO $ print tasks
   -- Recursively load all parent items
   items <- loadRecursive tasks
   --liftIO $ mapM_ (putStrLn . itemToString) items
   -- Get the lists
   let lists = (filter (\item -> itemType item == "list") items) :: [Item]
+  liftIO $ print lists
+  let children = concat $ map (filterChildren items) lists :: [Item]
+  -- Remove all previous indexes
+  update $ \t -> do
+    set t [ItemIndex =. nothing]
+    where_ (not_ $ isNothing (t ^. ItemIndex))
+  let itemToIndex_l = zip children [1..]
+  let uuidToIndex_m = M.fromList $ map (\(item, index) -> (itemUuid item, index)) itemToIndex_l
+  -- Set new indexes
+  mapM updateIndex itemToIndex_l
+  --mapM setIndex children
   -- Get the items in the order they'll be printed
   let ordered = concat $ map (\parent -> parent : (filterChildren items parent)) lists
-  mapM_ fn (zip [1..] ordered)
+  liftIO $ print ordered
+  liftIO $ mapM_ (fn uuidToIndex_m) ordered
   return ()
   where
-    fn (index, item) =
+    updateIndex :: (Item, Int) -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+    updateIndex (item, index) = do
+      update $ \t -> do
+        set t [ItemIndex =. val (Just index)]
+        where_ (t ^. ItemUuid ==. val (itemUuid item))
+    fn :: M.Map String Int -> Item -> IO ()
+    fn uuidToIndex_m item =
       case itemType item of
         "list" -> do
-          liftIO $ putStrLn ""
-          liftIO $ putStrLn $ "(" ++ (show index) ++ ")  " ++ (itemToString item)
-        _ ->
-          liftIO $ putStrLn $ "(" ++ (show index) ++ ")  " ++ (itemToString item)
+          putStrLn ""
+          putStrLn $ (itemToString item)
+        _ -> putStrLn $ prefix ++ (itemToString item) where
+          index :: Maybe Int
+          index = M.lookup (itemUuid item) uuidToIndex_m
+          index_s :: Maybe String
+          index_s = fmap (\i -> "(" ++ (show i) ++ ")  ") index
+          prefix = fromMaybe "" index_s
 
 loadRecursive :: [Item] -> SqlPersistT (NoLoggingT (ResourceT IO)) [Item]
 loadRecursive items = loadParents items uuids items where
@@ -164,15 +187,15 @@ itemToString item = unwords l where
     ("list", "open") -> Nothing
     ("list", "closed") -> Just "[x]"
     ("list", "deleted") -> Just "XXX"
-    ("task", "open") -> Just "- [ ]"
-    (_, "open") -> Just "- "
-    (_, "closed") -> Just "- [x]"
+    ("task", "open") -> Just "[ ]"
+    (_, "open") -> Just "-"
+    (_, "closed") -> Just "[x]"
     (_, "deleted") -> Just "- XXX"
     _ -> Nothing
   l :: [String]
   l = catMaybes $
     [ check
-    , itemIndex item >>= (\x -> Just ("(" ++ (show x) ++ ")"))
+    , fmap (\label -> "(" ++ label ++ ")") (itemLabel item)
     , if null path then Nothing else Just $ intercalate "/" path ++ ":"
     , Just $ itemTitle item
     ]

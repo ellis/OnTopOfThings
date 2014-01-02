@@ -40,6 +40,8 @@ import Args
 import Command (CommandRecord, loadCommandRecords)
 import DatabaseUtils
 import Utils
+import OnTopOfThings.Commands.Add
+import OnTopOfThings.Commands.Close
 import qualified Database as DB
 
 modeInfo_rebuild :: ModeInfo
@@ -60,6 +62,14 @@ mode_rebuild = Mode
     ]
   }
 
+modeInfo_l :: [ModeInfo]
+modeInfo_l =
+  [ modeInfo_add
+  , modeInfo_close
+  ]
+modeInfo :: M.Map String ModeInfo
+modeInfo = M.fromList $ map (\x@(mode, _) -> (head (modeNames mode), x)) modeInfo_l
+
 optsRun_rebuild :: Options -> IO (Validation ())
 optsRun_rebuild opts = do
       x <- loadCommandRecords
@@ -69,8 +79,56 @@ optsRun_rebuild opts = do
           mapM_ (putStrLn . show) records
           runSqlite "otot.db" $ do
             DB.databaseInit
-            -- 2) convert the command records to and SQL 'command' table
-            -- 3) process the 'command' table, producing the 'property' table
-            DB.databaseAddRecords records
-            DB.databaseUpdateIndexes
-            return (Right ())
+            mapM x records
+
+x record =
+  let cmd = CommandRecord.commandCmd record
+  case M.lookup cmd modeInfo of
+    Nothing -> return (Left ["unknown command `"++cmd++"`"])
+    Just (_, run) -> do
+      case run of
+        ModeRunDB optsProcess1 optsProcess2 optsRunDB -> do
+          handleOptions opts record optsProcess1 optsProcess2 optsRunDB
+          return (Right ())
+        ModeRunIO optsRunIO -> do
+          x <- optsRunIO opts
+          case x of
+            Left msgs -> mapM_ putStrLn msgs
+            _ -> return (Right ())
+
+handleOptions opts record optsProcess1 optsProcess2 optsRun = do
+  let time = CommandRecord.commandTime record
+  record' <- runSqlite "otot.db" $ do
+    -- Validate options and add parameters required for the new command record
+    opts_ <- optsProcess1 opts
+    case opts_ of
+      Left msgs -> return (Left msgs)
+      Right opts' -> do
+        -- Convert Options to CommandRecord
+        let record = optsToCommandRecord time "default" opts'
+        liftIO $ toStdErr record
+        -- TODO: Save CommandRecord to temporary file
+        -- TODO: CommandRecord read in from file
+        -- TODO: Verify that CommandRecords are equal
+        -- Convert CommandRecord to Command
+        let command = DB.recordToCommand record
+        -- Command saved to DB
+        insert command
+        -- TODO: Command loaded from DB
+        -- TODO: Verify that Commands are equal
+        -- TODO: Command converted to a CommandRecord
+        -- TODO: Verify that CommandRecords are equal
+        -- TODO: CommandRecord converted to Options
+        -- TODO: Verify that Options are equal
+        -- Options are validated and processed for modification of DB 'item' and 'property' tables
+        opts__ <- optsProcess2 opts'
+        case opts__ of
+          Left msgs -> return (Left msgs)
+          Right opts'' -> do
+            -- Update items and properties
+            x_ <- optsRun record opts''
+            case x_ of
+              Left msgs -> return (Left msgs)
+              Right _ -> return (Right record)
+  return $ record' >>= \_ -> Right ()
+

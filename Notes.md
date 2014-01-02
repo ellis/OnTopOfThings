@@ -95,6 +95,7 @@
     * link files and URLs to items
     * use as an RSS reader and for tagging other websites to read or that are noteworthy
     * scheduled reminders
+    * show marginal costs and benefits for comparison of activities
 * plausibility checks
     * make plausibility checks when setting a date to hide and item till, because hiding is kind of dangerous
     * when a task is marked as done which has incomplete sub-tasks

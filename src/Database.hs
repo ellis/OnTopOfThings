@@ -54,7 +54,7 @@ databaseInit :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
 databaseInit =
   runMigration migrateAll
 
-databaseAddRecords :: [C.CommandRecord] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+databaseAddRecords :: [C.CommandRecord] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
 databaseAddRecords records = do
   mapM_ insert' records
   load --records'
@@ -63,11 +63,15 @@ databaseAddRecords records = do
       let command = recordToCommand record
       insert command
       --return command
+    load :: SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
     load = do
       l <- select $ from $ \t -> do
         orderBy [asc (t ^. CommandTime)]
         return t
-      mapM_ (processCommand . entityVal) l
+      results' <- mapM (processCommand . entityVal) l
+      let results'' = concatEithersN results'
+      let results''' = fmap (\_ -> ()) results''
+      return results'''
 
 -- Set index value on open tasks
 databaseUpdateIndexes :: SqlPersistT (NoLoggingT (ResourceT IO)) ()

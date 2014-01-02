@@ -37,9 +37,10 @@
 - [x] Lookup tradeoffs for String, Text, ByteString, as well as the lazy and strict versions.
 - [x] List: get it working again with CmdArgs
 - [x] Main: shouldn't print help when no args or flags are given; individual commands could do that though
-- [x] Rebuild: check it again, with the newly imported test data
-- [ ] List: assign indexes to non-list items and save these in the db
+- [ ] Rebuild: delete database before importing
+- [ ] Rebuild: make sure commands get directed to the appropriate handlers
 - [ ] List: display label and title of lists
+- [ ] List: assign indexes to non-list items and save these in the db
 - [ ] Main: 'stage' command
 - [ ] List: display by stage
 - [ ] Use CmdArgs for 'mod'
