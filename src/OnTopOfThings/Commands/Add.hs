@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 module OnTopOfThings.Commands.Add
 ( mode_add
 , modeInfo_add
-, optsProcess1_add -- for Import command
+--, optsProcess1_add -- for Import command
 ) where
 
 import Control.Applicative ((<$>), (<*>), empty)

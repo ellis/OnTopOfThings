@@ -54,6 +54,7 @@ import Args
 import Command (CommandRecord(..))
 import Utils
 import OnTopOfThings.Commands.Add
+import OnTopOfThings.Commands.Mod
 
 modeInfo_import :: ModeInfo
 modeInfo_import = (mode_import, ModeRunIO optsRun_import)
@@ -138,7 +139,7 @@ compareRecordTime :: CommandRecord -> CommandRecord -> Ordering
 compareRecordTime a b = compare (commandTime a) (commandTime b)
 
 createItem :: Set.Set T.Text -> M.Map T.Text UTCTime -> Object -> Validation (Set.Set T.Text, M.Map T.Text UTCTime, CommandRecord)
-createItem uuids projects m | trace ("createItem " ++ show uuids) False = undefined
+--createItem uuids projects m | trace ("createItem " ++ show uuids) False = undefined
 createItem uuids projects m = do
   uuid <- get "uuid" m
   entry' <- get "entry" m
@@ -149,13 +150,12 @@ createItem uuids projects m = do
   time <- (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" entry') `maybeToValidation` ["Could not parse entry time"]
   --closed <- (end' >>= \end -> (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" (T.unpack end))) `maybeToValidation` ["Could not parse end time"]
   closed <- getClosed end'
-  let cmd = if Set.member (T.pack uuid) uuids then "mod" else "add"
+  let mode = if Set.member (T.pack uuid) uuids then mode_mod else mode_add
   let status = getStatus status'
   let parent = project >>= Just . (substituteInList '.' '/')
   let args = catMaybes [wrap "id" uuid, wrap "title" description, wrapMaybe "parent" parent, wrapMaybe "status" status, wrapMaybeTime "closed" closed]
   let projects' = updateProjects (fmap T.pack parent) time
-  opts0 <- eitherStringToValidation $ process mode_add args
-  --opts1 <- optsProcess1_add opts0
+  opts0 <- eitherStringToValidation $ process mode args
   let record = optsToCommandRecord time "default" opts0
   let uuids' = Set.insert (T.pack uuid) uuids
   return (uuids', projects', record)
@@ -199,17 +199,6 @@ createProject :: (T.Text, UTCTime) -> CommandRecord
 createProject (label, time) = CommandRecord 1 time' "default" "add" args where
   time' = addUTCTime (-1 :: NominalDiffTime) time
   args = [T.concat ["--id=", label], "--type=list", T.concat ["--label=", label], T.concat ["--title=", label]]
-
---getProjectMap :: [CommandRecord] -> [(Text, UTCTime)]
---getProjectMap items = l where
---  m = foldl getProjectMap' M.empty items
---  l' = M.toList m
---  l = sortBy compareTime l'
---  compareTime a b = compare (snd a) (snd b)
---
---getProjectMap' :: M.Map Text UTCTime -> CommandRecord -> M.Map Text UTCTime
---getProjectMap' m item =
---  case M.lookup 
 
 optsToCommandRecord :: UTCTime -> T.Text -> Options -> CommandRecord
 optsToCommandRecord time user opts = CommandRecord 1 time user (T.pack $ optionsCmd opts) opts'' where
