@@ -45,6 +45,7 @@ import Utils
 import OnTopOfThings.Commands.Add
 import OnTopOfThings.Commands.Close
 import OnTopOfThings.Commands.Import (optsToCommandRecord)
+import OnTopOfThings.Commands.Mod
 import qualified Database as DB
 
 modeInfo_rebuild :: ModeInfo
@@ -69,6 +70,7 @@ modeInfo_l :: [ModeInfo]
 modeInfo_l =
   [ modeInfo_add
   , modeInfo_close
+  , modeInfo_mod
   ]
 modeInfo :: M.Map String ModeInfo
 modeInfo = M.fromList $ map (\x@(mode, _) -> (head (modeNames mode), x)) modeInfo_l

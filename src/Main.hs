@@ -43,6 +43,7 @@ import OnTopOfThings.Commands.Add
 import OnTopOfThings.Commands.Close
 import OnTopOfThings.Commands.Import
 import OnTopOfThings.Commands.List
+import OnTopOfThings.Commands.Mod
 import OnTopOfThings.Commands.Rebuild
 import qualified Database as DB
 
@@ -53,6 +54,7 @@ modeInfo_l =
   , modeInfo_close
   , modeInfo_import
   , modeInfo_list
+  , modeInfo_mod
   , modeInfo_rebuild
   ]
 modeInfo :: M.Map String ModeInfo

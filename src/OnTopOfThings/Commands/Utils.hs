@@ -66,7 +66,7 @@ refToUuid ref = do
 --  return = Right
 
 createItem :: UTCTime -> Options -> Validation Item
-createItem _ opts | trace ("Utils.createItem: "++(show opts)) False = undefined
+--createItem _ opts | trace ("Utils.createItem: "++(show opts)) False = undefined
 createItem time opts = do
   id <- get "id"
   type_ <- get "type"
