@@ -34,15 +34,18 @@
    - [x] create CmdArgs Options
    - [x] update Main.hs
    - [x] test it
+- [x] Lookup tradeoffs for String, Text, ByteString, as well as the lazy and strict versions.
 - [x] List: get it working again with CmdArgs
-- [ ] Index all displayed items instead of open tasks?
+- [x] Main: shouldn't print help when no args or flags are given; individual commands could do that though
+- [ ] Rebuild: check it again, with the newly imported test data
+- [ ] Index all displayed items instead of open tasks
+- [ ] Main: 'stage' command
+- [ ] List: display by stage
 - [ ] Use CmdArgs for 'mod'
 - [ ] Simplify creation of CommandRecord so that only index-references are turned into uuids, and use same format as on the command line
 - [ ] Switch from String to Text
 - [ ] For the CmdArgs modes, consider creating two for each command: one for standard parameter plus command-line-only parameters, and one with standard parameters plus internal-only parameters (e.g. 'id')
 - [ ] Close: don't close an already closed item
-- [ ] Main: 'stage' command
-- [ ] List: display by stage
 - [ ] Main: use the 'format' parameter of CommandRecord to choose which function handles the command record
 - [ ] Rename Args.hs to Modes.hs or Options.hs
 - [ ] Move source files into appropriate module hierarchy
@@ -64,9 +67,9 @@
 - [ ] Main: list tasks with specific fields, i.e. --stage=inbox
 - [ ] DatabaseTables: Switch to using UTCTime
 - [ ] Main: when setting parent, prevent cyclic loops -- might want to check this in loadDB too.
-- [ ] Lookup tradeoffs for String, Text, ByteString, as well as the lazy and strict versions.
 - [ ] Command: save UTCTime with more precision?
 - [ ] Instead of `IO (Validation ())`, should I use `Validation (IO ())` or make a `ValidationT`?
+- [ ] Main: accept `--debug` flag to print debug output, but suppress it otherwise
 
 When creating a new item from the commandline:
 

@@ -82,7 +82,7 @@ main = do
       print $ helpText [] HelpFormatDefault mode_root
     Just (mode, run) -> do
       -- If help is selected or there are neither arguments nor flags:
-      if (optionsHelp opts) || (null (optionsArgs opts) && null (optionsFlags opts))
+      if optionsHelp opts
         -- print help for the given mode
         then print $ helpText [] HelpFormatDefault mode
         else
