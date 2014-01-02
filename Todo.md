@@ -43,12 +43,15 @@
 - [x] Rebuild: make sure commands get directed to the appropriate handlers
 - [x] List: display label and title of lists
 - [x] List: assign indexes to non-list items and save these in the db
-- [ ] Main: 'stage' command
+- [x] Mod: get it to work from the cli
 - [ ] List: display by stage
-- [ ] Use CmdArgs for 'mod'
-- [ ] Simplify creation of CommandRecord so that only index-references are turned into uuids, and use same format as on the command line
+- [ ] List: list tasks for a given list
+- [ ] create parser for item indexes with commas and dashes
+- [ ] Let 'mod' accept multiple references
+- [ ] Main: 'stage' command
 - [ ] Switch from String to Text and make sure umlauts are printed correctly
 - [ ] For the CmdArgs modes, consider creating two for each command: one for standard parameter plus command-line-only parameters, and one with standard parameters plus internal-only parameters (e.g. 'id')
+- [ ] Rename 'list' command to 'show'
 - [ ] Close: don't close an already closed item
 - [ ] Main: use the 'format' parameter of CommandRecord to choose which function handles the command record
 - [ ] Rename Args.hs to Modes.hs or Options.hs
@@ -56,9 +59,7 @@
 - [ ] Add: maybe refToUuid shouldn't be called while constructing the CommandRecord in order to leave labels as they are
 - [ ] Add: autogenerate a label for lists if none is given
 - [ ] Refactor.  See what can be merged among Main, Import, and Rebuild.
-- [ ] Utils: create a Validation monad and monoid
 - [ ] Add: think about putting list paths into 'Property' tables for finding lists by path and detecting duplicates
-- [ ] List: get parent path by using 'Item' instead of 'Property' table, unless path is stored into Property
 - [ ] Database: add fields for priority
 - [ ] List: prefix with start time
 - [ ] List: prefix with end time
@@ -75,6 +76,11 @@
 - [ ] Command: save UTCTime with more precision?
 - [ ] Instead of `IO (Validation ())`, should I use `Validation (IO ())` or make a `ValidationT`?
 - [ ] Main: accept `--debug` flag to print debug output, but suppress it otherwise
+- [ ] Reopen: add command to reopen closed and deleted items
+- [ ] create a parser for convenient specification of dates
+- [ ] Add/Mod: when an item is added with `--status=closed` or `--closed=DATE`, make sure both values get set in optsProcess2_add/mod
+- [ ] Create my own parser for command lines to allow for ``otot add "my happy task" stage=today tag+happy``
+- [ ] label references shouldn't be not turned into uuids for CommandRecord
 
 When creating a new item from the commandline:
 

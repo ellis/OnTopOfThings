@@ -64,7 +64,7 @@ mode_mod = Mode
   , modeExpandAt = True
   , modeHelp = "Modify an existing item"
   , modeHelpSuffix = []
-  , modeArgs = ([], Nothing)
+  , modeArgs = ([], Just (flagArg updArgs "ID"))
   , modeGroupFlags = toGroup
     [ flagReq ["parent", "p"] (upd "parent") "ID" "reference to parent of this item"
     , flagReq ["closed"] (upd "closed") "TIME" "Time that this item was closed."
@@ -82,11 +82,14 @@ mode_mod = Mode
 -- move the argument to the 'title' field
 optsProcess1_mod :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
 optsProcess1_mod opts0 = do
+  args_ <- mapM refToUuid (optionsArgs opts0)
   -- replace references with uuids where necessary,
   flags_l_ <- mapM refToUuid' (optionsFlags opts0)
   return $ do
-    flags <- concatEithersN flags_l_
-    return $ opts0 { optionsFlags = flags }
+    args <- concatEithersN args_
+    flags' <- concatEithersN flags_l_
+    let flags = (map ((,) "id") args) ++ flags'
+    return $ opts0 { optionsArgs = [], optionsFlags = flags }
 
 optsProcess2_mod :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
 optsProcess2_mod opts = return (Right opts)
@@ -95,8 +98,14 @@ optsRun_mod :: CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO
 optsRun_mod record opts = do
   let time = Command.commandTime record
   let m = optionsMap opts
-  case M.lookup "id" m of
-    Just (Just uuid) -> do
+  let uuids = catMaybes $ map (\(name, value) -> if name == "id" then Just value else Nothing) (optionsFlags opts)
+  case uuids of
+    [] -> return (Left ["You must specify ID(s) for item(s) to modify"])
+    uuids -> do
+      x_ <- mapM (fn time m) uuids
+      return $ concatEithersN x_ >>= const (Right ())
+  where
+    fn time m uuid = do
       entity_ <- getBy (ItemUniqUuid uuid)
       case entity_ of
         Nothing -> return (Left ["Could not find item with given id"])
@@ -110,7 +119,7 @@ optsRun_mod record opts = do
               return (Right ())
 
 --refToUuid :: (String, String) -> SqlPersistT (NoLoggingT (ResourceT IO)) (Either String (String, String))
-refToUuid' ("parent", ref) = do
+refToUuid' ("id", ref) = do
   uuid_ <- refToUuid ref
-  return $ fmap (\uuid -> ("parent", uuid)) uuid_
+  return $ fmap (\uuid -> ("id", uuid)) uuid_
 refToUuid' x = return $ Right x

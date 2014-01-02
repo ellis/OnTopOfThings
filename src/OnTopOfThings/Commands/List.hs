@@ -90,13 +90,13 @@ listTasks fromTime = do
     where_ (t ^. ItemType ==. val "task" &&. (t ^. ItemStatus ==. val "open" ||. t ^. ItemClosed >. val (Just fromTime)))
     return t
   let tasks = map entityVal tasks'
-  liftIO $ print tasks
+  --liftIO $ print tasks
   -- Recursively load all parent items
   items <- loadRecursive tasks
   --liftIO $ mapM_ (putStrLn . itemToString) items
   -- Get the lists
   let lists = (filter (\item -> itemType item == "list") items) :: [Item]
-  liftIO $ print lists
+  --liftIO $ print lists
   let children = concat $ map (filterChildren items) lists :: [Item]
   -- Remove all previous indexes
   update $ \t -> do
@@ -109,7 +109,7 @@ listTasks fromTime = do
   --mapM setIndex children
   -- Get the items in the order they'll be printed
   let ordered = concat $ map (\parent -> parent : (filterChildren items parent)) lists
-  liftIO $ print ordered
+  --liftIO $ print ordered
   liftIO $ mapM_ (fn uuidToIndex_m) ordered
   return ()
   where
