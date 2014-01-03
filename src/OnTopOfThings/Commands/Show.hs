@@ -17,8 +17,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module OnTopOfThings.Commands.List
-( modeInfo_list
+module OnTopOfThings.Commands.Show
+( modeInfo_show
 ) where
 
 import Control.Monad.IO.Class (liftIO, MonadIO)
@@ -54,17 +54,17 @@ import OnTopOfThings.Parsers.NumberList
 type PropertyMap = M.Map String [String]
 type EntityMap = M.Map String PropertyMap
 
-modeInfo_list :: ModeInfo
-modeInfo_list = (mode_list, ModeRunIO optsRun_list)
+modeInfo_show :: ModeInfo
+modeInfo_show = (mode_show, ModeRunIO optsRun_show)
 
-mode_list = Mode
+mode_show = Mode
   { modeGroupModes = mempty
-  , modeNames = ["list"]
-  , modeValue = options_empty "list"
+  , modeNames = ["show"]
+  , modeValue = options_empty "show"
   , modeCheck = Right
   , modeReform = Just . reform
   , modeExpandAt = True
-  , modeHelp = "List items"
+  , modeHelp = "Display items"
   , modeHelpSuffix = []
   , modeArgs = ([], Nothing)
   , modeGroupFlags = toGroup
@@ -72,13 +72,13 @@ mode_list = Mode
     , flagReq ["stage", "s"] (updN "stage") "STAGE" "Stage to restrict display to.  May contain a comma-separated list."
     , flagReq ["status"] (updN "status") "STATUS" "Status to restrict display to.  May contain a comma-separated list."
     , flagReq ["parent", "p"] (updN "parent") "ID" "ID of parent whose children should be displayed.  May contain a comma-separated list."
-    , flagNone ["show-tag"] (upd0 "show-tag") "Display item tags along with item."
+    , flagNone ["hide-tags"] (upd0 "hide-tags") "Display item tags along with item."
     , flagHelpSimple updHelp
     ]
   }
 
-optsRun_list :: Options -> IO (Validation ())
-optsRun_list opts = do
+optsRun_show :: Options -> IO (Validation ())
+optsRun_show opts = do
   now <- getCurrentTime
   let fromTime = (parseTime defaultTimeLocale "%Y%m%d" $ formatTime defaultTimeLocale "%Y%m%d" now) :: Maybe UTCTime
   case fromTime of
@@ -95,7 +95,7 @@ optsRun_list opts = do
             case opts_ of
               Left msgs -> return (Left msgs)
               Right opts' -> do
-                listTasks opts' t
+                showTasks opts' t
                 return (Right ())
   where
     fn :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation [String])
@@ -128,9 +128,9 @@ expr' opts fromTime t = expr3 where
     l = map Just l'
   splitMaybe _ = []
 
-listTasks :: Options -> UTCTime -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
-listTasks opts fromTime | trace ("listTasks: "++(show opts)) False = undefined
-listTasks opts fromTime = do
+showTasks :: Options -> UTCTime -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+showTasks opts fromTime | trace ("showTasks: "++(show opts)) False = undefined
+showTasks opts fromTime = do
   -- Load all tasks that meet the user's criteria
   tasks' <- select $ from $ \t -> do
     where_ (expr' opts fromTime t)
@@ -231,13 +231,13 @@ filterChildren items parent =
 
 itemToString :: Options -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) String
 itemToString opts item = do
-  tags <- if Set.member "show-tag" (optionsParams0 opts)
-    then do
+  tags <- if Set.member "hide-tags" (optionsParams0 opts)
+    then return ([] :: [String])
+    else do
       tags' <- select $ from $ \t -> do
         where_ (t ^. PropertyUuid ==. val (itemUuid item) &&. t ^. PropertyName ==. val "tag")
         return (t ^. PropertyValue)
-      return $ map (\(Value s) -> s) tags'
-    else return ([] :: [String])
+      return $ map (\(Value s) -> '+':s) tags'
   let l = getParts tags
   return $ unwords l
   where

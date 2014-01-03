@@ -42,7 +42,7 @@ import Utils
 import OnTopOfThings.Commands.Add
 import OnTopOfThings.Commands.Close
 import OnTopOfThings.Commands.Import
-import OnTopOfThings.Commands.List
+import OnTopOfThings.Commands.Show
 import OnTopOfThings.Commands.Mod
 import OnTopOfThings.Commands.Rebuild
 import OnTopOfThings.Parsers.NumberList
@@ -54,9 +54,9 @@ modeInfo_l =
   [ modeInfo_add
   , modeInfo_close
   , modeInfo_import
-  , modeInfo_list
   , modeInfo_mod
   , modeInfo_rebuild
+  , modeInfo_show
   ]
 modeInfo :: M.Map String ModeInfo
 modeInfo = M.fromList $ map (\x@(mode, _) -> (head (modeNames mode), x)) modeInfo_l
