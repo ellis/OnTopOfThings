@@ -45,6 +45,7 @@ import OnTopOfThings.Commands.Import
 import OnTopOfThings.Commands.List
 import OnTopOfThings.Commands.Mod
 import OnTopOfThings.Commands.Rebuild
+import OnTopOfThings.Parsers.NumberList
 import qualified Database as DB
 
 

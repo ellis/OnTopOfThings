@@ -46,9 +46,11 @@
 - [x] Mod: get it to work from the cli
 - [x] List: display by stage
 - [x] List: display by status
+- [x] create parser for item indexes with commas and dashes (look at parsec)
+- [x] Let 'mod' accept multiple references
+- [ ] List: remove parentheses around index and print extra spacing so that items are aligned
 - [ ] List: list tasks for a given list
-- [ ] create parser for item indexes with commas and dashes
-- [ ] Let 'mod' accept multiple references
+- [ ] List: items which aren't on a list
 - [ ] Main: 'stage' command
 - [ ] Switch from String to Text and make sure umlauts are printed correctly
 - [ ] For the CmdArgs modes, consider creating two for each command: one for standard parameter plus command-line-only parameters, and one with standard parameters plus internal-only parameters (e.g. 'id')

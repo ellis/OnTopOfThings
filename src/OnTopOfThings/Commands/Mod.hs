@@ -51,6 +51,7 @@ import DatabaseTables
 import DatabaseUtils
 import Utils
 import OnTopOfThings.Commands.Utils
+import OnTopOfThings.Parsers.NumberList
 
 modeInfo_mod :: ModeInfo
 modeInfo_mod = (mode_mod, ModeRunDB optsProcess1_mod optsProcess2_mod optsRun_mod)
@@ -82,14 +83,19 @@ mode_mod = Mode
 -- move the argument to the 'title' field
 optsProcess1_mod :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
 optsProcess1_mod opts0 = do
-  args_ <- mapM refToUuid (optionsArgs opts0)
-  -- replace references with uuids where necessary,
-  flags_l_ <- mapM refToUuid' (optionsFlags opts0)
-  return $ do
-    args <- concatEithersN args_
-    flags' <- concatEithersN flags_l_
-    let flags = (map ((,) "id") args) ++ flags'
-    return $ opts0 { optionsArgs = [], optionsFlags = flags }
+  let idArgs0 = optionsArgs opts0
+  let flags0 = optionsFlags opts0
+  let idFlags0 = catMaybes $ map (\(name, value) -> if name == "id" then Just value else Nothing) flags0
+  let ids0 = idArgs0 ++ idFlags0
+  let ids_ = (concatEithersN $ map parseNumberList ids0) >>= \ll -> (Right $ concat ll)
+  case ids_ of
+    Left msgs -> return (Left msgs)
+    Right ids -> do
+      uuids_ <- mapM refToUuid ids
+      return $ do
+        uuids <- concatEithersN uuids_
+        let flags = filter (\(name, _) -> name /= "id") flags0
+        return $ opts0 { optionsArgs = uuids, optionsFlags = flags }
 
 optsProcess2_mod :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
 optsProcess2_mod opts = return (Right opts)
@@ -98,7 +104,7 @@ optsRun_mod :: CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO
 optsRun_mod record opts = do
   let time = Command.commandTime record
   let m = optionsMap opts
-  let uuids = catMaybes $ map (\(name, value) -> if name == "id" then Just value else Nothing) (optionsFlags opts)
+  let uuids = optionsArgs opts
   case uuids of
     [] -> return (Left ["You must specify ID(s) for item(s) to modify"])
     uuids -> do
