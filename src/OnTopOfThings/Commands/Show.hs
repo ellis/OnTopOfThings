@@ -114,11 +114,11 @@ expr' opts fromTime t = expr4 where
   -- select tasks which are open or were just closed today
   expr0 = (t ^. ItemType ==. val "task" &&. (t ^. ItemStatus ==. val "open" ||. t ^. ItemClosed >. val (Just fromTime)))
   -- restrict status
-  expr1 = case split (M.lookup "status" m) of
+  expr1 = case splitN "status" of
     [] -> expr0
     l -> expr0 &&. (in_ (t ^. ItemStatus) (valList l))
   -- restrict stage
-  expr2 = case splitMaybe (M.lookup "stage" m) of
+  expr2 = case splitNMaybe "stage" of
     [] -> expr1
     l -> expr1 &&. (in_ (t ^. ItemStage) (valList l))
   -- restrict parent
@@ -132,11 +132,15 @@ expr' opts fromTime t = expr4 where
   split :: Maybe (Maybe String) -> [String]
   split (Just (Just s)) = splitOn "," s
   split _ = []
-  splitMaybe :: Maybe (Maybe String) -> [Maybe String]
-  splitMaybe (Just (Just s)) = l where
-    l' = splitOn "," s
-    l = map Just l'
-  splitMaybe _ = []
+  splitN :: String -> [String]
+  splitN name = case M.lookup name (optionsParamsN opts) of
+      Just l -> concat $ map (splitOn ",") l
+      Nothing -> []
+  splitNMaybe :: String -> [Maybe String]
+  splitNMaybe name =
+    case M.lookup name (optionsParamsN opts) of
+      Just l -> map Just $ concat $ map (splitOn ",") l
+      Nothing -> []
 
 showTasks :: Options -> UTCTime -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 showTasks opts fromTime | trace ("showTasks: "++(show opts)) False = undefined

@@ -61,7 +61,9 @@
 - [x] Show: show items which aren't on any list (i.e., don't have a parent)
 - [x] Rebuild: delete command rows too
 - [x] Rebuild: why isn't delete command record getting saved in DB?
-- [ ] Mod: 'parent' need to be a valid reference
+- [x] Mod: 'parent' need to be a valid reference
+- [ ] Show: fix --stage
+- [ ] Add: autogenerate a label for lists if none is given
 - [ ] Check out hlint
 - [ ] Read chapters 15 and 18 of Real World Haskell
 - [ ] Add: when run from command line, give task the next available index and print it out
@@ -91,7 +93,6 @@
 - [ ] Rename Args.hs to Modes.hs or Options.hs
 - [ ] Move source files into appropriate module hierarchy
 - [ ] Add: maybe refToUuid shouldn't be called while constructing the CommandRecord in order to leave labels as they are
-- [ ] Add: autogenerate a label for lists if none is given
 - [ ] Refactor.  See what can be merged among Main, Import, and Rebuild.
 - [ ] Add: think about putting list paths into 'Property' tables for finding lists by path and detecting duplicates
 - [ ] Database: add fields for priority

@@ -91,6 +91,7 @@
 * special tags:
     * routine
     * review-week, review-month, review-quarter, review-year
+    * decide, for things that need to be decided as opposed to acted on
 * more features
     * items somehow inherit properties from their parents, if the properies are not set on the items
     * when an item has a due date and a time estimate, show it on the daily list once things start getting tight
