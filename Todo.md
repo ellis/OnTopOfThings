@@ -60,7 +60,8 @@
 - [x] Show: --search for text in title
 - [x] Show: show items which aren't on any list (i.e., don't have a parent)
 - [x] Rebuild: delete command rows too
-- [ ] Rebuild: why isn't delete command record getting saved in DB?
+- [x] Rebuild: why isn't delete command record getting saved in DB?
+- [ ] Mod: 'parent' need to be a valid reference
 - [ ] Check out hlint
 - [ ] Read chapters 15 and 18 of Real World Haskell
 - [ ] Add: when run from command line, give task the next available index and print it out

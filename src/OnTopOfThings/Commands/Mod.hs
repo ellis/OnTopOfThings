@@ -67,15 +67,15 @@ mode_mod = Mode
   , modeHelpSuffix = []
   , modeArgs = ([], Just (flagArg updArgs "ID"))
   , modeGroupFlags = toGroup
-    [ flagReq ["parent", "p"] (upd "parent") "ID" "reference to parent of this item"
-    , flagReq ["closed"] (upd "closed") "TIME" "Time that this item was closed."
-    , flagReq ["id"] (upd "id") "ID" "A unique ID for this item. (NOT FOR NORMAL USE!)"
-    , flagReq ["label", "l"] (upd "label") "LABEL" "A unique label for this item."
-    , flagReq ["stage", "s"] (upd "stage") "STAGE" "new|incubator|today. (default=new)"
-    , flagReq ["status"] (upd "status") "STATUS" "open|closed|deleted. (default=open)"
+    [ flagReq ["parent", "p"] (upd1 "parent") "ID" "reference to parent of this item"
+    , flagReq ["closed"] (upd1 "closed") "TIME" "Time that this item was closed."
+    , flagReq ["id"] (updN "id") "ID" "A unique ID for this item. (NOT FOR NORMAL USE!)"
+    , flagReq ["label", "l"] (upd1 "label") "LABEL" "A unique label for this item."
+    , flagReq ["stage", "s"] (upd1 "stage") "STAGE" "new|incubator|today. (default=new)"
+    , flagReq ["status"] (upd1 "status") "STATUS" "open|closed|deleted. (default=open)"
     , flagReq ["tag", "t"] (updN "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
-    , flagReq ["title"] (upd "title") "TITLE" "Title of the item."
-    , flagReq ["type"] (upd "type") "TYPE" "list|task. (default=task)"
+    , flagReq ["title"] (upd1 "title") "TITLE" "Title of the item."
+    , flagReq ["type"] (upd1 "type") "TYPE" "list|task. (default=task)"
     , flagHelpSimple updHelp
     ]
   }
@@ -83,19 +83,12 @@ mode_mod = Mode
 -- move the argument to the 'title' field
 optsProcess1_mod :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
 optsProcess1_mod opts0 = do
-  let idArgs0 = optionsArgs opts0
-  let flags0 = optionsFlags opts0
-  let idFlags0 = catMaybes $ map (\(name, value) -> if name == "id" then Just value else Nothing) flags0
-  let ids0 = idArgs0 ++ idFlags0
-  let ids_ = (concatEithersN $ map parseNumberList ids0) >>= \ll -> (Right $ concat ll)
-  case ids_ of
+  opts1_ <- processRefArgsAndFlags opts0 "id"
+  case opts1_ of
     Left msgs -> return (Left msgs)
-    Right ids -> do
-      uuids_ <- mapM refToUuid ids
-      return $ do
-        uuids <- concatEithersN uuids_
-        let flags = filter (\(name, _) -> name /= "id") flags0
-        return $ opts0 { optionsArgs = uuids, optionsFlags = flags }
+    Right opts1 -> do
+      opts2_ <- processRefFlags opts1 "parent"
+      return opts2_
 
 optsProcess2_mod :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
 optsProcess2_mod opts = return (Right opts)
@@ -104,12 +97,11 @@ optsRun_mod :: CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO
 optsRun_mod record opts = do
   let time = Command.commandTime record
   let m = optionsMap opts
-  let uuids = optionsArgs opts
-  case uuids of
-    [] -> return (Left ["You must specify ID(s) for item(s) to modify"])
-    uuids -> do
+  case M.lookup "id" (optionsParamsN opts) of
+    Just uuids -> do
       x_ <- mapM (fn time m) uuids
       return $ concatEithersN x_ >>= const (Right ())
+    _ -> return (Left ["You must specify ID(s) for item(s) to modify"])
   where
     fn time m uuid = do
       entity_ <- getBy (ItemUniqUuid uuid)

@@ -21,6 +21,7 @@ module OnTopOfThings.Commands.Utils
 ( refToUuid
 , createItem
 , processRefArgsAndFlags
+, processRefFlags
 , updateItem
 , saveProperty
 ) where
@@ -74,8 +75,22 @@ processRefArgsAndFlags opts0 name = do
   where
     idArgs0 = optionsArgs opts0
     flags0 = optionsFlags opts0
-    idFlags0 = catMaybes $ map (\(name, value) -> if name == "id" then Just value else Nothing) flags0
+    idFlags0 = catMaybes $ map (\(n, value) -> if n == name then Just value else Nothing) flags0
     ids0 = idArgs0 ++ idFlags0
+    ids_ = (concatEithersN $ map parseNumberList ids0) >>= \ll -> (Right $ concat ll)
+
+processRefFlags :: Options -> String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
+processRefFlags opts0 name = do
+  case ids_ of
+    Left msgs -> return (Left msgs)
+    Right ids -> do
+      uuids_ <- mapM refToUuid ids
+      return $ do
+        uuids <- concatEithersN uuids_
+        optionsReplaceParamN name uuids (opts0 { optionsArgs = [] })
+  where
+    flags0 = optionsFlags opts0
+    ids0 = catMaybes $ map (\(n, value) -> if n == name then Just value else Nothing) flags0
     ids_ = (concatEithersN $ map parseNumberList ids0) >>= \ll -> (Right $ concat ll)
 
 --instance Monad (Either e) where
