@@ -65,28 +65,25 @@ mode_close = Mode
   , modeHelpSuffix = []
   , modeArgs = ([flagArg updArgs "ID"], Nothing)
   , modeGroupFlags = toGroup
-    [ flagReq ["id"] (upd "id") "ID" "A unique ID for this item. (NOT FOR NORMAL USE!)"
+    [ flagReq ["id"] (updN "id") "ID" "A unique ID for this item. (NOT FOR NORMAL USE!)"
     , flagHelpSimple updHelp
     ]
   }
 
 -- move the argument to the 'title' field
 optsProcess1_close :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
-optsProcess1_close opts = do
-  uuid <- liftIO $ U4.nextRandom >>= return . U.toString
-  -- replace references with uuids where necessary,
-  ids_ <- mapM refToUuid (optionsArgs opts)
-  return $ do
-    ids <- concatEithersN ids_
-    return $ opts { optionsArgs = ids }
+optsProcess1_close opts0 = do
+  processRefArgsAndFlags opts0 "id"
 
 optsProcess2_close :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
 optsProcess2_close opts = return (Right opts)
 
 optsRun_close :: CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
 optsRun_close record opts = do
-  mapM close (optionsArgs opts)
-  return (Right ())
+  case M.lookup "id" (optionsParamsN opts) of
+    Just uuids -> do
+      mapM close (optionsArgs opts)
+      return (Right ())
   where
     time = Command.commandTime record
     close uuid = do

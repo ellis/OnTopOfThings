@@ -62,7 +62,8 @@
 - [x] Rebuild: delete command rows too
 - [x] Rebuild: why isn't delete command record getting saved in DB?
 - [x] Mod: 'parent' need to be a valid reference
-- [ ] Show: fix --stage
+- [x] Show: fix --stage
+- [x] Close: let it interpret id ranges like Mod
 - [ ] Add: autogenerate a label for lists if none is given
 - [ ] Check out hlint
 - [ ] Read chapters 15 and 18 of Real World Haskell
