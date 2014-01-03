@@ -69,6 +69,7 @@ mode_show = Mode
   , modeArgs = ([], Nothing)
   , modeGroupFlags = toGroup
     [ flagReq ["from"] (upd1 "from") "TIME" "Starting time for the listing. (default=today)"
+    , flagReq ["search"] (upd1 "search") "TEXT" "Limit items to those whose title matches TEXT."
     , flagReq ["stage", "s"] (updN "stage") "STAGE" "Stage to restrict display to.  May contain a comma-separated list."
     , flagReq ["status"] (updN "status") "STATUS" "Status to restrict display to.  May contain a comma-separated list."
     , flagReq ["tag", "t"] (updN "tag") "TAG" "A comma-separated list of tags to restrict display to."
@@ -108,7 +109,7 @@ optsRun_show opts = do
           --liftIO $ print uuids_
           return $ concatEithersN uuids_
 
-expr' opts fromTime t = expr3 where
+expr' opts fromTime t = expr4 where
   m = optionsMap opts
   -- select tasks which are open or were just closed today
   expr0 = (t ^. ItemType ==. val "task" &&. (t ^. ItemStatus ==. val "open" ||. t ^. ItemClosed >. val (Just fromTime)))
@@ -124,6 +125,10 @@ expr' opts fromTime t = expr3 where
   expr3 = case M.lookup "parent" (optionsParamsN opts) of
     Nothing -> expr2
     Just l -> expr2 &&. (in_ (t ^. ItemParent) (valList (map Just l)))
+  -- restrict by searching for text in title
+  expr4 = case M.lookup "search" (optionsParams1 opts) of
+    Nothing -> expr3
+    Just s -> expr3 &&. (t ^. ItemTitle `like` val ("%"++s++"%"))
   split :: Maybe (Maybe String) -> [String]
   split (Just (Just s)) = splitOn "," s
   split _ = []

@@ -155,7 +155,8 @@ createItem uuids projects m = do
   let mode = if Set.member (T.pack uuid) uuids then mode_mod else mode_add
   let status = getStatus status'
   let parent = project >>= Just . (substituteInList '.' '/')
-  let args = catMaybes [wrap "id" uuid, wrap "title" description, wrapMaybe "parent" parent, wrapMaybe "status" status, wrapMaybeTime "closed" closed, wrapList "tag" tags']
+  let parentUuid = fmap (T.unpack . getProjectUuid . T.pack) parent
+  let args = catMaybes [wrap "id" uuid, wrap "title" description, wrapMaybe "parent" parentUuid, wrapMaybe "status" status, wrapMaybeTime "closed" closed, wrapList "tag" tags']
   let projects' = updateProjects (fmap T.pack parent) time
   opts0 <- eitherStringToValidation $ process mode args
   let record = optsToCommandRecord time "default" opts0
@@ -213,15 +214,16 @@ createProject (label, time) = CommandRecord 1 time' "default" "add" args where
   -- Use only alphanumeric lower-case characters,
   -- insert hypens at the right places (e.g. 0a815f87-ab07-45e7-abbd-21a71c21c176)
   -- and fill with 0s
-  createProjectUuid label = uuid where
-    label' = T.toLower $ T.filter isAlphaNum label
-    uuid0 = T.justifyLeft (8+4+4+4+12) '0' label'
-    uuid = insertHyphen 8 $ insertHyphen (8+4) $ insertHyphen (8+4+4) $ insertHyphen (8+4+4+4) uuid0
-    insertHyphen :: Int -> T.Text -> T.Text
-    insertHyphen i s = T.concat [left, "-", right] where
-      (left, right) = T.splitAt i s
-  uuid = createProjectUuid label
+  uuid = getProjectUuid label
   args = [T.concat ["--id=", uuid], "--type=list", T.concat ["--label=", label], T.concat ["--title=", label]]
+
+getProjectUuid label = uuid where
+  label' = T.toLower $ T.filter isAlphaNum label
+  uuid0 = T.justifyLeft (8+4+4+4+12) '0' label'
+  uuid = insertHyphen 8 $ insertHyphen (8+4) $ insertHyphen (8+4+4) $ insertHyphen (8+4+4+4) uuid0
+  insertHyphen :: Int -> T.Text -> T.Text
+  insertHyphen i s = T.concat [left, "-", right] where
+    (left, right) = T.splitAt i s
 
 optsToCommandRecord :: UTCTime -> T.Text -> Options -> CommandRecord
 optsToCommandRecord time user opts = CommandRecord 1 time user (T.pack $ optionsCmd opts) opts'' where

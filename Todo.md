@@ -57,7 +57,8 @@
 - [x] Mod: allow for removing tags by prefixing them with '-'
 - [x] Delete: create command
 - [x] Import: create proper uuids for projects rather than use name
-- [ ] Search: create command
+- [x] Show: --search for text in title
+- [ ] Show: show items which aren't on any list (i.e., don't have a parent)
 - [ ] Check out hlint
 - [ ] Read chapters 15 and 18 of Real World Haskell
 - [ ] Add: when run from command line, give task the next available index and print it out
@@ -70,7 +71,6 @@
 - [ ] Mod: get '--tag' to work, if it doesn't already
 - [ ] Show: show by stages
 - [ ] Show: when listing with '--parent=ID', also list sublists of the given parent
-- [ ] Show: show items which aren't on any list (i.e., don't have a parent)
 - [ ] Show: --type for just listing lists, for example
 - [ ] NumberList: accept '/' and other symbols in identifiers
 - [ ] Add: due date
