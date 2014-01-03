@@ -27,7 +27,7 @@ import Control.Monad
 import Data.Aeson
 import Data.Aeson.Types (Parser)
 import Data.Generics.Aliases (orElse)
-import Data.List (inits, intersperse, sortBy)
+import Data.List (inits, intercalate, sortBy)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Monoid (mempty)
 import Data.Time.Clock
@@ -147,13 +147,14 @@ createItem uuids projects m = do
   project <- getMaybe "project" m
   status' <- getMaybe "status" m
   end' <- getMaybe "end" m
+  tags' <- getList "tags" m
   time <- (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" entry') `maybeToValidation` ["Could not parse entry time"]
   --closed <- (end' >>= \end -> (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" (T.unpack end))) `maybeToValidation` ["Could not parse end time"]
   closed <- getClosed end'
   let mode = if Set.member (T.pack uuid) uuids then mode_mod else mode_add
   let status = getStatus status'
   let parent = project >>= Just . (substituteInList '.' '/')
-  let args = catMaybes [wrap "id" uuid, wrap "title" description, wrapMaybe "parent" parent, wrapMaybe "status" status, wrapMaybeTime "closed" closed]
+  let args = catMaybes [wrap "id" uuid, wrap "title" description, wrapMaybe "parent" parent, wrapMaybe "status" status, wrapMaybeTime "closed" closed, wrapList "tag" tags']
   let projects' = updateProjects (fmap T.pack parent) time
   opts0 <- eitherStringToValidation $ process mode args
   let record = optsToCommandRecord time "default" opts0
@@ -182,6 +183,9 @@ createItem uuids projects m = do
     wrapMaybe name value = value >>= (\x -> Just (concat ["--", name, "=", x]))
     wrapMaybeTime :: String -> Maybe UTCTime -> Maybe String
     wrapMaybeTime name value = value >>= (\x -> Just (concat ["--", name, "=", formatISO8601Millis x]))
+    wrapList :: String -> [String] -> Maybe String
+    wrapList _ [] = Nothing
+    wrapList name l = Just $ (concat ["--", name, "=", intercalate "," l])
 
 get :: T.Text -> HM.HashMap T.Text Value -> Validation String
 get name m = case HM.lookup name m of
@@ -194,6 +198,12 @@ getMaybe name m = case HM.lookup name m of
   Nothing -> Right Nothing
   Just (String text) -> Right $ Just (T.unpack text)
   Just _ -> Left ["Field `" ++ (T.unpack name) ++ "` is not text"]
+
+getList :: T.Text -> Object -> Validation ([String])
+getList name m = case HM.lookup name m of
+  Nothing -> Right []
+  Just (Array v) -> Right $ V.toList $ V.map (\(String text) -> T.unpack text) v
+  Just _ -> Left ["Field `" ++ (T.unpack name) ++ "` is not and array"]
 
 createProject :: (T.Text, UTCTime) -> CommandRecord
 createProject (label, time) = CommandRecord 1 time' "default" "add" args where

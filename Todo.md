@@ -52,26 +52,28 @@
 - [x] Rename 'list' command to 'show'
 - [x] Show: shows tags
 - [x] Show: --hide-tags suppresses display of tag
-- [x] Show: --tag to show specific tags
+- [x] Show: --tag to show items specific tags
+- [ ] Import: import tags
 - [ ] Show: remove parentheses around index and print extra spacing so that items are aligned
 - [ ] Show: --show-context, --show-stage
 - [ ] Show: --no-tag to filter out items with given tags
 - [ ] Show: --by-stages to group the output by stages, and if stages are specified only using the given stages and display them in the given order
 - [ ] Show: --by-tags to group the output by stages, and if stages are specified only using the given stages and display them in the given order
 - [ ] Show: 'lists' argument to just show lists -- preferably show them hierarchially then?
-- [ ] Import: import tags propertly
 - [ ] Mod: get '--tag' to work, if it doesn't already
 - [ ] Show: show by stages
 - [ ] Show: when listing with '--parent=ID', also list sublists of the given parent
 - [ ] Show: show items which aren't on any list (i.e., don't have a parent)
 - [ ] Show: --type for just listing lists, for example
 - [ ] NumberList: accept '/' and other symbols in identifiers
+- [ ] Add: due date
+- [ ] Import: due date
 - [ ] Args: make upd1 and updN functions, where upd1 updates the map and ensures only once instance of the flag
 - [ ] Show: --orphans for items without parents
 - [ ] Show: --emptylists for lists without children
 - [ ] Main: 'stage' command
 - [ ] Main: 'tag' command
-- [ ] Possible commands: task, list, note, file, search, report, order
+- [ ] Possible commands: task, list, note, event, file, search, report, order, calendar, pomodoros, kanban
 - [ ] Add: when run from command line, give task the next available index and print it out
 - [ ] Switch from String to Text and make sure umlauts are printed correctly
 - [ ] For the CmdArgs modes, consider creating two for each command: one for standard parameter plus command-line-only parameters, and one with standard parameters plus internal-only parameters (e.g. 'id')

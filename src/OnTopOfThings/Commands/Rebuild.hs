@@ -26,6 +26,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
+import Data.List (sortBy)
 import Data.Maybe
 import Data.Monoid
 import Database.Persist.Sqlite
@@ -84,8 +85,10 @@ optsRun_rebuild opts = do
       x <- loadCommandRecords
       case x of
         Left msgs -> return (Left msgs)
-        Right records -> do
-          mapM_ (putStrLn . show) records
+        Right records' -> do
+          --mapM_ (putStrLn . show) records
+          -- TODO: Instead of sorting in memory, it'd be better to write the commands to the DB, then process them in sorted order
+          let records = sortBy (\a b -> compare (Command.commandTime a) (Command.commandTime b)) records'
           runSqlite "otot.db" $ do
             -- Create tables if necessary
             DB.databaseInit
