@@ -52,8 +52,12 @@
 - [x] Rename 'list' command to 'show'
 - [x] Show: shows tags
 - [x] Show: --hide-tags suppresses display of tag
+- [x] Show: --tag to show specific tags
 - [ ] Show: remove parentheses around index and print extra spacing so that items are aligned
-- [ ] Show: --show-tag, --show-context, --show-stage
+- [ ] Show: --show-context, --show-stage
+- [ ] Show: --no-tag to filter out items with given tags
+- [ ] Show: --by-stages to group the output by stages, and if stages are specified only using the given stages and display them in the given order
+- [ ] Show: --by-tags to group the output by stages, and if stages are specified only using the given stages and display them in the given order
 - [ ] Show: 'lists' argument to just show lists -- preferably show them hierarchially then?
 - [ ] Import: import tags propertly
 - [ ] Mod: get '--tag' to work, if it doesn't already

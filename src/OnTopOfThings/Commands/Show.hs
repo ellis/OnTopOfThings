@@ -71,6 +71,7 @@ mode_show = Mode
     [ flagReq ["from"] (upd1 "from") "TIME" "Starting time for the listing. (default=today)"
     , flagReq ["stage", "s"] (updN "stage") "STAGE" "Stage to restrict display to.  May contain a comma-separated list."
     , flagReq ["status"] (updN "status") "STATUS" "Status to restrict display to.  May contain a comma-separated list."
+    , flagReq ["tag", "t"] (updN "tag") "TAG" "A comma-separated list of tags to restrict display to."
     , flagReq ["parent", "p"] (updN "parent") "ID" "ID of parent whose children should be displayed.  May contain a comma-separated list."
     , flagNone ["hide-tags"] (upd0 "hide-tags") "Display item tags along with item."
     , flagHelpSimple updHelp
@@ -109,13 +110,17 @@ optsRun_show opts = do
 
 expr' opts fromTime t = expr3 where
   m = optionsMap opts
+  -- select tasks which are open or were just closed today
   expr0 = (t ^. ItemType ==. val "task" &&. (t ^. ItemStatus ==. val "open" ||. t ^. ItemClosed >. val (Just fromTime)))
+  -- restrict status
   expr1 = case split (M.lookup "status" m) of
     [] -> expr0
     l -> expr0 &&. (in_ (t ^. ItemStatus) (valList l))
+  -- restrict stage
   expr2 = case splitMaybe (M.lookup "stage" m) of
     [] -> expr1
     l -> expr1 &&. (in_ (t ^. ItemStage) (valList l))
+  -- restrict parent
   expr3 = case M.lookup "parent" (optionsParamsN opts) of
     Nothing -> expr2
     Just l -> expr2 &&. (in_ (t ^. ItemParent) (valList (map Just l)))
@@ -132,9 +137,15 @@ showTasks :: Options -> UTCTime -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 showTasks opts fromTime | trace ("showTasks: "++(show opts)) False = undefined
 showTasks opts fromTime = do
   -- Load all tasks that meet the user's criteria
-  tasks' <- select $ from $ \t -> do
-    where_ (expr' opts fromTime t)
-    return t
+  tasks' <- case M.lookup "tag" (optionsParamsN opts) of
+    Nothing -> do
+      select $ from $ \t -> do
+        where_ (expr' opts fromTime t)
+        return t
+    Just l ->
+      select $ from $ \(i, p) -> do
+        where_ ((expr' opts fromTime i) &&. p ^. PropertyUuid ==. i ^. ItemUuid &&. p ^. PropertyName ==. val "tag" &&. (in_ (p ^. PropertyValue) (valList l)))
+        return i
   let tasks = map entityVal tasks'
   --liftIO $ print tasks
   -- Recursively load all parent items
