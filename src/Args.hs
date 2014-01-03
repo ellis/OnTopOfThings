@@ -26,6 +26,9 @@ module Args
 , optionsSetDefault
 , reform
 , upd
+, upd0
+, upd1
+, updN
 , updArgs
 , updHelp
 ) where
@@ -38,7 +41,7 @@ import Data.Maybe
 import Data.Monoid
 import Database.Persist.Sqlite
 import System.Console.CmdArgs.Explicit
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import qualified Data.Set as Set
 import qualified Data.UUID as U
 import qualified Data.UUID.V4 as U4
@@ -53,7 +56,10 @@ data Options = Options
   , optionsFlags :: [(String, String)]
   , optionsHelp :: Bool
   , optionsMods :: [Mod]
-  , optionsMap :: M.Map String (Maybe String)
+  , optionsMap :: M.Map String (Maybe String) -- REFACTOR: remove this
+  , optionsParams0 :: Set.Set String
+  , optionsParams1 :: M.Map String String
+  , optionsParamsN :: M.Map String [String]
   }
   deriving (Show)
 
@@ -78,7 +84,7 @@ type ModeInfo =
   ( Mode Options, ModeRun )
 
 options_empty :: String -> Options
-options_empty name = Options name [] [] False [] M.empty
+options_empty name = Options name [] [] False [] M.empty Set.empty M.empty M.empty
 
 updArgs value opts = Right opts' where
   args' = optionsArgs opts ++ [value]
@@ -87,9 +93,37 @@ updArgs value opts = Right opts' where
 upd :: String -> String -> Options -> Either String Options
 upd name value opts = Right opts' where
   flags' = optionsFlags opts ++ [(name, value)]
-  mods' = optionsMods opts ++ (catMaybes [if null value then Nothing else Just (ModEqual name value)])
+  mods' = optionsMods opts ++ (if null value then [] else [(ModAdd name value)])
   map' = M.insert name (Just value) (optionsMap opts)
   opts' = opts { optionsFlags = flags', optionsMods = mods', optionsMap = map' }
+
+upd0 = optionsAddParam0
+upd1 = optionsAddParam1
+updN = optionsAddParamN
+
+optionsAddParam0 :: String -> Options -> Options
+optionsAddParam0 name opts = opts' where
+  params0' = Set.insert name (optionsParams0 opts)
+  opts' = opts { optionsParams0 = params0' }
+
+optionsAddParam1 :: String -> String -> Options -> Either String Options
+optionsAddParam1 name value opts = Right opts' where
+  -- TODO: validate that value /= ""
+  flags' = optionsFlags opts ++ [(name, value)]
+  mods' = optionsMods opts ++ (if null value then [] else [(ModAdd name value)])
+  map' = M.insert name (Just value) (optionsMap opts)
+  params1' = M.insert name value (optionsParams1 opts)
+  opts' = opts { optionsFlags = flags', optionsMods = mods', optionsMap = map', optionsParams1 = params1' }
+
+optionsAddParamN :: String -> String -> Options -> Either String Options
+optionsAddParamN name value opts = Right opts' where
+  flags' = optionsFlags opts ++ [(name, value)]
+  mods' = optionsMods opts ++ (if null value then [] else [(ModAdd name value)])
+  paramsN' = M.alter fn name (optionsParamsN opts)
+  opts' = opts { optionsFlags = flags', optionsMods = mods', optionsParamsN = paramsN' }
+  fn :: Maybe [String] -> Maybe [String]
+  fn Nothing = Just ([value])
+  fn (Just l) = Just (l ++ [value])
 
 updHelp opts = opts { optionsHelp = True }
 

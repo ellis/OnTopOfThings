@@ -67,10 +67,11 @@ mode_list = Mode
   , modeHelpSuffix = []
   , modeArgs = ([], Nothing)
   , modeGroupFlags = toGroup
-    [ flagReq ["from"] (upd "from") "TIME" "Starting time for the listing. (default=today)"
-    , flagReq ["stage"] (upd "stage") "STAGE" "Stage to restrict display to.  May contain a comma-separated list."
-    , flagReq ["status"] (upd "status") "STATUS" "Status to restrict display to.  May contain a comma-separated list."
-    , flagReq ["parent", "p"] (upd "parent") "ID" "ID of parent whose children should be displayed.  May contain a comma-separated list."
+    [ flagReq ["from"] (upd1 "from") "TIME" "Starting time for the listing. (default=today)"
+    , flagReq ["stage"] (updN "stage") "STAGE" "Stage to restrict display to.  May contain a comma-separated list."
+    , flagReq ["status"] (updN "status") "STATUS" "Status to restrict display to.  May contain a comma-separated list."
+    , flagReq ["parent", "p"] (updN "parent") "ID" "ID of parent whose children should be displayed.  May contain a comma-separated list."
+    , flagNone ["show-tag"] (upd0 "show-tag") "Display item tags along with item."
     , flagHelpSimple updHelp
     ]
   }
@@ -152,7 +153,7 @@ listTasks opts fromTime = do
   -- Get the items in the order they'll be printed
   let ordered = concat $ map (\parent -> parent : (filterChildren items parent)) lists
   --liftIO $ print ordered
-  liftIO $ mapM_ (fn uuidToIndex_m) ordered
+  mapM_ (fn uuidToIndex_m) ordered
   return ()
   where
     updateIndex :: (Item, Int) -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
@@ -160,18 +161,22 @@ listTasks opts fromTime = do
       update $ \t -> do
         set t [ItemIndex =. val (Just index)]
         where_ (t ^. ItemUuid ==. val (itemUuid item))
-    fn :: M.Map String Int -> Item -> IO ()
+    fn :: M.Map String Int -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
     fn uuidToIndex_m item =
       case itemType item of
         "list" -> do
-          putStrLn ""
-          putStrLn $ (itemToString item)
-        _ -> putStrLn $ prefix ++ (itemToString item) where
-          index :: Maybe Int
-          index = M.lookup (itemUuid item) uuidToIndex_m
-          index_s :: Maybe String
-          index_s = fmap (\i -> "(" ++ (show i) ++ ")  ") index
-          prefix = fromMaybe "" index_s
+          liftIO $ putStrLn ""
+          s <- itemToString opts item
+          liftIO $ putStrLn $ s
+        _ -> do
+          s <- itemToString opts item
+          liftIO $ putStrLn $ prefix ++ s
+          where
+            index :: Maybe Int
+            index = M.lookup (itemUuid item) uuidToIndex_m
+            index_s :: Maybe String
+            index_s = fmap (\i -> "(" ++ (show i) ++ ")  ") index
+            prefix = fromMaybe "" index_s
 
 loadRecursive :: [Item] -> SqlPersistT (NoLoggingT (ResourceT IO)) [Item]
 loadRecursive items = loadParents items uuids items where
@@ -221,24 +226,35 @@ filterChildren items parent =
 --      uuid' = M.lookup "parent" m'
 --findParentLabel' _ _ acc = acc
 
-itemToString :: Item -> String
-itemToString item = unwords l where
-  path = [] -- findParentLabel (itemParent item >>= \x -> Just [x]) entities
-  check :: Maybe String
-  check = case (itemType item, itemStatus item) of
-    ("list", "open") -> Nothing
-    ("list", "closed") -> Just "[x]"
-    ("list", "deleted") -> Just "XXX"
-    ("task", "open") -> Just "[ ]"
-    (_, "open") -> Just "-"
-    (_, "closed") -> Just "[x]"
-    (_, "deleted") -> Just "- XXX"
-    _ -> Nothing
-  l :: [String]
-  l = catMaybes $
-    [ check
-    , fmap (\label -> "(" ++ label ++ ")") (itemLabel item)
-    , if null path then Nothing else Just $ intercalate "/" path ++ ":"
-    , Just $ itemTitle item
-    ]
+itemToString :: Options -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) String
+itemToString opts item = do
+  tags <- if Set.member "show-tag" (optionsParams0 opts)
+    then do
+      tags' <- select $ from $ \t -> do
+        where_ (t ^. PropertyUuid ==. val (itemUuid item) &&. t ^. PropertyName ==. val "tag")
+        return (t ^. PropertyValue)
+      return $ map (\(Value s) -> s) tags'
+    else return ([] :: [String])
+  let l = getParts tags
+  return $ unwords l
+  where
+    path = [] -- findParentLabel (itemParent item >>= \x -> Just [x]) entities
+    check :: Maybe String
+    check = case (itemType item, itemStatus item) of
+      ("list", "open") -> Nothing
+      ("list", "closed") -> Just "[x]"
+      ("list", "deleted") -> Just "XXX"
+      ("task", "open") -> Just "[ ]"
+      (_, "open") -> Just "-"
+      (_, "closed") -> Just "[x]"
+      (_, "deleted") -> Just "- XXX"
+      _ -> Nothing
+    getParts :: [String] -> [String]
+    getParts tags = catMaybes
+      [ check
+      , fmap (\label -> "(" ++ label ++ ")") (itemLabel item)
+      , if null path then Nothing else Just $ intercalate "/" path ++ ":"
+      , Just $ itemTitle item
+      , if null tags then Nothing else Just $ "(" ++ (intercalate "," tags) ++ ")"
+      ]
 

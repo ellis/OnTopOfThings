@@ -50,8 +50,10 @@
 - [x] Let 'mod' accept multiple references
 - [x] List: list tasks for a given list
 - [ ] List: remove parentheses around index and print extra spacing so that items are aligned
+- [ ] List: --show-tag, --show-context, --show-stage
+- [ ] Import: import tags propertly
 - [ ] Mod: get '--tag' to work, if it doesn't already
-- [ ] List: show by tags
+- [ ] List: show by stages
 - [ ] List: when listing with '--parent=ID', also list sublists of the given parent
 - [ ] List: show items which aren't on any list (i.e., don't have a parent)
 - [ ] List: --type for just listing lists, for example
@@ -61,6 +63,8 @@
 - [ ] List: --emptylists for lists without children
 - [ ] Main: 'stage' command
 - [ ] Main: 'tag' command
+- [ ] Possible commands: task, list, note, file, search, report, order
+- [ ] Add: when run from command line, give task the next available index and print it out
 - [ ] Switch from String to Text and make sure umlauts are printed correctly
 - [ ] For the CmdArgs modes, consider creating two for each command: one for standard parameter plus command-line-only parameters, and one with standard parameters plus internal-only parameters (e.g. 'id')
 - [ ] Rename 'list' command to 'show'
@@ -93,6 +97,7 @@
 - [ ] Add/Mod: when an item is added with `--status=closed` or `--closed=DATE`, make sure both values get set in optsProcess2_add/mod
 - [ ] Create my own parser for command lines to allow for ``otot add "my happy task" stage=today tag+happy``
 - [ ] label references shouldn't be not turned into uuids for CommandRecord
+- [ ] Command line for specifying config file or root directory
 
 When creating a new item from the commandline:
 
