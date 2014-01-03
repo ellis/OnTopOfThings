@@ -56,7 +56,10 @@
 - [x] Import: import tags
 - [x] Mod: allow for removing tags by prefixing them with '-'
 - [x] Delete: create command
+- [x] Import: create proper uuids for projects rather than use name
 - [ ] Search: create command
+- [ ] Check out hlint
+- [ ] Read chapters 15 and 18 of Real World Haskell
 - [ ] Add: when run from command line, give task the next available index and print it out
 - [ ] Show: remove parentheses around index and print extra spacing so that items are aligned
 - [ ] Show: --show-context, --show-stage
@@ -110,6 +113,7 @@
 - [ ] Create my own parser for command lines to allow for ``otot add "my happy task" stage=today tag+happy``
 - [ ] label references shouldn't be not turned into uuids for CommandRecord
 - [ ] Command line for specifying config file or root directory
+- [ ] CLI options: look here for inspiration: <http://zuttobenkyou.wordpress.com/2011/04/19/haskell-using-cmdargs-single-and-multi-mode/>
 
 When creating a new item from the commandline:
 

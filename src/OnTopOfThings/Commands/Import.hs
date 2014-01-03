@@ -26,6 +26,7 @@ import Control.Applicative ((<$>), (<*>), empty)
 import Control.Monad
 import Data.Aeson
 import Data.Aeson.Types (Parser)
+import Data.Char (isAlphaNum)
 import Data.Generics.Aliases (orElse)
 import Data.List (inits, intercalate, sortBy)
 import Data.Maybe (catMaybes, fromMaybe)
@@ -208,7 +209,19 @@ getList name m = case HM.lookup name m of
 createProject :: (T.Text, UTCTime) -> CommandRecord
 createProject (label, time) = CommandRecord 1 time' "default" "add" args where
   time' = addUTCTime (-1 :: NominalDiffTime) time
-  args = [T.concat ["--id=", label], "--type=list", T.concat ["--label=", label], T.concat ["--title=", label]]
+  -- Create a uuid from the label
+  -- Use only alphanumeric lower-case characters,
+  -- insert hypens at the right places (e.g. 0a815f87-ab07-45e7-abbd-21a71c21c176)
+  -- and fill with 0s
+  createProjectUuid label = uuid where
+    label' = T.toLower $ T.filter isAlphaNum label
+    uuid0 = T.justifyLeft (8+4+4+4+12) '0' label'
+    uuid = insertHyphen 8 $ insertHyphen (8+4) $ insertHyphen (8+4+4) $ insertHyphen (8+4+4+4) uuid0
+    insertHyphen :: Int -> T.Text -> T.Text
+    insertHyphen i s = T.concat [left, "-", right] where
+      (left, right) = T.splitAt i s
+  uuid = createProjectUuid label
+  args = [T.concat ["--id=", uuid], "--type=list", T.concat ["--label=", label], T.concat ["--title=", label]]
 
 optsToCommandRecord :: UTCTime -> T.Text -> Options -> CommandRecord
 optsToCommandRecord time user opts = CommandRecord 1 time user (T.pack $ optionsCmd opts) opts'' where
