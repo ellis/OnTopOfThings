@@ -55,7 +55,7 @@
 - [x] Show: --tag to show items specific tags
 - [x] Import: import tags
 - [x] Mod: allow for removing tags by prefixing them with '-'
-- [ ] Delete: create command
+- [x] Delete: create command
 - [ ] Search: create command
 - [ ] Add: when run from command line, give task the next available index and print it out
 - [ ] Show: remove parentheses around index and print extra spacing so that items are aligned

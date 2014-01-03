@@ -261,7 +261,7 @@ itemToString opts item = do
       ("task", "open") -> Just "[ ]"
       (_, "open") -> Just "-"
       (_, "closed") -> Just "[x]"
-      (_, "deleted") -> Just "- XXX"
+      (_, "deleted") -> Just "XXX"
       _ -> Nothing
     getParts :: [String] -> [String]
     getParts tags = catMaybes
