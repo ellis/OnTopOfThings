@@ -118,8 +118,8 @@ optsRun_mod record opts = do
         Just entity -> do
           let item0 = entityVal entity
           case updateItem time m item0 of
-            Nothing -> return (Left ["Couldn't update item"])
-            Just item -> do
+            Left msgs -> return (Left msgs)
+            Right item -> do
               replace (entityKey entity) item
               mapM_ (saveProperty uuid) (optionsMods opts)
               return (Right ())

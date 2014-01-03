@@ -114,40 +114,38 @@ createItem time opts = do
         (parseISO8601 s) `maybeToValidation` ["Could not parse time: " ++ s] >>= \time -> Right (Just time)
       _ -> Right Nothing
 
-updateItem :: UTCTime -> M.Map String (Maybe String) -> Item -> Maybe Item
+updateItem :: UTCTime -> M.Map String (Maybe String) -> Item -> Validation Item
 updateItem time map item0 =
   Item <$>
     get "id" itemUuid <*>
-    Just (itemCtime item0) <*>
+    Right (itemCtime item0) <*>
     get "type" itemType <*>
     get "title" itemTitle <*>
     get "status" itemStatus <*>
     getMaybe "parent" itemParent <*>
     getMaybe "stage" itemStage <*>
     getMaybe "label" itemLabel <*>
-    Just (itemIndex item0) <*>
+    Right (itemIndex item0) <*>
     getMaybeDate "closed" itemClosed <*>
     getMaybeDate "start" itemStart <*>
     getMaybeDate "end" itemEnd <*>
     getMaybeDate "due" itemDue <*>
     getMaybeDate "review" itemReview
   where
-    get :: String -> (Item -> String) -> Maybe String
+    get :: String -> (Item -> String) -> Validation String
     get name fn = case M.lookup name map of
-      Just (Just s) -> Just s
-      _ -> Just (fn item0)
+      Just (Just s) -> Right s
+      _ -> Right (fn item0)
 
-    getMaybe :: String -> (Item -> Maybe String) -> Maybe (Maybe String)
+    getMaybe :: String -> (Item -> Maybe String) -> Validation (Maybe String)
     getMaybe name fn = case M.lookup name map of
-      Just (Just s) -> Just (Just s)
-      _ -> Just (fn item0)
+      Just (Just s) -> Right (Just s)
+      _ -> Right (fn item0)
 
-    getMaybeDate :: String -> (Item -> Maybe UTCTime) -> Maybe (Maybe UTCTime)
+    getMaybeDate :: String -> (Item -> Maybe UTCTime) -> Validation (Maybe UTCTime)
     getMaybeDate name fn = case M.lookup name map of
-      Just (Just s) -> case parseTime defaultTimeLocale "%Y%m%dT%H%M%S" s of
-        Just time -> Just (Just time)
-        Nothing -> Nothing
-      _ -> Just (fn item0)
+      Just (Just s) -> (parseISO8601 s) `maybeToValidation` ["Could not parse time: " ++ s] >>= \time -> Right (Just time)
+      _ -> Right (fn item0)
 
 itemFields = ["id", "type", "title", "status", "parent", "stage", "label", "index", "closed", "start", "end", "due", "review"]
 
