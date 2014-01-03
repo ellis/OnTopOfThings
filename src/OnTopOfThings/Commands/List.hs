@@ -35,6 +35,7 @@ import Database.Persist (PersistQuery)
 import Database.Persist.Sql (insert, deleteWhere)
 import Database.Persist.Sqlite (SqlPersistT, runSqlite)
 import Database.Esqueleto
+import Debug.Trace
 import System.Console.CmdArgs.Explicit
 import System.Locale (defaultTimeLocale)
 import Text.Regex (mkRegex, matchRegexAll)
@@ -68,7 +69,7 @@ mode_list = Mode
   , modeArgs = ([], Nothing)
   , modeGroupFlags = toGroup
     [ flagReq ["from"] (upd1 "from") "TIME" "Starting time for the listing. (default=today)"
-    , flagReq ["stage"] (updN "stage") "STAGE" "Stage to restrict display to.  May contain a comma-separated list."
+    , flagReq ["stage", "s"] (updN "stage") "STAGE" "Stage to restrict display to.  May contain a comma-separated list."
     , flagReq ["status"] (updN "status") "STATUS" "Status to restrict display to.  May contain a comma-separated list."
     , flagReq ["parent", "p"] (updN "parent") "ID" "ID of parent whose children should be displayed.  May contain a comma-separated list."
     , flagNone ["show-tag"] (upd0 "show-tag") "Display item tags along with item."
@@ -84,26 +85,27 @@ optsRun_list opts = do
     Nothing -> return (Left ["bad time"])
     Just t -> do
       runSqlite "otot.db" $ do
-        flags_l_ <- mapM fn (optionsFlags opts)
-        let flags_ = concatEithersN flags_l_
-        case flags_ of
+        let parents0 = fromMaybe [] $ M.lookup "parent" (optionsParamsN opts)
+        parents_l_ <- mapM fn parents0
+        let parents_ = concatEithersN parents_l_
+        case parents_ of
           Left msgs -> return (Left msgs)
-          Right flags' -> do
-            let opts' = opts { optionsFlags = concat flags' }
-            listTasks opts t
-            return (Right ())
+          Right parents' -> do
+            let opts_ = optionsReplaceParamN "parent" (concat parents') opts
+            case opts_ of
+              Left msgs -> return (Left msgs)
+              Right opts' -> do
+                listTasks opts' t
+                return (Right ())
   where
-    fn :: (String, String) -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation [(String, String)])
-    fn ("parent", value) = do
+    fn :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation [String])
+    fn value =
       case parseNumberList value of
         Left msgs -> return (Left msgs)
         Right ids1 -> do
           uuids_ <- mapM refToUuid ids1
           --liftIO $ print uuids_
-          return $ do
-            uuids <- concatEithersN uuids_
-            return $ map (\value -> ("parent", value)) uuids
-    fn x = return $ Right [x]
+          return $ concatEithersN uuids_
 
 expr' opts fromTime t = expr3 where
   m = optionsMap opts
@@ -114,9 +116,9 @@ expr' opts fromTime t = expr3 where
   expr2 = case splitMaybe (M.lookup "stage" m) of
     [] -> expr1
     l -> expr1 &&. (in_ (t ^. ItemStage) (valList l))
-  expr3 = case splitMaybe (M.lookup "parent" m) of
-    [] -> expr2
-    l -> expr2 &&. (in_ (t ^. ItemParent) (valList l))
+  expr3 = case M.lookup "parent" (optionsParamsN opts) of
+    Nothing -> expr2
+    Just l -> expr2 &&. (in_ (t ^. ItemParent) (valList (map Just l)))
   split :: Maybe (Maybe String) -> [String]
   split (Just (Just s)) = splitOn "," s
   split _ = []
@@ -127,6 +129,7 @@ expr' opts fromTime t = expr3 where
   splitMaybe _ = []
 
 listTasks :: Options -> UTCTime -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+listTasks opts fromTime | trace ("listTasks: "++(show opts)) False = undefined
 listTasks opts fromTime = do
   -- Load all tasks that meet the user's criteria
   tasks' <- select $ from $ \t -> do

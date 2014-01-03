@@ -31,6 +31,7 @@ module Args
 , updN
 , updArgs
 , updHelp
+, optionsReplaceParamN
 ) where
 
 import Control.Monad.IO.Class (liftIO)
@@ -108,6 +109,7 @@ optionsAddParam0 name opts = opts' where
 
 optionsAddParam1 :: String -> String -> Options -> Either String Options
 optionsAddParam1 name value opts = Right opts' where
+  -- TODO: validate that parameter has not already been set
   -- TODO: validate that value /= ""
   flags' = optionsFlags opts ++ [(name, value)]
   mods' = optionsMods opts ++ (if null value then [] else [(ModAdd name value)])
@@ -126,6 +128,25 @@ optionsAddParamN name value opts = Right opts' where
   fn (Just l) = Just (l ++ [value])
 
 updHelp opts = opts { optionsHelp = True }
+
+optionsRemoveParamN :: String -> Options -> Options
+optionsRemoveParamN name opts = opts' where
+  flags' = filter (\(n, _) -> n /= name) (optionsFlags opts)
+  mods' = filter (not . (modHasName name)) (optionsMods opts)
+  paramsN' = M.filterWithKey (\key _ -> key /= name) (optionsParamsN opts)
+  opts' = opts { optionsFlags = flags', optionsMods = mods', optionsParamsN = paramsN' }
+
+modHasName :: String -> Mod -> Bool
+modHasName name (ModAdd n _) = n == name
+modHasName name (ModEqual n _) = n == name
+modHasName _ _ = False
+
+optionsReplaceParamN :: String -> [String] -> Options -> Validation Options
+optionsReplaceParamN name values opts = foldl fn (Right opts') values where
+  opts' = optionsRemoveParamN name opts
+  fn :: Validation Options -> String -> Validation Options
+  fn (Right opts) value = eitherStringToValidation $ updN name value opts
+  fn x _ = x
 
 -- Function to add a default flag value if no value was already set
 -- TODO: this function won't work correctly if a value isn't in 'optionsMap'.
