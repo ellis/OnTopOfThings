@@ -45,6 +45,7 @@ import DatabaseUtils
 import Utils
 import OnTopOfThings.Commands.Add
 import OnTopOfThings.Commands.Close
+import OnTopOfThings.Commands.Delete
 import OnTopOfThings.Commands.Import (optsToCommandRecord)
 import OnTopOfThings.Commands.Mod
 import qualified Database as DB
@@ -71,6 +72,7 @@ modeInfo_l :: [ModeInfo]
 modeInfo_l =
   [ modeInfo_add
   , modeInfo_close
+  , modeInfo_delete
   , modeInfo_mod
   ]
 modeInfo :: M.Map String ModeInfo

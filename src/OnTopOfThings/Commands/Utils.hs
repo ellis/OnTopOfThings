@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 module OnTopOfThings.Commands.Utils
 ( refToUuid
 , createItem
+, processRefArgsAndFlags
 , updateItem
 , saveProperty
 ) where
@@ -51,6 +52,7 @@ import Command
 import DatabaseTables
 import DatabaseUtils
 import Utils
+import OnTopOfThings.Parsers.NumberList
 
 
 refToUuid :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation String)
@@ -59,6 +61,22 @@ refToUuid ref = do
   case uuid' of
     Nothing -> return (Left ["Couldn't find ref: "++ref])
     Just uuid -> return (Right uuid)
+
+processRefArgsAndFlags :: Options -> String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
+processRefArgsAndFlags opts0 name = do
+  case ids_ of
+    Left msgs -> return (Left msgs)
+    Right ids -> do
+      uuids_ <- mapM refToUuid ids
+      return $ do
+        uuids <- concatEithersN uuids_
+        optionsReplaceParamN name uuids (opts0 { optionsArgs = [] })
+  where
+    idArgs0 = optionsArgs opts0
+    flags0 = optionsFlags opts0
+    idFlags0 = catMaybes $ map (\(name, value) -> if name == "id" then Just value else Nothing) flags0
+    ids0 = idArgs0 ++ idFlags0
+    ids_ = (concatEithersN $ map parseNumberList ids0) >>= \ll -> (Right $ concat ll)
 
 --instance Monad (Either e) where
 --  (Left msgs) >>= f = Left msgs

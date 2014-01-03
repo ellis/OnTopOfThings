@@ -41,6 +41,7 @@ import DatabaseUtils
 import Utils
 import OnTopOfThings.Commands.Add
 import OnTopOfThings.Commands.Close
+import OnTopOfThings.Commands.Delete
 import OnTopOfThings.Commands.Import
 import OnTopOfThings.Commands.Show
 import OnTopOfThings.Commands.Mod
@@ -53,6 +54,7 @@ modeInfo_l :: [ModeInfo]
 modeInfo_l =
   [ modeInfo_add
   , modeInfo_close
+  , modeInfo_delete
   , modeInfo_import
   , modeInfo_mod
   , modeInfo_rebuild

@@ -55,6 +55,9 @@
 - [x] Show: --tag to show items specific tags
 - [x] Import: import tags
 - [x] Mod: allow for removing tags by prefixing them with '-'
+- [ ] Delete: create command
+- [ ] Search: create command
+- [ ] Add: when run from command line, give task the next available index and print it out
 - [ ] Show: remove parentheses around index and print extra spacing so that items are aligned
 - [ ] Show: --show-context, --show-stage
 - [ ] Show: --no-tag to filter out items with given tags
@@ -75,7 +78,6 @@
 - [ ] Main: 'stage' command
 - [ ] Main: 'tag' command
 - [ ] Possible commands: task, list, note, event, file, search, report, order, calendar, pomodoros, kanban
-- [ ] Add: when run from command line, give task the next available index and print it out
 - [ ] Switch from String to Text and make sure umlauts are printed correctly
 - [ ] For the CmdArgs modes, consider creating two for each command: one for standard parameter plus command-line-only parameters, and one with standard parameters plus internal-only parameters (e.g. 'id')
 - [ ] Close: don't close an already closed item
