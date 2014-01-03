@@ -160,11 +160,12 @@ showTasks opts fromTime = do
   let lists = (filter (\item -> itemType item == "list") items) :: [Item]
   --liftIO $ print lists
   let children = concat $ map (filterChildren items) lists :: [Item]
+  let orphans = filter (\task -> (itemParent task) == Nothing) tasks
   -- Remove all previous indexes
   update $ \t -> do
     set t [ItemIndex =. nothing]
     where_ (not_ $ isNothing (t ^. ItemIndex))
-  let itemToIndex_l = zip children [1..]
+  let itemToIndex_l = zip (children ++ orphans) [1..]
   let uuidToIndex_m = M.fromList $ map (\(item, index) -> (itemUuid item, index)) itemToIndex_l
   -- Set new indexes
   mapM updateIndex itemToIndex_l
@@ -173,6 +174,12 @@ showTasks opts fromTime = do
   let ordered = concat $ map (\parent -> parent : (filterChildren items parent)) lists
   --liftIO $ print ordered
   mapM_ (fn uuidToIndex_m) ordered
+  if not (null orphans)
+    then do
+      liftIO $ putStrLn ""
+      liftIO $ putStrLn "Tasks without a list:"
+      mapM_ (fn uuidToIndex_m) orphans
+    else return ()
   return ()
   where
     updateIndex :: (Item, Int) -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
