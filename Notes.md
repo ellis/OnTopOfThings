@@ -92,6 +92,14 @@
     * routine
     * review-week, review-month, review-quarter, review-year
     * decide, for things that need to be decided as opposed to acted on
+* tasks vs ideas
+    * some lists never need to be reviewed regularly -- they're just there for when you want to reference them
+    * some items may not need to be reviewed regularly -- they're just there for idea generation
+    * each projects should have such lists: brainstorm, reference, tasks
+    * so two dimensions:
+         * purpose: brainstorm (idea), reference (note), task
+         * review: only when needed, year, quarter, month, week, on a specific date, after a specific date, certain intervals
+         * for tasks: they may be past the review stage
 * more features
     * items somehow inherit properties from their parents, if the properies are not set on the items
     * when an item has a due date and a time estimate, show it on the daily list once things start getting tight
@@ -101,6 +109,7 @@
     * use as an RSS reader and for tagging other websites to read or that are noteworthy
     * scheduled reminders
     * show marginal costs and benefits for comparison of activities
+    * like Anki for scheduled review?
 * plausibility checks
     * make plausibility checks when setting a date to hide and item till, because hiding is kind of dangerous
     * when a task is marked as done which has incomplete sub-tasks

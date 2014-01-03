@@ -64,6 +64,7 @@
 - [x] Mod: 'parent' need to be a valid reference
 - [x] Show: fix --stage
 - [x] Close: let it interpret id ranges like Mod
+- [ ] Show: why does `--search Jeff` not work on my test data?
 - [ ] Add: autogenerate a label for lists if none is given
 - [ ] Check out hlint
 - [ ] Read chapters 15 and 18 of Real World Haskell
