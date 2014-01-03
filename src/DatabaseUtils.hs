@@ -37,6 +37,7 @@ import Database.Persist (PersistQuery)
 import Database.Persist.Sql (insert, deleteWhere)
 import Database.Esqueleto
 import Database.Persist.TH
+import Debug.Trace
 import Text.Read (readMaybe)
 
 import qualified Data.ByteString.Lazy.Char8 as BL
@@ -47,6 +48,7 @@ import DatabaseTables
 
 --databaseLookupUuid :: PersistQuery m => String -> m (Maybe String)
 databaseLookupUuid :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Maybe String)
+--databaseLookupUuid ref | trace ("databaseLookupUuid: " ++ ref) False = undefined
 databaseLookupUuid ref = do
   a <- fn (\t -> t ^. ItemUuid ==. val ref)
   case a of
@@ -63,6 +65,7 @@ databaseLookupUuid ref = do
           return c
   where
     fn expr = do
+      --if ref == "fde44ebb-8c4d-44f2-b2dd-a228d9530030" then (liftIO . print) "databaseLookupUuid" else return ()
       l <- select $ from $ \t -> do
         where_ (expr t)
         limit 2

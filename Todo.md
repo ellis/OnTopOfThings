@@ -58,7 +58,9 @@
 - [x] Delete: create command
 - [x] Import: create proper uuids for projects rather than use name
 - [x] Show: --search for text in title
-- [ ] Show: show items which aren't on any list (i.e., don't have a parent)
+- [x] Show: show items which aren't on any list (i.e., don't have a parent)
+- [x] Rebuild: delete command rows too
+- [ ] Rebuild: why isn't delete command record getting saved in DB?
 - [ ] Check out hlint
 - [ ] Read chapters 15 and 18 of Real World Haskell
 - [ ] Add: when run from command line, give task the next available index and print it out
@@ -113,7 +115,6 @@
 - [ ] Create my own parser for command lines to allow for ``otot add "my happy task" stage=today tag+happy``
 - [ ] label references shouldn't be not turned into uuids for CommandRecord
 - [ ] Command line for specifying config file or root directory
-- [ ] CLI options: look here for inspiration: <http://zuttobenkyou.wordpress.com/2011/04/19/haskell-using-cmdargs-single-and-multi-mode/>
 
 When creating a new item from the commandline:
 

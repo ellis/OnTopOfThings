@@ -29,6 +29,7 @@ import Control.Monad.Trans.Resource (ResourceT)
 import Data.List (sortBy)
 import Data.Maybe
 import Data.Monoid
+import Debug.Trace
 import Database.Persist.Sqlite
 import System.Console.CmdArgs.Explicit
 import System.IO
@@ -95,6 +96,7 @@ optsRun_rebuild opts = do
             -- Create tables if necessary
             DB.databaseInit
             -- Delete existing rows
+            deleteWhere ([] :: [Filter Command])
             deleteWhere ([] :: [Filter Item])
             deleteWhere ([] :: [Filter Property])
             -- Add the command records and process them
@@ -103,24 +105,23 @@ optsRun_rebuild opts = do
             return $ fmap (const ()) result'
 
 processRecord :: CommandRecord -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+--processRecord record | if (Command.commandCmd record) /= "add" then trace ("cmd: "++(T.unpack $ Command.commandCmd record)) False else False = undefined
 processRecord record = do
   let cmd = T.unpack $ Command.commandCmd record
   case M.lookup cmd modeInfo of
     Nothing -> return (Left ["unknown command `"++cmd++"`"])
     Just (mode, run) -> do
       let args = fmap T.unpack (Command.commandArgs record)
+      --if cmd /= "add" then liftIO $ print (modeNames mode) else return ()
       case process mode args of
         Left msg -> return (Left [msg])
         Right opts -> do
           case run of
             ModeRunDB optsProcess1 optsProcess2 optsRunDB -> do
+              --if cmd /= "add" then liftIO $ print record else return ()
+              --if cmd /= "add" then liftIO $ print opts else return ()
               handleOptions record opts mode optsProcess1 optsProcess2 optsRunDB
-              return (Right ())
-            ModeRunIO optsRunIO -> do
-              x <- liftIO $ optsRunIO opts
-              case x of
-                Left msgs -> return (Left msgs)
-                _ -> return (Right ())
+            _ -> return (Left ["Command `"++cmd++"` is not valid while rebuilding"])
 
 --handleOptions :: CommandRecord -> Mode Options -> 
 handleOptions record opts mode optsProcess1 optsProcess2 optsRun = do
@@ -132,12 +133,13 @@ handleOptions record opts mode optsProcess1 optsProcess2 optsRun = do
     Right opts' -> do
       -- Convert Options to CommandRecord
       let record = optsToCommandRecord time "default" opts'
-      liftIO $ toStdErr record
+      --liftIO $ toStdErr record
       -- TODO: Save CommandRecord to temporary file
       -- TODO: CommandRecord read in from file
       -- TODO: Verify that CommandRecords are equal
       -- Convert CommandRecord to Command
       let command = DB.recordToCommand record
+      --liftIO $ print (Command.commandCmd record)
       -- Command saved to DB
       insert command
       -- TODO: Command loaded from DB
@@ -154,6 +156,6 @@ handleOptions record opts mode optsProcess1 optsProcess2 optsRun = do
           -- Update items and properties
           x_ <- optsRun record opts''
           case x_ of
-            Left msgs -> return (Left msgs)
+            Left msgs -> return (Left (msgs ++ [show record]))
             Right _ -> return (Right ())
 

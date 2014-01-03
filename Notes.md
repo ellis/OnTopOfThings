@@ -219,6 +219,21 @@ Then:
 * For all items, recursively find the name of the list
 * Sort the tickets 
 
+## Command Line Options
+
+Right now I'm using CmdArgs, which produces nice help output, but doesn't accommodate much of what I'd like.
+Search for the library that helps you write your own command option parser.
+
+Ideally, I'd like this:
+
+        otot [root flags] cmd [args and flags]
+        otot [root flags] [ID cmd [flags]]
+
+The first line executes a single command which may or may not modify items.
+The second time can be used to edit multiple items on a single command line.
+
+Might want to look here for a few ideas about extra commands: <http://zuttobenkyou.wordpress.com/2011/04/19/haskell-using-cmdargs-single-and-multi-mode/>
+
 ## Using fossil
 
 I considered using fossil's ticket system, but abadoned the attempt due to the inability to

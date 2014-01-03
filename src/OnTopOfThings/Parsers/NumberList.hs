@@ -22,6 +22,7 @@ module OnTopOfThings.Parsers.NumberList
 --) where
 where
 
+import Data.List (intercalate)
 import Text.Parsec
 import Text.Parsec.Char
 import Text.Parsec.String
@@ -44,12 +45,27 @@ pnum = do
   s <- many1 digit
   return $ (read s :: Int)
 
+_ALPHANUM :: String
+_ALPHANUM = ['a'..'z'] ++ ['A'..'Z'] ++ ['0'..'9']
+
+puuid = try $ do
+  part1 <- count 8 alphaNum
+  char '-'
+  part2 <- count 4 alphaNum
+  char '-'
+  part3 <- count 4 alphaNum
+  char '-'
+  part4 <- count 4 alphaNum
+  char '-'
+  part5 <- count 12 alphaNum
+  return $ [intercalate "-" [part1, part2, part3, part4, part5]]
+
 pident = do
   a <- letter
-  as <- many alphaNum
+  as <- many $ oneOf $ _ALPHANUM ++ "/-_"
   return $ ([a:as] :: [String])
 
-prange = pident <|> prange2 <|> prange
+prange = puuid <|> pident <|> prange2 <|> prange
 
 prange2 = do
   l <- pnum `sepBy` (char '-')
