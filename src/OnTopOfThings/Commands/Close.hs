@@ -82,7 +82,8 @@ optsRun_close :: CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT 
 optsRun_close record opts = do
   case M.lookup "id" (optionsParamsN opts) of
     Just uuids -> do
-      mapM close (optionsArgs opts)
+      liftIO $ print uuids
+      mapM close uuids
       return (Right ())
   where
     time = Command.commandTime record
