@@ -53,7 +53,8 @@
 - [x] Show: shows tags
 - [x] Show: --hide-tags suppresses display of tag
 - [x] Show: --tag to show items specific tags
-- [ ] Import: import tags
+- [x] Import: import tags
+- [x] Mod: allow for removing tags by prefixing them with '-'
 - [ ] Show: remove parentheses around index and print extra spacing so that items are aligned
 - [ ] Show: --show-context, --show-stage
 - [ ] Show: --no-tag to filter out items with given tags

@@ -120,12 +120,22 @@ optionsAddParam1 name value opts = Right opts' where
 optionsAddParamN :: String -> String -> Options -> Either String Options
 optionsAddParamN name value opts = Right opts' where
   flags' = optionsFlags opts ++ [(name, value)]
-  mods' = optionsMods opts ++ (if null value then [] else [(ModAdd name value)])
-  paramsN' = M.alter fn name (optionsParamsN opts)
+  (mods', paramsN') = case value of
+    '-':value' -> (mods', paramsN') where
+      mods' = optionsMods opts ++ (if null value then [] else [(ModRemove name value')])
+      paramsN' = M.alter fn name (optionsParamsN opts)
+      fn :: Maybe [String] -> Maybe [String]
+      fn Nothing = Nothing
+      fn (Just l) = case filter (/= value') l of
+        [] -> Nothing
+        l' -> Just l'
+    value' -> (mods', paramsN') where
+      mods' = optionsMods opts ++ (if null value then [] else [(ModAdd name value)])
+      paramsN' = M.alter fn name (optionsParamsN opts)
+      fn :: Maybe [String] -> Maybe [String]
+      fn Nothing = Just ([value])
+      fn (Just l) = Just (l ++ [value])
   opts' = opts { optionsFlags = flags', optionsMods = mods', optionsParamsN = paramsN' }
-  fn :: Maybe [String] -> Maybe [String]
-  fn Nothing = Just ([value])
-  fn (Just l) = Just (l ++ [value])
 
 updHelp opts = opts { optionsHelp = True }
 
@@ -139,6 +149,7 @@ optionsRemoveParamN name opts = opts' where
 modHasName :: String -> Mod -> Bool
 modHasName name (ModAdd n _) = n == name
 modHasName name (ModEqual n _) = n == name
+modHasName name (ModRemove n _) = n == name
 modHasName _ _ = False
 
 optionsReplaceParamN :: String -> [String] -> Options -> Validation Options
