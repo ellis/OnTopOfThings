@@ -47,6 +47,8 @@ import qualified Command as C
 import Args
 import DatabaseTables
 import Utils
+import OnTopOfThings.Commands.Utils
+import OnTopOfThings.Parsers.NumberList
 
 type PropertyMap = M.Map String [String]
 type EntityMap = M.Map String PropertyMap
@@ -68,6 +70,7 @@ mode_list = Mode
     [ flagReq ["from"] (upd "from") "TIME" "Starting time for the listing. (default=today)"
     , flagReq ["stage"] (upd "stage") "STAGE" "Stage to restrict display to.  May contain a comma-separated list."
     , flagReq ["status"] (upd "status") "STATUS" "Status to restrict display to.  May contain a comma-separated list."
+    , flagReq ["parent", "p"] (upd "parent") "ID" "ID of parent whose children should be displayed.  May contain a comma-separated list."
     , flagHelpSimple updHelp
     ]
   }
@@ -80,21 +83,39 @@ optsRun_list opts = do
     Nothing -> return (Left ["bad time"])
     Just t -> do
       runSqlite "otot.db" $ do
-        listTasks opts t
-      return (Right ())
+        flags_l_ <- mapM fn (optionsFlags opts)
+        let flags_ = concatEithersN flags_l_
+        case flags_ of
+          Left msgs -> return (Left msgs)
+          Right flags' -> do
+            let opts' = opts { optionsFlags = concat flags' }
+            listTasks opts t
+            return (Right ())
+  where
+    fn :: (String, String) -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation [(String, String)])
+    fn ("parent", value) = do
+      case parseNumberList value of
+        Left msgs -> return (Left msgs)
+        Right ids1 -> do
+          uuids_ <- mapM refToUuid ids1
+          --liftIO $ print uuids_
+          return $ do
+            uuids <- concatEithersN uuids_
+            return $ map (\value -> ("parent", value)) uuids
+    fn x = return $ Right [x]
 
-optsValidate :: Options -> Validation ()
-optsValidate opts = Right ()
-
-expr' opts fromTime t = expr2 where
+expr' opts fromTime t = expr3 where
   m = optionsMap opts
   expr0 = (t ^. ItemType ==. val "task" &&. (t ^. ItemStatus ==. val "open" ||. t ^. ItemClosed >. val (Just fromTime)))
   expr1 = case split (M.lookup "status" m) of
     [] -> expr0
-    l -> expr0 &&. (in_ (t ^. ItemStatus) (valList l)) where
+    l -> expr0 &&. (in_ (t ^. ItemStatus) (valList l))
   expr2 = case splitMaybe (M.lookup "stage" m) of
     [] -> expr1
-    l -> expr1 &&. (in_ (t ^. ItemStage) (valList l)) where
+    l -> expr1 &&. (in_ (t ^. ItemStage) (valList l))
+  expr3 = case splitMaybe (M.lookup "parent" m) of
+    [] -> expr2
+    l -> expr2 &&. (in_ (t ^. ItemParent) (valList l))
   split :: Maybe (Maybe String) -> [String]
   split (Just (Just s)) = splitOn "," s
   split _ = []
@@ -106,7 +127,7 @@ expr' opts fromTime t = expr2 where
 
 listTasks :: Options -> UTCTime -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 listTasks opts fromTime = do
-  -- Load all tasks that are open or were closed today
+  -- Load all tasks that meet the user's criteria
   tasks' <- select $ from $ \t -> do
     where_ (expr' opts fromTime t)
     return t

@@ -48,10 +48,19 @@
 - [x] List: display by status
 - [x] create parser for item indexes with commas and dashes (look at parsec)
 - [x] Let 'mod' accept multiple references
+- [x] List: list tasks for a given list
 - [ ] List: remove parentheses around index and print extra spacing so that items are aligned
-- [ ] List: list tasks for a given list
-- [ ] List: items which aren't on a list
+- [ ] Mod: get '--tag' to work, if it doesn't already
+- [ ] List: show by tags
+- [ ] List: when listing with '--parent=ID', also list sublists of the given parent
+- [ ] List: show items which aren't on any list (i.e., don't have a parent)
+- [ ] List: --type for just listing lists, for example
+- [ ] NumberList: accept '/' and other symbols in identifiers
+- [ ] Args: make upd1 and updN functions, where upd1 updates the map and ensures only once instance of the flag
+- [ ] List: --orphans for items without parents
+- [ ] List: --emptylists for lists without children
 - [ ] Main: 'stage' command
+- [ ] Main: 'tag' command
 - [ ] Switch from String to Text and make sure umlauts are printed correctly
 - [ ] For the CmdArgs modes, consider creating two for each command: one for standard parameter plus command-line-only parameters, and one with standard parameters plus internal-only parameters (e.g. 'id')
 - [ ] Rename 'list' command to 'show'
