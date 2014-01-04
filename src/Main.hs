@@ -92,20 +92,25 @@ repl = do
   time <- getCurrentTime
   record_ <- runSqlite "repl.db" $ do
     case args0 of
-      [] -> return (Right Nothing)
+      [] -> return (Nothing :: Maybe CommandRecord, [], [])
       "ls":args -> do
         let cmd = CommandLs args
         result <- ls time "default" ["/"] cmd
-        return (result >>= \x -> Right Nothing)
+        case result of
+          Left msgs -> return (Nothing, [], msgs)
+          Right _ -> return (Nothing, [], [])
       "mkdir":args -> do
         let cmd = CommandMkdir args False
         result <- mkdir time "default" ["/"] cmd
-        return $ result >>= Right . Just
-      cmd:_ -> return (Left ["command not found: "++cmd])
-  case (record_ :: Validation (Maybe CommandRecord)) of
-    Left msgs -> liftIO $ mapM_ putStrLn msgs
-    Right Nothing -> return ()
-    Right (Just record) -> liftIO $ print record
+        return result
+      cmd:_ -> return (Nothing, [], ["command not found: "++cmd])
+  case record_ of
+    (record', warn, err) -> do
+      liftIO $ mapM_ putStrLn err
+      liftIO $ mapM_ putStrLn warn
+      case record' of
+        Nothing -> return ()
+        Just record -> liftIO $ print record
   repl
 
 data CommandLs = CommandLs {
@@ -175,36 +180,58 @@ pathStringToPathChain cwd path_s = case splitDirectories path_s of
   l@("/":rest) -> dropWhile (== "/") l
   rest -> dropWhile (== "/") (cwd ++ rest)
 
-mkdir :: UTCTime -> String -> [FilePath] -> CommandMkdir -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (CommandRecord))
+mkdir :: UTCTime -> String -> [FilePath] -> CommandMkdir -> SqlPersistT (NoLoggingT (ResourceT IO)) (Maybe CommandRecord, [String], [String])
 mkdir time user cwd cmd | trace "mkdir" False = undefined
 mkdir time user cwd cmd = do
   if null args
-    then return (Left ["mkdir: missing operand", "Try 'mkdir --help' for more information."])
+    then return (Nothing, ["mkdir: missing operand", "Try 'mkdir --help' for more information."], [])
     else do
       result_ <- mapM mkone (mkdirArgs cmd)
-      case concatEithersN result_ of
-        Left msgs -> return (Left msgs)
-        Right _ -> return (Right (CommandRecord 1 time (T.pack user) (T.pack "repl-mkdir") (map T.pack args')))
+      let ret = foldl (\(succ, warn, err) (succ', warn', err') -> (succ || succ', warn ++ warn', err ++ err')) (False, [], []) result_
+      case ret of
+        (True, warn, err) -> return (Just record, warn, err)
+        (False, warn, err) -> return (Nothing, warn, err)
   where
     args = (mkdirArgs cmd)
     args' = args ++ (if mkdirParents cmd then ["--parents"] else [])
+    record = CommandRecord 1 time (T.pack user) (T.pack "repl-mkdir") (map T.pack args')
 
-    mkone :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
-    mkone path0 | trace ("mkone "++path0) False = undefined
-    mkone path0 =
+    mkone :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Bool, [String], [String])
+    --mkone path_s | trace ("mkone "++path_s) False = undefined
+    mkone path_s =
       let
-        chain = pathStringToPathChain cwd path0
+        chain = pathStringToPathChain cwd path_s
+        --chains = tail $ inits chain
       in do
-        parent_ <- fn (mkdirParents cmd) (init chain) Nothing
-        case parent_ of
-          Left msgs -> return (Left msgs)
-          Right parent -> do
-            new_ <- mksub parent (last chain)
-            case new_ of
-              Left msgs -> return (Left msgs)
-              Right new -> do
-                let args' = (mkdirArgs cmd) ++ (if mkdirParents cmd then ["--parents"] else [])
-                return (Right ())
+        -- Check whether the item already exists
+        uuid_ <- pathChainToUuid chain
+        case uuid_ of
+          -- if the item already exists:
+          Right _ -> do
+            -- if --parents flag:
+            if mkdirParents cmd
+              then return (False, [], [])
+              else return (False, [], ["mkdir: cannot create directory ‘"++path_s++"’: File exists"])
+          -- if the item doesn't already exist:
+          Left msgs -> do
+            if mkdirParents cmd
+              -- if all parents should be created
+              then do
+                uuid_ <- fn True chain Nothing
+                case uuid_ of
+                  Left msgs -> return (False, [], msgs)
+                  Right uuid -> return (True, [], [])
+              -- if all parents should already exist
+              else do
+                parent_ <- fn False (init chain) Nothing
+                case parent_ of
+                  Left msgs -> return (False, [], msgs)
+                  Right parent -> do
+                    new_ <- mksub parent (last chain)
+                    case new_ of
+                      Left msgs -> return (False, [], msgs)
+                      Right new -> do
+                        return (True, [], [])
 
     fn :: Bool -> [FilePath] -> Maybe String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (Maybe String))
     fn doMake l parent | trace ("fn "++(show l)) False = undefined
