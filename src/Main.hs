@@ -124,7 +124,7 @@ ls time user cwd cmd = do
     Left msgs -> return (Left msgs)
     Right _ -> return (Right ())
   where
-    args' = (\x -> if null x then [] else x) (lsArgs cmd)
+    args' = (\x -> if null x then ["."] else x) (lsArgs cmd)
     chain_l = map (pathStringToPathChain cwd) args'
     lsone :: [FilePath] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
     lsone chain = do
@@ -133,6 +133,7 @@ ls time user cwd cmd = do
         Left msgs -> return (Left msgs)
         Right Nothing -> do
           liftIO $ putStrLn "/"
+          lschildren Nothing
           return (Right ())
         Right (Just uuid) -> do
           item__ <- getBy $ ItemUniqUuid uuid
@@ -140,11 +141,28 @@ ls time user cwd cmd = do
             Nothing ->
               return (Left ["couldn't load item from database: "++uuid])
             Just item_ -> do
-              let item = entityVal item_
-              case itemType item of
-                "folder" -> do
-                  liftIO $ putStrLn $ (itemToName item) ++ "/"
-                  return (Right ())
+              lsitem (entityVal item_)
+    lsitem :: Item -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+    lsitem item =
+      case itemType item of
+        "folder" -> do
+          liftIO $ putStrLn $ (itemToName item) ++ "/"
+          lschildren (Just $ itemUuid item)
+          return (Right ())
+        "list" -> do
+          liftIO $ putStrLn $ (itemToName item) ++ "/"
+          lschildren (Just $ itemUuid item)
+          return (Right ())
+        "task" -> do
+          liftIO $ putStrLn $ (itemToName item)
+          lschildren (Just $ itemUuid item)
+          return (Right ())
+    lschildren :: Maybe String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+    lschildren parent = do
+      items_ <- selectList [ItemParent ==. parent] []
+      let items = map entityVal items_
+      mapM_ lsitem items
+      return (Right ())
 
 itemToName :: Item -> String
 itemToName item =
@@ -176,12 +194,24 @@ data CommandMkdir = CommandMkdir {
 }
 
 pathStringToPathChain :: [FilePath] -> String -> [FilePath]
-pathStringToPathChain cwd path_s = case splitDirectories path_s of
-  l@("/":rest) -> dropWhile (== "/") l
-  rest -> dropWhile (== "/") (cwd ++ rest)
+pathStringToPathChain cwd path_s = chain3 where
+  -- Prepend cwd if relative path is given
+  chain0 = case splitDirectories path_s of
+    l@("/":rest) -> l
+    rest -> cwd ++ rest
+  -- Drop '/' prefixes
+  chain1 = dropWhile (== "/") chain0
+  -- Drop '.' infixes
+  chain2 = filter (/= ".") chain1
+  -- Drop x:".."
+  dropDotDot :: [FilePath] -> [FilePath] -> [FilePath]
+  dropDotDot [] acc = reverse acc
+  dropDotDot (_:"..":rest) acc = dropDotDot rest acc
+  dropDotDot (x:rest) acc = dropDotDot rest (x:acc)
+  chain3 = dropDotDot chain2 []
 
 mkdir :: UTCTime -> String -> [FilePath] -> CommandMkdir -> SqlPersistT (NoLoggingT (ResourceT IO)) (Maybe CommandRecord, [String], [String])
-mkdir time user cwd cmd | trace "mkdir" False = undefined
+--mkdir time user cwd cmd | trace "mkdir" False = undefined
 mkdir time user cwd cmd = do
   if null args
     then return (Nothing, ["mkdir: missing operand", "Try 'mkdir --help' for more information."], [])
