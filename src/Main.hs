@@ -21,7 +21,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, fromMaybe)
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import System.Console.CmdArgs.Explicit
 import System.Environment
@@ -86,18 +86,83 @@ main = do
 
 repl = do
   putStr "> "
+  hFlush stdout
   input <- getLine
   let args = splitArgs input
   time <- getCurrentTime
   runSqlite "repl.db" $ do
-    let cmd = CommandMkdir args False
-    result <- mkdir time "default" ["/"] cmd
+    --let cmd = CommandMkdir args False
+    --result <- mkdir time "default" ["/"] cmd
+    let cmd = CommandLs args
+    result <- ls time "default" ["/"] cmd
     liftIO $ print result
+
+data CommandLs = CommandLs {
+  lsArgs :: [String]
+}
+
+ls :: UTCTime -> String -> [FilePath] -> CommandLs -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+ls time user cwd cmd = do
+  x_ <- mapM lsone chain_l
+  case concatEithersN x_ of
+    Left msgs -> return (Left msgs)
+    Right _ -> return (Right ())
+  where
+    args' = (\x -> if null x then [] else x) (lsArgs cmd)
+    chain_l = map (pathStringToPathChain cwd) args'
+    lsone :: [FilePath] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+    lsone chain = do
+      uuid_ <- pathChainToUuid chain
+      case uuid_ of
+        Left msgs -> return (Left msgs)
+        Right Nothing -> do
+          liftIO $ putStrLn "/"
+          return (Right ())
+        Right (Just uuid) -> do
+          item__ <- getBy $ ItemUniqUuid uuid
+          case item__ of
+            Nothing ->
+              return (Left ["couldn't load item from database: "++uuid])
+            Just item_ -> do
+              let item = entityVal item_
+              case itemType item of
+                "folder" -> do
+                  liftIO $ putStrLn $ (itemToName item) ++ "/"
+                  return (Right ())
+
+itemToName :: Item -> String
+itemToName item =
+  fromMaybe (itemUuid item) (itemLabel item)
+
+pathChainToUuid :: [FilePath] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (Maybe String))
+pathChainToUuid chain = parentToPathChainToUuid Nothing chain
+
+parentToPathChainToUuid :: Maybe String -> [FilePath] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (Maybe String))
+parentToPathChainToUuid parent [] = return (Right parent)
+parentToPathChainToUuid parent (name:rest) = do
+  item_ <- nameToItem parent name
+  case item_ of
+    Left msgs -> return (Left msgs)
+    Right item -> parentToPathChainToUuid (Just $ itemUuid item) rest
+
+
+nameToItem :: Maybe String -> FilePath -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
+nameToItem parent name = do
+  item_ <- selectList [ItemLabel ==. (Just name), ItemParent ==. parent] [LimitTo 2]
+  case item_ of
+    [] -> return (Left ["No such file or directory"])
+    p:[] -> return (Right $ entityVal p)
+    _ -> return (Left ["conflict: multiple items at path"])
 
 data CommandMkdir = CommandMkdir {
   mkdirArgs :: [String],
   mkdirParents :: Bool
 }
+
+pathStringToPathChain :: [FilePath] -> String -> [FilePath]
+pathStringToPathChain cwd path_s = case splitDirectories path_s of
+  l@("/":rest) -> dropWhile (== "/") l
+  rest -> dropWhile (== "/") (cwd ++ rest)
 
 mkdir :: UTCTime -> String -> [FilePath] -> CommandMkdir -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (CommandRecord))
 mkdir time user cwd cmd | trace "mkdir" False = undefined
@@ -117,15 +182,13 @@ mkdir time user cwd cmd = do
     mkone path0 | trace ("mkone "++path0) False = undefined
     mkone path0 =
       let
-        path = case splitDirectories path0 of
-          l@("/":rest) -> dropWhile (== "/") l
-          rest -> dropWhile (== "/") (cwd ++ rest)
+        chain = pathStringToPathChain cwd path0
       in do
-        parent_ <- fn (mkdirParents cmd) (init path) Nothing
+        parent_ <- fn (mkdirParents cmd) (init chain) Nothing
         case parent_ of
           Left msgs -> return (Left msgs)
           Right parent -> do
-            new_ <- mksub parent (last path)
+            new_ <- mksub parent (last chain)
             case new_ of
               Left msgs -> return (Left msgs)
               Right new -> do

@@ -81,6 +81,9 @@ mode_ls = Mode
     ]
   }
 
+--optsRun_ls :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+--optsRun_ls opts = do
+
 mode_mkdir = Mode
   { modeGroupModes = mempty
   , modeNames = ["mkdir"]
@@ -140,6 +143,14 @@ refToUuid' ("id", ref) = do
   return $ fmap (\uuid -> ("id", uuid)) uuid_
 refToUuid' x = return $ Right x
 
+data CommandLs = CommandLs {
+  lsArgs :: [String]
+}
+
+ls :: UTCTime -> String -> [FilePath] -> CommandLs -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (CommandRecord))
+ls time user cwd cmd = do
+  mapM mkone (mkdirArgs cmd)
+
 data CommandMkdir = CommandMkdir {
   mkdirArgs :: [String],
   mkdirParents :: Bool
@@ -159,7 +170,6 @@ mkdir time user cwd cmd = do
         Right parent -> do
           new_ <- mksub parent name
           case new_ of
-    mkdirTop
 
     fn :: [FilePath] -> Maybe String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (Maybe String))
     fn [] parent = return (Right parent)
