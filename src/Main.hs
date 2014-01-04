@@ -88,14 +88,25 @@ repl = do
   putStr "> "
   hFlush stdout
   input <- getLine
-  let args = splitArgs input
+  let args0 = splitArgs input
   time <- getCurrentTime
-  runSqlite "repl.db" $ do
-    --let cmd = CommandMkdir args False
-    --result <- mkdir time "default" ["/"] cmd
-    let cmd = CommandLs args
-    result <- ls time "default" ["/"] cmd
-    liftIO $ print result
+  record_ <- runSqlite "repl.db" $ do
+    case args0 of
+      [] -> return (Right Nothing)
+      "ls":args -> do
+        let cmd = CommandLs args
+        result <- ls time "default" ["/"] cmd
+        return (result >>= \x -> Right Nothing)
+      "mkdir":args -> do
+        let cmd = CommandMkdir args False
+        result <- mkdir time "default" ["/"] cmd
+        return $ result >>= Right . Just
+      cmd:_ -> return (Left ["command not found: "++cmd])
+  case (record_ :: Validation (Maybe CommandRecord)) of
+    Left msgs -> liftIO $ mapM_ putStrLn msgs
+    Right Nothing -> return ()
+    Right (Just record) -> liftIO $ print record
+  repl
 
 data CommandLs = CommandLs {
   lsArgs :: [String]
