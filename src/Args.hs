@@ -78,6 +78,12 @@ data ModeRun
     , modeRunProcess2 :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
     , modeRunDB :: CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
     }
+  | ModeRunRW
+    { modeRunCannonize :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Options)
+    , modeRunRW :: CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+    }
+  | ModeRunRO
+    { modeRunRO :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ()) }
   | ModeRunIO
     { modeRunIO :: Options -> IO (Validation ()) }
 

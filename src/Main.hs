@@ -26,9 +26,12 @@ import Data.Time.Clock (UTCTime, getCurrentTime)
 import System.Console.CmdArgs.Explicit
 import System.Environment
 import System.Exit
+import System.FilePath.Posix (splitDirectories)
 import System.IO
 import Database.Persist (insert)
-import Database.Persist.Sqlite (SqlPersistT, runSqlite)
+--import Database.Persist.Sqlite (SqlPersistT, runSqlite)
+import Database.Persist.Sqlite
+import Debug.Trace
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.UUID as U
@@ -77,6 +80,86 @@ mode_root = modes "otot" (options_empty "") "OnTopOfThings for managing lists an
 -- 7) print relevant output
 main :: IO ()
 main = do
+  runSqlite "repl.db" $ do
+    runMigration migrateAll
+  repl
+
+repl = do
+  putStr "> "
+  input <- getLine
+  let args = splitArgs input
+  time <- getCurrentTime
+  runSqlite "repl.db" $ do
+    let cmd = CommandMkdir args False
+    result <- mkdir time "default" ["/"] cmd
+    liftIO $ print result
+
+data CommandMkdir = CommandMkdir {
+  mkdirArgs :: [String],
+  mkdirParents :: Bool
+}
+
+mkdir :: UTCTime -> String -> [FilePath] -> CommandMkdir -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (CommandRecord))
+mkdir time user cwd cmd | trace "mkdir" False = undefined
+mkdir time user cwd cmd = do
+  if null args
+    then return (Left ["mkdir: missing operand", "Try 'mkdir --help' for more information."])
+    else do
+      result_ <- mapM mkone (mkdirArgs cmd)
+      case concatEithersN result_ of
+        Left msgs -> return (Left msgs)
+        Right _ -> return (Right (CommandRecord 1 time (T.pack user) (T.pack "repl-mkdir") (map T.pack args')))
+  where
+    args = (mkdirArgs cmd)
+    args' = args ++ (if mkdirParents cmd then ["--parents"] else [])
+
+    mkone :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+    mkone path0 | trace ("mkone "++path0) False = undefined
+    mkone path0 =
+      let
+        path = case splitDirectories path0 of
+          l@("/":rest) -> dropWhile (== "/") l
+          rest -> dropWhile (== "/") (cwd ++ rest)
+      in do
+        parent_ <- fn (mkdirParents cmd) (init path) Nothing
+        case parent_ of
+          Left msgs -> return (Left msgs)
+          Right parent -> do
+            new_ <- mksub parent (last path)
+            case new_ of
+              Left msgs -> return (Left msgs)
+              Right new -> do
+                let args' = (mkdirArgs cmd) ++ (if mkdirParents cmd then ["--parents"] else [])
+                return (Right ())
+
+    fn :: Bool -> [FilePath] -> Maybe String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (Maybe String))
+    fn doMake l parent | trace ("fn "++(show l)) False = undefined
+    fn _ [] parent = return (Right parent)
+    fn doMake (name:rest) parent = do
+      item_ <- selectList [ItemLabel ==. (Just name), ItemParent ==. parent] [LimitTo 2]
+      case item_ of
+        [] -> if doMake
+          then do
+            new_ <- mksub parent name
+            case new_ of
+              Left msgs -> return (Left msgs)
+              Right new -> fn doMake rest (Just $ itemUuid new)
+          else return (Left ["mkdir: cannot create directory ‘a/b/c’: No such file or directory"])
+        p:[] -> fn doMake rest (Just $ itemUuid $ entityVal p)
+        _ -> return (Left ["conflict: multiple items at path"])
+
+    mksub :: Maybe String -> String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
+    mksub parent name = do
+      uuid <- liftIO (U4.nextRandom >>= return . U.toString)
+      let item = (itemEmpty uuid time "folder" name "open") { itemParent = parent, itemLabel = Just name }
+      insert item
+      return (Right item)
+
+
+-------------------------------------------------------------
+
+mainOld :: IO ()
+mainOld = do
   -- Options read by CmdArgs
   opts <- processArgs mode_root
   toStdErr opts

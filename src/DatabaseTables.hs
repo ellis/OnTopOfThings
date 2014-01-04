@@ -68,3 +68,7 @@ Item
   --reviewed UTCTime Maybe -- Last time reviewed
   deriving Show
 |]
+
+itemEmpty :: String -> UTCTime -> String -> String -> String -> Item
+itemEmpty uuid ctime type_ title status =
+  Item uuid ctime type_ title status Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing

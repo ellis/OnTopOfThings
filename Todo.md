@@ -9,6 +9,7 @@ Ideas:
 - make a terminal-like repl for: cd, cat, mv, ln, ls, find, mkdir, rmdir as well as special commands like new, close, show, mod
 
 - [ ] Create a REPL
+- [ ] Item: add creator, assignedTo
 - [ ] Add: rename to new?
 - [ ] New: add -F --newfolder to create a folder with the given name if not already present
 - [ ] Add support for folders, taking the place of the old list concept
