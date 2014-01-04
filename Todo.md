@@ -1,5 +1,20 @@
 # Todos
 
+## Design 3
+
+Ideas:
+- Rename 'title' -> 'content'?
+- Rename 'label' -> 'name'? But maybe we still want to have global labels?
+- Should term for the hierarchical parent be: parent, path, directory, or folder?
+- make a terminal-like repl for: cd, cat, mv, ln, ls, find, mkdir, rmdir as well as special commands like new, close, show, mod
+
+- [ ] Create a REPL
+- [ ] Add: rename to new?
+- [ ] New: add -F --newfolder to create a folder with the given name if not already present
+- [ ] Add support for folders, taking the place of the old list concept
+- [ ] Add support for lists as an ordered sequence of items
+
+## Design 2
 - [x] Command: instead of storing data changes, store commands
 - [x] Database: load command records into database
 - [x] Add: update database based on a Command
@@ -64,7 +79,7 @@
 - [x] Mod: 'parent' need to be a valid reference
 - [x] Show: fix --stage
 - [x] Close: let it interpret id ranges like Mod
-- [ ] Show: why does `--search Jeff` not work on my test data?
+
 - [ ] Add: autogenerate a label for lists if none is given
 - [ ] Check out hlint
 - [ ] Read chapters 15 and 18 of Real World Haskell
@@ -161,7 +176,6 @@ Config file:
 - [ ] Temporary directory
 
 ## Incubator tasks
-
 - [ ] 'command undo' command deleting the last local command from the history
 - [ ] 'command history' command to list all commands given so far (perhaps filtering out old closed items)
 - [ ] 'command ignore' command for ignoring a command when rebuilding the database
@@ -170,7 +184,7 @@ Config file:
 - [ ] interactive mode possibly for adding new item
 - [ ] web UI
 
-## Old
+## Design 1
 - [x] Change: switch to new JSON format
 - [x] Change: Give clearer names to the Change* types
 - [x] Create new change record files

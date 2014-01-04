@@ -92,6 +92,11 @@
     * routine
     * review-week, review-month, review-quarter, review-year
     * decide, for things that need to be decided as opposed to acted on
+* folders, tags, lists, items, projects
+    * a folder is a hierarchical way to organize all the stuff
+    * lists are an ordered sequence of items, but where the items may be modified from their original
+    * lists are in a folder, but they can contain items from any folder
+    * list contents could either be a text file which gets modified or a sequence of items representing the lines of the list
 * tasks vs ideas
     * some lists never need to be reviewed regularly -- they're just there for when you want to reference them
     * some items may not need to be reviewed regularly -- they're just there for idea generation
@@ -100,6 +105,11 @@
          * purpose: brainstorm (idea), reference (note), task
          * review: only when needed, year, quarter, month, week, on a specific date, after a specific date, certain intervals
          * for tasks: they may be past the review stage
+* revisions:
+    * need to think about how to handle revisions.  Maybe need to introduce branches and not just use command times.
+    * we might not always want to save fine-grained changes when a user changes ordering on a list, for exampe
+    * maybe an "compress" command which would compress commands down, perhaps since previous sync
+    * maybe an "apply diff" which would apply a data diff instead of commands
 * more features
     * items somehow inherit properties from their parents, if the properies are not set on the items
     * when an item has a due date and a time estimate, show it on the daily list once things start getting tight
@@ -110,6 +120,21 @@
     * scheduled reminders
     * show marginal costs and benefits for comparison of activities
     * like Anki for scheduled review?
+    * Shopping lists
+        * recurring and one-time items
+        * recurring items can be selected when they start to run low
+        * the qualitity to purchase can be selected
+        * you can display the list by store
+        * check-off while shopping
+        * keep track of amounts purchased over time
+    * recipes, connected with shopping lists
+    * Travel lists
+        * Lists of things to pack and take care of
+        * Items can be tagged by weather, destination, duration, occasion, participants, etc
+        * Should be able to organize according to where item was packed
+        * General lists and lists for concrete past/future trips
+        * Make it easy to create a new list for a new trip by picking items from the past and/or starting with an existing list as a template
+    * calendar for both one-time events and general schedule, where the schedule should be easily modified for deviations on a given day/week/month
 * plausibility checks
     * make plausibility checks when setting a date to hide and item till, because hiding is kind of dangerous
     * when a task is marked as done which has incomplete sub-tasks

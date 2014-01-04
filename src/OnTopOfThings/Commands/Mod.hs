@@ -94,6 +94,7 @@ optsProcess2_mod :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validati
 optsProcess2_mod opts = return (Right opts)
 
 optsRun_mod :: CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+--optsRun_mod record opts | trace ("optsRun_mod: "++(show record)) False = undefined
 optsRun_mod record opts = do
   let time = Command.commandTime record
   let m = optionsMap opts
