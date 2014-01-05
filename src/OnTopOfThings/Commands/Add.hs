@@ -75,6 +75,7 @@ mode_add = Mode
     , flagReq ["tag", "t"] (updN "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
     , flagReq ["title"] (upd1 "title") "TITLE" "Title of the item."
     , flagReq ["type"] (upd1 "type") "TYPE" "list|task. (default=task)"
+    , flagNone ["newfolder", "F"] (upd0 "newfolder") "If a parent path is given which doesn't exist yet, create it first."
     , flagHelpSimple updHelp
     ]
   }

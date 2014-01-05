@@ -22,6 +22,7 @@ import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
 import Data.Maybe (catMaybes, fromMaybe)
+import Data.Monoid
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import System.Console.CmdArgs.Explicit
 import System.Environment
@@ -42,6 +43,9 @@ import Command
 import DatabaseTables
 import DatabaseUtils
 import Utils
+import OnTopOfThings.Actions.Action
+import OnTopOfThings.Actions.Env
+import OnTopOfThings.Actions.Run
 import OnTopOfThings.Commands.Add
 import OnTopOfThings.Commands.Close
 import OnTopOfThings.Commands.Delete
@@ -82,212 +86,31 @@ main :: IO ()
 main = do
   runSqlite "repl.db" $ do
     runMigration migrateAll
-  repl
+  repl ["/"]
 
-repl = do
+repl cwd = do
   putStr "> "
   hFlush stdout
   input <- getLine
-  let args0 = splitArgs input
   time <- getCurrentTime
-  record_ <- runSqlite "repl.db" $ do
+  let args0 = splitArgs input
+  let env0 = Env time "default" cwd
+  (env1, result_) <- runSqlite "repl.db" $ do
     case args0 of
-      [] -> return (Nothing :: Maybe CommandRecord, [], [])
-      "ls":args -> do
-        let cmd = CommandLs args
-        result <- ls time "default" ["/"] cmd
-        case result of
-          Left msgs -> return (Nothing, [], msgs)
-          Right _ -> return (Nothing, [], [])
-      "mkdir":args -> do
-        let cmd = CommandMkdir args False
-        result <- mkdir time "default" ["/"] cmd
-        return result
+      [] -> return (env0, mempty)
+      "ls":args -> do runAction env0 (ActionLs args)
+      "mkdir":args -> do runAction env0 (ActionMkdir args False)
       cmd:_ -> do
         liftIO $ processMode args0
-        return (Nothing, [], ["command not found: "++cmd])
-  case record_ of
-    (record', warn, err) -> do
+        return (env0, ActionResult False False [] ["command not found: "++cmd])
+  case result_ of
+    (ActionResult change rollback warn err) -> do
       liftIO $ mapM_ putStrLn err
       liftIO $ mapM_ putStrLn warn
-      case record' of
-        Nothing -> return ()
-        Just record -> liftIO $ print record
-  repl
-
-data CommandLs = CommandLs {
-  lsArgs :: [String]
-}
-
-ls :: UTCTime -> String -> [FilePath] -> CommandLs -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
-ls time user cwd cmd = do
-  x_ <- mapM lsone chain_l
-  case concatEithersN x_ of
-    Left msgs -> return (Left msgs)
-    Right _ -> return (Right ())
-  where
-    args' = (\x -> if null x then ["."] else x) (lsArgs cmd)
-    chain_l = map (pathStringToPathChain cwd) args'
-    lsone :: [FilePath] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
-    lsone chain = do
-      uuid_ <- pathChainToUuid chain
-      case uuid_ of
-        Left msgs -> return (Left msgs)
-        Right Nothing -> do
-          liftIO $ putStrLn "/"
-          lschildren Nothing
-          return (Right ())
-        Right (Just uuid) -> do
-          item__ <- getBy $ ItemUniqUuid uuid
-          case item__ of
-            Nothing ->
-              return (Left ["couldn't load item from database: "++uuid])
-            Just item_ -> do
-              lsitem (entityVal item_)
-    lsitem :: Item -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
-    lsitem item =
-      case itemType item of
-        "folder" -> do
-          liftIO $ putStrLn $ (itemToName item) ++ "/"
-          lschildren (Just $ itemUuid item)
-          return (Right ())
-        "list" -> do
-          liftIO $ putStrLn $ (itemToName item) ++ "/"
-          lschildren (Just $ itemUuid item)
-          return (Right ())
-        "task" -> do
-          liftIO $ putStrLn $ (itemToName item)
-          lschildren (Just $ itemUuid item)
-          return (Right ())
-    lschildren :: Maybe String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
-    lschildren parent = do
-      items_ <- selectList [ItemParent ==. parent] []
-      let items = map entityVal items_
-      mapM_ lsitem items
-      return (Right ())
-
-itemToName :: Item -> String
-itemToName item =
-  fromMaybe (itemUuid item) (itemLabel item)
-
-pathChainToUuid :: [FilePath] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (Maybe String))
-pathChainToUuid chain = parentToPathChainToUuid Nothing chain
-
-parentToPathChainToUuid :: Maybe String -> [FilePath] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (Maybe String))
-parentToPathChainToUuid parent [] = return (Right parent)
-parentToPathChainToUuid parent (name:rest) = do
-  item_ <- nameToItem parent name
-  case item_ of
-    Left msgs -> return (Left msgs)
-    Right item -> parentToPathChainToUuid (Just $ itemUuid item) rest
-
-
-nameToItem :: Maybe String -> FilePath -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
-nameToItem parent name = do
-  item_ <- selectList [ItemLabel ==. (Just name), ItemParent ==. parent] [LimitTo 2]
-  case item_ of
-    [] -> return (Left ["No such file or directory"])
-    p:[] -> return (Right $ entityVal p)
-    _ -> return (Left ["conflict: multiple items at path"])
-
-data CommandMkdir = CommandMkdir {
-  mkdirArgs :: [String],
-  mkdirParents :: Bool
-}
-
-pathStringToPathChain :: [FilePath] -> String -> [FilePath]
-pathStringToPathChain cwd path_s = chain3 where
-  -- Prepend cwd if relative path is given
-  chain0 = case splitDirectories path_s of
-    l@("/":rest) -> l
-    rest -> cwd ++ rest
-  -- Drop '/' prefixes
-  chain1 = dropWhile (== "/") chain0
-  -- Drop '.' infixes
-  chain2 = filter (/= ".") chain1
-  -- Drop x:".."
-  dropDotDot :: [FilePath] -> [FilePath] -> [FilePath]
-  dropDotDot [] acc = reverse acc
-  dropDotDot (_:"..":rest) acc = dropDotDot rest acc
-  dropDotDot (x:rest) acc = dropDotDot rest (x:acc)
-  chain3 = dropDotDot chain2 []
-
-mkdir :: UTCTime -> String -> [FilePath] -> CommandMkdir -> SqlPersistT (NoLoggingT (ResourceT IO)) (Maybe CommandRecord, [String], [String])
---mkdir time user cwd cmd | trace "mkdir" False = undefined
-mkdir time user cwd cmd = do
-  if null args
-    then return (Nothing, ["mkdir: missing operand", "Try 'mkdir --help' for more information."], [])
-    else do
-      result_ <- mapM mkone (mkdirArgs cmd)
-      let ret = foldl (\(succ, warn, err) (succ', warn', err') -> (succ || succ', warn ++ warn', err ++ err')) (False, [], []) result_
-      case ret of
-        (True, warn, err) -> return (Just record, warn, err)
-        (False, warn, err) -> return (Nothing, warn, err)
-  where
-    args = (mkdirArgs cmd)
-    args' = args ++ (if mkdirParents cmd then ["--parents"] else [])
-    record = CommandRecord 1 time (T.pack user) (T.pack "repl-mkdir") (map T.pack args')
-
-    mkone :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Bool, [String], [String])
-    --mkone path_s | trace ("mkone "++path_s) False = undefined
-    mkone path_s =
-      let
-        chain = pathStringToPathChain cwd path_s
-        --chains = tail $ inits chain
-      in do
-        -- Check whether the item already exists
-        uuid_ <- pathChainToUuid chain
-        case uuid_ of
-          -- if the item already exists:
-          Right _ -> do
-            -- if --parents flag:
-            if mkdirParents cmd
-              then return (False, [], [])
-              else return (False, [], ["mkdir: cannot create directory ‘"++path_s++"’: File exists"])
-          -- if the item doesn't already exist:
-          Left msgs -> do
-            if mkdirParents cmd
-              -- if all parents should be created
-              then do
-                uuid_ <- fn True chain Nothing
-                case uuid_ of
-                  Left msgs -> return (False, [], msgs)
-                  Right uuid -> return (True, [], [])
-              -- if all parents should already exist
-              else do
-                parent_ <- fn False (init chain) Nothing
-                case parent_ of
-                  Left msgs -> return (False, [], msgs)
-                  Right parent -> do
-                    new_ <- mksub parent (last chain)
-                    case new_ of
-                      Left msgs -> return (False, [], msgs)
-                      Right new -> do
-                        return (True, [], [])
-
-    fn :: Bool -> [FilePath] -> Maybe String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (Maybe String))
-    fn doMake l parent | trace ("fn "++(show l)) False = undefined
-    fn _ [] parent = return (Right parent)
-    fn doMake (name:rest) parent = do
-      item_ <- selectList [ItemLabel ==. (Just name), ItemParent ==. parent] [LimitTo 2]
-      case item_ of
-        [] -> if doMake
-          then do
-            new_ <- mksub parent name
-            case new_ of
-              Left msgs -> return (Left msgs)
-              Right new -> fn doMake rest (Just $ itemUuid new)
-          else return (Left ["mkdir: cannot create directory ‘a/b/c’: No such file or directory"])
-        p:[] -> fn doMake rest (Just $ itemUuid $ entityVal p)
-        _ -> return (Left ["conflict: multiple items at path"])
-
-    mksub :: Maybe String -> String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
-    mksub parent name = do
-      uuid <- liftIO (U4.nextRandom >>= return . U.toString)
-      let item = (itemEmpty uuid time "folder" name "open") { itemParent = parent, itemLabel = Just name }
-      insert item
-      return (Right item)
-
+      -- TODO: if change && not rollback: create and save command record
+      -- TODO: if change && rollback: rebuild the database
+      liftIO $ print result_
+  repl (envCwdChain env1)
 
 -------------------------------------------------------------
 

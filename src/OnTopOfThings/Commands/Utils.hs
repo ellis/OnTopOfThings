@@ -98,6 +98,7 @@ processRefFlags opts0 name = do
 --  (Right x) >>= f = f x
 --  return = Right
 
+--createFolderItems :: UTCTime -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation [Item])
 createItem :: UTCTime -> Options -> Validation Item
 --createItem _ opts | trace ("Utils.createItem: "++(show opts)) False = undefined
 createItem time opts = do
