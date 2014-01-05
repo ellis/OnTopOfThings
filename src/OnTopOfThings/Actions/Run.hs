@@ -164,48 +164,6 @@ ls (Env time user cwd) (ActionLs args0 isRecursive) = do
       liftIO $ lsitems items
       return mempty
 
-
---    -- 'ls' for each arg
---    lsone :: [FilePath] -> SqlActionResult
---    lsone chain recurse = do
---      uuid_ <- pathChainToUuid chain
---      case uuid_ of
---        Left msgs -> return (ActionResult False False [] msgs)
---        Right Nothing -> do
---          when doShowFolderName (liftIO $ putStrLn "/:")
---          when recurse $ do { lschildren Nothing; return () }
---          return mempty
---        Right (Just uuid) -> do
---          item__ <- getBy $ ItemUniqUuid uuid
---          case item__ of
---            Nothing ->
---              return (ActionResult False False [] ["couldn't load item from database: "++uuid])
---            Just item_ -> do
---              lsitem (entityVal item_)
---    lsFolder
---    -- 'ls' for an item
---    lsitem :: Item -> SqlActionResult
---    lsitem item =
---      case itemType item of
---        "folder" -> do
---          when doShowFolderName (liftIO $ putStrLn $ (itemToName item) ++ "/")
---          when isRecursive $ do { lschildren (Just $ itemUuid item); return () }
---          return mempty
---        "list" -> do
---          when doShowFolderName (liftIO $ putStrLn $ (itemToName item) ++ "/")
---          when isRecursive $ do { lschildren (Just $ itemUuid item); return () }
---          return mempty
---        "task" -> do
---          liftIO $ putStrLn $ (itemToName item)
---          when isRecursive $ do { lschildren (Just $ itemUuid item); return () }
---          return mempty
---    lschildren :: Maybe String -> SqlActionResult
---    lschildren parent = do
---      items_ <- selectList [ItemParent ==. parent] []
---      let items = map entityVal items_
---      mapM_ lsitem items
---      return mempty
-
 itemToName :: Item -> String
 itemToName item =
   fromMaybe (itemUuid item) (itemLabel item)
@@ -246,10 +204,14 @@ pathStringToPathChain cwd path_s = chain3 where
   dropDotDot (_:"..":rest) acc = dropDotDot rest acc
   dropDotDot (x:rest) acc = dropDotDot rest (x:acc)
   chain3 = dropDotDot chain2 []
+  -- Prefix root '/'
+  chain4 = "/":chain3
 
 fullPathStringToUuid :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (Maybe String))
 fullPathStringToUuid path_s = pathChainToUuid chain where
   chain = pathStringToPathChain [] path_s
+
+uuidRoot = "00000000-0000-0000-0000-000000000000"
 
 mkdir :: Env -> ActionMkdir -> SqlActionResult
 mkdir env cmd | trace "mkdir" False = undefined
@@ -257,12 +219,24 @@ mkdir (Env time user cwd) cmd = do
   if null args
     then return (ActionResult False False ["mkdir: missing operand", "Try 'mkdir --help' for more information."] [])
     else do
+      mkroot
       result_ <- mapM mkone (mkdirArgs cmd)
       return $ mconcat result_
   where
     args = (mkdirArgs cmd)
     args' = args ++ (if mkdirParents cmd then ["--parents"] else [])
     --record = CommandRecord 1 time (T.pack user) (T.pack "repl-mkdir") (map T.pack args')
+
+    mkroot :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
+    mkroot = do
+      root_ <- getBy $ ItemUniqUuid uuidRoot
+      case root_ of
+        Just _ -> return ()
+        Nothing -> do
+          time <- liftIO $ getCurrentTime
+          let itemRoot = (itemEmpty uuidRoot time "folder" "/" "open") { itemLabel = Just "/" }
+          insert itemRoot
+          return ()
 
     mkone :: String -> SqlActionResult
     --mkone path_s | trace ("mkone "++path_s) False = undefined

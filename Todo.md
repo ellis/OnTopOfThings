@@ -14,13 +14,13 @@ Ideas:
 - [x] Repl: convert Options to Action
 - [x] Repl: convert Action to CommandRecord arguments
 - [x] Repl: ls: don't display recursively unless `-R` flag
-- [ ] mkdir: consider automatically creating a root folder with uuid = 0's
-- [ ] Repl: `ls`: should display items in current folder
-- [ ] Repl: `ls -R`: should display items in current folder, then recursively for each item
+- [ ] Repl: ``ls``: should display items in current folder
+- [ ] Repl: ``ls -R``: should display items in current folder, then recursively for each item
 - [ ] Repl: ls -R
 - [ ] Repl: create CommandRecord when appropriate for actions
 - [ ] Repl: newtask
-- [ ] Import: use `add -F` when creating projects
+- [ ] Import: use ``add -F`` when creating projects
+- [ ] mkdir: consider automatically creating a root folder with uuid = 0's
 - [ ] Item: add name, creator, owner fields
 - [ ] Edit my data in 'testdata' to create folders instead of lists; also no use of 'label'
 - [ ] Repl: cd
