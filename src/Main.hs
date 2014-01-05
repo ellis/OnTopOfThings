@@ -98,7 +98,14 @@ repl cwd = do
   (env1, result_) <- runSqlite "repl.db" $ do
     case args0 of
       [] -> return (env0, mempty)
-      "ls":args -> do runAction env0 (ActionLs args)
+      "ls":args -> do
+        case process mode_ls args of
+          Left msg -> return (env0, ActionResult False False [] [msg])
+          Right opts -> do
+            action_ <- actionFromOptions opts
+            case (action_ :: Validation ActionLs) of
+              Left msgs -> return (env0, ActionResult False False [] msgs)
+              Right action -> runAction env0 (ActionLs args)
       "mkdir":args -> do runAction env0 (ActionMkdir args False)
       cmd:_ -> do
         liftIO $ processMode args0

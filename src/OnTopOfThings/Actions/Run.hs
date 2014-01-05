@@ -26,6 +26,7 @@ import Control.Monad.Trans.Resource (ResourceT)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Monoid
 import Data.Time.Clock (UTCTime, getCurrentTime)
+import System.Console.CmdArgs.Explicit
 import System.Environment
 import System.FilePath.Posix (splitDirectories)
 import System.IO
@@ -33,10 +34,12 @@ import Database.Persist (insert)
 import Database.Persist.Sqlite
 import Debug.Trace
 import qualified Data.Map as M
+import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.UUID as U
 import qualified Data.UUID.V4 as U4
 
+import Args
 import DatabaseTables
 import DatabaseUtils
 import Utils
@@ -53,9 +56,46 @@ concatActionResults l = mconcat l
 
 instance Action ActionLs where
   runAction env cmd = ls env cmd >>= \x -> return (env, x)
+  --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionLs)
+  actionFromOptions opts = do
+    return (Right (ActionLs (optionsArgs opts)))
 
 instance Action ActionMkdir where
   runAction env cmd = mkdir env cmd >>= \x -> return (env, x)
+  --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionMkdir)
+  actionFromOptions opts = do
+    return (Right (ActionMkdir (optionsArgs opts) (Set.member "parents" (optionsParams0 opts))))
+
+mode_ls = Mode
+  { modeGroupModes = mempty
+  , modeNames = ["ls"]
+  , modeValue = options_empty "ls"
+  , modeCheck = Right
+  , modeReform = Just . reform
+  , modeExpandAt = True
+  , modeHelp = "List information about the FILEs (in the current directory by default)."
+  , modeHelpSuffix = ["Add a new task and be a dude"]
+  , modeArgs = ([], Just (flagArg updArgs "FILE"))
+  , modeGroupFlags = toGroup
+    [ flagHelpSimple updHelp
+    ]
+  }
+
+mode_mkdir = Mode
+  { modeGroupModes = mempty
+  , modeNames = ["mkdir"]
+  , modeValue = options_empty "mkdir"
+  , modeCheck = Right
+  , modeReform = Just . reform
+  , modeExpandAt = True
+  , modeHelp = "Create the DIRECTORY(ies), if they do not already exist."
+  , modeHelpSuffix = []
+  , modeArgs = ([], Just (flagArg updArgs "DIRECTORY"))
+  , modeGroupFlags = toGroup
+    [ flagNone ["parents", "p"] (upd0 "parents") "no error if existing, make parent directories as needed"
+    , flagHelpSimple updHelp
+    ]
+  }
 
 ls :: Env -> ActionLs -> SqlActionResult
 ls (Env time user cwd) cmd = do

@@ -37,15 +37,19 @@ import qualified Data.Text as T
 import qualified Data.UUID as U
 import qualified Data.UUID.V4 as U4
 
+import Args
+import Utils
 import OnTopOfThings.Actions.Env
 
 data ActionLs = ActionLs
     { lsArgs :: [String]
     } deriving (Show)
+
 data ActionMkdir = ActionMkdir
     { mkdirArgs :: [String]
     , mkdirParents :: Bool
     } deriving (Show)
+
 data ActionNewItem = ActionNewItem
     { newItemType :: String
     , newItemParentRef :: Maybe String
@@ -69,3 +73,5 @@ type SqlActionResult = SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 
 class Action a where
   runAction :: Env -> a -> SqlPersistT (NoLoggingT (ResourceT IO)) (Env, ActionResult)
+  actionFromOptions :: (Action a) => Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation a)
+
