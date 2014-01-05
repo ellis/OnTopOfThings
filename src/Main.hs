@@ -106,7 +106,14 @@ repl cwd = do
             case (action_ :: Validation ActionLs) of
               Left msgs -> return (env0, ActionResult False False [] msgs)
               Right action -> runAction env0 (ActionLs args)
-      "mkdir":args -> do runAction env0 (ActionMkdir args False)
+      "mkdir":args -> do
+        case process mode_mkdir args of
+          Left msg -> return (env0, ActionResult False False [] [msg])
+          Right opts -> do
+            action_ <- actionFromOptions opts
+            case (action_ :: Validation ActionMkdir) of
+              Left msgs -> return (env0, ActionResult False False [] msgs)
+              Right action -> runAction env0 (ActionLs args)
       cmd:_ -> do
         liftIO $ processMode args0
         return (env0, ActionResult False False [] ["command not found: "++cmd])
