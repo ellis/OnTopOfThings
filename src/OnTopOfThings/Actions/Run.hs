@@ -19,15 +19,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 module OnTopOfThings.Actions.Run where
 
-import Control.Monad (when)
+import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
 import Data.List (intercalate, partition)
-import Data.Maybe (catMaybes, fromMaybe)
+import Data.Maybe
 import Data.Monoid
 import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time.ISO8601
 import System.Console.CmdArgs.Explicit
 import System.Environment
 import System.FilePath.Posix (splitDirectories)
@@ -70,6 +71,56 @@ instance Action ActionMkdir where
     args = mkdirArgs action
     flags = catMaybes $ [if mkdirParents action then Just "--parents" else Nothing]
 
+instance Action ActionNewTask where
+  runAction env cmd = newtask env cmd >>= \x -> return (env, x)
+  --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionMkdir)
+  actionFromOptions opts = do
+    let action_ = createAction
+    return action_
+    where
+      createAction :: Validation ActionNewTask
+      createAction = do
+        id <- getMaybe "id"
+        let title = unwords $ optionsArgs opts
+        status <- get "status"
+        parent <- getMaybe "parent"
+        stage <- getMaybe "stage"
+        label <- getMaybe "label"
+        -- index
+        closed <- getMaybeDate "closed"
+        start <- getMaybeDate "start"
+        end <- getMaybeDate "end"
+        due <- getMaybeDate "due"
+        review <- getMaybeDate "review"
+        return $ ActionNewTask
+          { newTaskParentRef = parent
+          , newTaskName = label
+          , newTaskTitle = Just title
+          , newTaskContent = Nothing
+          , newTaskStatus = Just status
+          , newTaskStage = stage
+          , newTaskTags = []
+          }
+      map = optionsMap opts
+      get name = case M.lookup name map of
+        Just (Just x) -> Right x
+        _ -> Left ["missing value for `" ++ name ++ "`"]
+      getMaybe name = case M.lookup name map of
+        Just (Just s) -> Right (Just s)
+        _ -> Right Nothing
+      getMaybeDate :: String -> Validation (Maybe UTCTime)
+      getMaybeDate name = case M.lookup name map of
+        Just (Just s) ->
+          (parseISO8601 s) `maybeToValidation` ["Could not parse time: " ++ s] >>= \time -> Right (Just time)
+        _ -> Right Nothing
+
+  actionToRecordArgs action = Just $ flags ++ args where
+    args = maybeToList (newTaskTitle action)
+    flags = catMaybes
+      [ newTaskParentRef action >>= \x -> Just ("--parent="++x)
+      , newTaskName action >>= \x -> Just ("--name="++x)
+      ]
+
 mode_ls = Mode
   { modeGroupModes = mempty
   , modeNames = ["ls"]
@@ -98,6 +149,31 @@ mode_mkdir = Mode
   , modeArgs = ([], Just (flagArg updArgs "DIRECTORY"))
   , modeGroupFlags = toGroup
     [ flagNone ["parents", "p"] (upd0 "parents") "no error if existing, make parent directories as needed"
+    , flagHelpSimple updHelp
+    ]
+  }
+
+mode_newtask = Mode
+  { modeGroupModes = mempty
+  , modeNames = ["newtask"]
+  , modeValue = options_empty "newtask"
+  , modeCheck = Right
+  , modeReform = Just . reform
+  , modeExpandAt = True
+  , modeHelp = "Add a new task"
+  , modeHelpSuffix = []
+  , modeArgs = ([flagArg updArgs "TITLE"], Nothing)
+  , modeGroupFlags = toGroup
+    [ flagReq ["parent", "p"] (upd1 "parent") "ID" "reference to parent of this item"
+    , flagReq ["closed"] (upd1 "closed") "TIME" "Time that this item was closed."
+    , flagReq ["id"] (upd1 "id") "ID" "A unique ID for this item. (NOT FOR NORMAL USE!)"
+    , flagReq ["label", "l"] (upd1 "label") "LABEL" "A unique label for this item."
+    , flagReq ["stage", "s"] (upd1 "stage") "STAGE" "new|incubator|today. (default=new)"
+    , flagReq ["status"] (upd1 "status") "STATUS" "open|closed|deleted. (default=open)"
+    , flagReq ["tag", "t"] (updN "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
+    , flagReq ["title"] (upd1 "title") "TITLE" "Title of the item."
+    , flagReq ["type"] (upd1 "type") "TYPE" "list|task. (default=task)"
+    , flagReq ["newfolder", "F"] (upd1 "newfolder") "FOLDER" "Place item in folder, and create the folder if necessary."
     , flagHelpSimple updHelp
     ]
   }
@@ -308,3 +384,48 @@ mkdir (Env time user cwd) cmd = do
       let item = (itemEmpty uuid time "folder" name "open") { itemParent = (Just $ itemUuid parent), itemLabel = Just name }
       insert item
       return (Right item)
+
+newtask :: Env -> ActionNewTask -> SqlActionResult
+newtask env cmd | trace "newtask" False = undefined
+newtask (Env time user cwd) action = do
+  parent_ <- absPathChainToItem parentChain
+  case parent_ of
+    Left msgs -> return (ActionResult False False [] msgs)
+    Right parent -> do
+      uuid <- liftIO (U4.nextRandom >>= return . U.toString)
+      item_ <- return $ do
+        title <- get newTaskTitle
+        status <- getMaybe newTaskStatus
+        stage <- getMaybe newTaskStage
+        name <- getMaybe newTaskName
+        return $ Item
+          { itemUuid = uuid
+          , itemCtime = time
+          , itemType = "task"
+          , itemTitle = title
+          , itemStatus = fromMaybe "open" status
+          , itemParent = Just (itemUuid parent)
+          , itemStage = stage `mplus` Just "new"
+          , itemLabel = name
+          , itemIndex = Nothing
+          , itemClosed = Nothing
+          , itemStart = Nothing
+          , itemEnd = Nothing
+          , itemDue = Nothing
+          , itemReview = Nothing
+          }
+      case item_ of
+        Left msgs -> return (ActionResult False False [] msgs)
+        Right item -> do
+          insert item
+          return mempty
+  where
+    parentChain = case newTaskParentRef action of
+      Just s -> pathStringToPathChain cwd s
+      Nothing -> cwd
+    get :: (ActionNewTask -> Maybe String) -> Validation String
+    get fn = case fn action of
+      Nothing -> Left ["missing value"]
+      Just s -> Right s
+    getMaybe :: (ActionNewTask -> Maybe String) -> Validation (Maybe String)
+    getMaybe fn = Right (fn action)

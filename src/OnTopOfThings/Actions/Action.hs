@@ -52,12 +52,14 @@ data ActionMkdir = ActionMkdir
     , mkdirParents :: Bool
     } deriving (Show)
 
-data ActionNewItem = ActionNewItem
-    { newItemType :: String
-    , newItemParentRef :: Maybe String
-    , newItemName :: Maybe String
-    , newItemTitle :: Maybe String
-    , newItemContent :: Maybe String
+data ActionNewTask = ActionNewTask
+    { newTaskParentRef :: Maybe String
+    , newTaskName :: Maybe String
+    , newTaskTitle :: Maybe String
+    , newTaskContent :: Maybe String
+    , newTaskStatus :: Maybe String
+    , newTaskStage :: Maybe String
+    , newTaskTags :: [String]
     } deriving (Show)
 
 data ActionResult = ActionResult
