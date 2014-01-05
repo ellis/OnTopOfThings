@@ -10,8 +10,9 @@ Ideas:
 
 - [x] Create a REPL
 - [x] Add: option -F, automatically create required folders
-- [ ] Repl: create CmdArgs Options for ls, mkdir
-- [ ] Repl: convert between Options and Action
+- [x] Repl: create CmdArgs Options for ls, mkdir
+- [x] Repl: convert Options to Action
+- [ ] Repl: convert Action to Options
 - [ ] Repl: newtask
 - [ ] Import: use `add -F` when creating projects
 - [ ] Item: add name, creator, owner fields

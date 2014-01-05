@@ -188,7 +188,7 @@ fullPathStringToUuid path_s = pathChainToUuid chain where
   chain = pathStringToPathChain [] path_s
 
 mkdir :: Env -> ActionMkdir -> SqlActionResult
---mkdir time user cwd cmd | trace "mkdir" False = undefined
+mkdir env cmd | trace "mkdir" False = undefined
 mkdir (Env time user cwd) cmd = do
   if null args
     then return (ActionResult False False ["mkdir: missing operand", "Try 'mkdir --help' for more information."] [])
