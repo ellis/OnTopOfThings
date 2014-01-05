@@ -95,35 +95,41 @@ repl cwd = do
   time <- getCurrentTime
   let args0 = splitArgs input
   let env0 = Env time "default" cwd
-  (env1, result_) <- runSqlite "repl.db" $ do
+  (env1, recordArgs, result_) <- runSqlite "repl.db" $ do
     case args0 of
-      [] -> return (env0, mempty)
+      [] -> return (env0, [], mempty)
       "ls":args -> do
         case process mode_ls args of
-          Left msg -> return (env0, ActionResult False False [] [msg])
+          Left msg -> return (env0, [], ActionResult False False [] [msg])
           Right opts -> do
             if optionsHelp opts
               then do
                 liftIO $ print $ helpText [] HelpFormatDefault mode_ls
-                return (env0, mempty)
+                return (env0, [], mempty)
               else do
                 action_ <- actionFromOptions opts
                 case (action_ :: Validation ActionLs) of
-                  Left msgs -> return (env0, ActionResult False False [] msgs)
-                  Right action -> runAction env0 action
+                  Left msgs -> return (env0, [], ActionResult False False [] msgs)
+                  Right action -> do
+                    result_ <- runAction env0 action
+                    case result_ of
+                      (env', action', result') -> return (env', Just action', result')
       "mkdir":args -> do
         case process mode_mkdir args of
-          Left msg -> return (env0, ActionResult False False [] [msg])
+          Left msg -> return (env0, Nothing, ActionResult False False [] [msg])
           Right opts -> do
             if optionsHelp opts
               then do
                 liftIO $ print $ helpText [] HelpFormatDefault mode_mkdir
-                return (env0, mempty)
+                return (env0, Nothing, mempty)
               else do
                 action_ <- actionFromOptions opts
                 case (action_ :: Validation ActionMkdir) of
                   Left msgs -> return (env0, ActionResult False False [] msgs)
-                  Right action -> runAction env0 action
+                  Right action -> do
+                    result_ <- runAction env0 action
+                    case result_ of
+                      (env', action', result') -> return (env', Just action', result')
       "newtask":args -> do
         case process mode_newtask args of
           Left msg -> return (env0, ActionResult False False [] [msg])
@@ -133,17 +139,33 @@ repl cwd = do
                 liftIO $ print $ helpText [] HelpFormatDefault mode_newtask
                 return (env0, mempty)
               else do
-                runAction env0 action
+                result_ <- runAction env0 action
+                case result_ of
+                  (env', action', result') -> return (env', Just (actionToRecordArgs action'), result')
       cmd:_ -> do
         liftIO $ processMode args0
-        return (env0, ActionResult False False [] ["command not found: "++cmd])
+        return (env0, Nothing, ActionResult False False [] ["command not found: "++cmd])
   case result_ of
     (ActionResult change rollback warn err) -> do
       liftIO $ mapM_ putStrLn err
       liftIO $ mapM_ putStrLn warn
+      if rollback
+        then liftIO $ putStrLn "ERROR: NEED TO `rebuild`"
+        else if change
+          then do
+            case action_ of
+              Nothing -> return ()
+              Just action ->
+                case actionToRecordArgs action of
+                  Nothing -> return ()
+                  Just args -> do
+                    let record = CommandRecord 1 time (T.pack $ envUser env0) (T.pack $ head args0) (map T.pack args)
+                    liftIO $ print record
+          else
+            return ()
       -- TODO: if change && not rollback: create and save command record
       -- TODO: if change && rollback: rebuild the database
-      liftIO $ print result_
+      --liftIO $ print result_
   repl (envCwdChain env1)
 
 -------------------------------------------------------------

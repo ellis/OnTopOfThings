@@ -39,6 +39,6 @@ import qualified Data.UUID.V4 as U4
 
 data Env = Env
   { envTime :: UTCTime
-  , envUse :: String
+  , envUser :: String
   , envCwdChain :: [FilePath]
   } deriving (Show)

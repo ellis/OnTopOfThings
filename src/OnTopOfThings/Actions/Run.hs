@@ -52,7 +52,7 @@ import OnTopOfThings.Actions.Env
 
 
 instance Action ActionLs where
-  runAction env cmd = ls env cmd >>= \x -> return (env, x)
+  runAction env action = ls env action >>= \x -> return (env, action, x)
   --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionLs)
   actionFromOptions opts = let
       args = optionsArgs opts
@@ -63,7 +63,7 @@ instance Action ActionLs where
   actionToRecordArgs action = Nothing
 
 instance Action ActionMkdir where
-  runAction env cmd = mkdir env cmd >>= \x -> return (env, x)
+  runAction env action = mkdir env action >>= \x -> return (env, action, x)
   --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionMkdir)
   actionFromOptions opts = do
     return (Right (ActionMkdir (optionsArgs opts) (Set.member "parents" (optionsParams0 opts))))
@@ -72,7 +72,7 @@ instance Action ActionMkdir where
     flags = catMaybes $ [if mkdirParents action then Just "--parents" else Nothing]
 
 instance Action ActionNewTask where
-  runAction env cmd = newtask env cmd >>= \x -> return (env, x)
+  runAction env action = newtask env action >>= \x -> return (env, action, x)
   --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionMkdir)
   actionFromOptions opts = do
     let action_ = createAction
@@ -419,7 +419,7 @@ newtask (Env time user cwd) action = do
         Left msgs -> return (ActionResult False False [] msgs)
         Right item -> do
           insert item
-          return (ActionNewTask True False [] [])
+          return (ActionResult True False [] [])
   where
     parentChain = case newTaskParentRef action of
       Just s -> pathStringToPathChain cwd s

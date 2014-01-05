@@ -18,6 +18,7 @@ Ideas:
 - [x] Repl: ``ls``: should display items in current folder
 - [x] Repl: newtask
 - [x] mode_newtask should be ActionNewTask instead of Options
+- [ ] CommandRecord put cwd in there?
 - [ ] Repl: create CommandRecord when appropriate for actions
 - [ ] Item: add name, creator, owner fields
 - [ ] Import: use ``add -F`` when creating projects
