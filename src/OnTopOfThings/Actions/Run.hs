@@ -19,10 +19,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 module OnTopOfThings.Actions.Run where
 
+import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
+import Data.List (intercalate, partition)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Monoid
 import Data.Time.Clock (UTCTime, getCurrentTime)
@@ -48,23 +50,25 @@ import OnTopOfThings.Actions.Action
 import OnTopOfThings.Actions.Env
 
 
--- TODO: Make ActionResult a monoid so that the list can be reduced and we can get rid of actionResultEmpty
---concatActionResults :: [ActionResult] -> ActionResult
-concatActionResults l = mconcat l
---foldl fn (ActionResult False False [] []) l where
-  --fn (ActionResult s r w e) (ActionResult s' r' w' e') = ActionResult (c || c') (r || r') (w ++ w') (e ++ e')
-
 instance Action ActionLs where
   runAction env cmd = ls env cmd >>= \x -> return (env, x)
   --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionLs)
-  actionFromOptions opts = do
-    return (Right (ActionLs (optionsArgs opts)))
+  actionFromOptions opts = let
+      args = optionsArgs opts
+      isRecursive = Set.member "recursive" (optionsParams0 opts)
+    in do
+      return (Right (ActionLs args isRecursive))
+
+  actionToRecordArgs action = Nothing
 
 instance Action ActionMkdir where
   runAction env cmd = mkdir env cmd >>= \x -> return (env, x)
   --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionMkdir)
   actionFromOptions opts = do
     return (Right (ActionMkdir (optionsArgs opts) (Set.member "parents" (optionsParams0 opts))))
+  actionToRecordArgs action = Just $ flags ++ args where
+    args = mkdirArgs action
+    flags = catMaybes $ [if mkdirParents action then Just "--parents" else Nothing]
 
 mode_ls = Mode
   { modeGroupModes = mempty
@@ -77,7 +81,8 @@ mode_ls = Mode
   , modeHelpSuffix = ["Add a new task and be a dude"]
   , modeArgs = ([], Just (flagArg updArgs "FILE"))
   , modeGroupFlags = toGroup
-    [ flagHelpSimple updHelp
+    [ flagNone ["recursive", "R"] (upd0 "recursive") "list subdirectories recursively"
+    , flagNone ["help"] updHelp "display this help and exit"
     ]
   }
 
@@ -98,49 +103,108 @@ mode_mkdir = Mode
   }
 
 ls :: Env -> ActionLs -> SqlActionResult
-ls (Env time user cwd) cmd = do
-  x_ <- mapM lsone chain_l
-  return (concatActionResults x_)
+ls env action | trace ("ls: "++(show action)) False = undefined
+ls (Env time user cwd) (ActionLs args0 isRecursive) = do
+  uuidTop_ <- mapM pathChainToUuid chain_l
+  itemTop_ <- mapM loadItem uuidTop_
+  let (goodR, badR) = foldl partitionArgs ([], []) (zip args0 itemTop_)
+  let bad = reverse badR
+  liftIO $ mapM_ putStrLn bad
+  let good = reverse goodR
+  let (folders, tasks) = partition partitionTypes good
+  let items' = catMaybes $ map snd tasks
+  liftIO $ lsitems items'
+  x_ <- mapM lsfolder folders
+  return (mempty :: ActionResult)
+
+  return (mconcat x_)
   where
-    args' = (\x -> if null x then ["."] else x) (lsArgs cmd)
+    args' = (\x -> if null x then ["."] else x) args0
     chain_l = map (pathStringToPathChain cwd) args'
-    lsone :: [FilePath] -> SqlActionResult
-    lsone chain = do
-      uuid_ <- pathChainToUuid chain
-      case uuid_ of
-        Left msgs -> return (ActionResult False False [] msgs)
-        Right Nothing -> do
-          liftIO $ putStrLn "/"
-          lschildren Nothing
-          return mempty
-        Right (Just uuid) -> do
-          item__ <- getBy $ ItemUniqUuid uuid
-          case item__ of
-            Nothing ->
-              return (ActionResult False False [] ["couldn't load item from database: "++uuid])
-            Just item_ -> do
-              lsitem (entityVal item_)
-    lsitem :: Item -> SqlActionResult
-    lsitem item =
-      case itemType item of
-        "folder" -> do
-          liftIO $ putStrLn $ (itemToName item) ++ "/"
-          lschildren (Just $ itemUuid item)
-          return mempty
-        "list" -> do
-          liftIO $ putStrLn $ (itemToName item) ++ "/"
-          lschildren (Just $ itemUuid item)
-          return mempty
-        "task" -> do
-          liftIO $ putStrLn $ (itemToName item)
-          lschildren (Just $ itemUuid item)
-          return mempty
-    lschildren :: Maybe String -> SqlActionResult
-    lschildren parent = do
-      items_ <- selectList [ItemParent ==. parent] []
+
+    loadItem :: Validation (Maybe String) -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (Maybe Item))
+    loadItem (Right Nothing) = return (Right Nothing)
+    loadItem (Right (Just uuid)) = do
+      entity_ <- getBy $ (ItemUniqUuid uuid)
+      case entity_ of
+        Nothing -> return (Left ["internal lookup error: "++uuid])
+        Just entity -> return (Right (Just $ entityVal entity))
+
+    partitionArgs :: ([(String, Maybe Item)], [String]) -> (String, Validation (Maybe Item)) -> ([(String, Maybe Item)], [String])
+    partitionArgs (good, bad) (arg, Right item) = ((arg, item):good, bad)
+    partitionArgs (good, bad) (arg, Left msgs) = (good, (map (\s -> "ls: cannot access "++arg++": "++s) msgs) ++ bad)
+
+    -- Return true if this if passed a folder or list item (or Nothing item, for the root folder)
+    partitionTypes :: (String, Maybe Item) -> Bool
+    partitionTypes (_, Nothing) = True -- TODO: but False if -d
+    partitionTypes (_, Just item) = case itemType item of
+      "folder" -> True -- TODO: but False if -d
+      "list" -> True
+      _ -> False
+
+    lsitems :: [Item] -> IO ()
+    lsitems items = do
+      mapM_ (\l -> (putStrLn . intercalate " ") l) ll
+      where
+        ll = map strings items
+        strings item = case itemType item of
+          "folder" -> [(itemToName item) ++ "/"]
+          "list" -> [(itemToName item) ++ "/"]
+          _ -> [(itemToName item)]
+
+    doShowFolderName = isRecursive || length args' > 1
+
+    lsfolder :: (String, Maybe Item) -> SqlActionResult
+    lsfolder (arg, item_) = do
+      let name = fromMaybe "/" (item_ >>= \item -> Just (itemToName item))
+      let uuid_ = (item_ >>= \item -> Just (itemUuid item))
+      when doShowFolderName (liftIO $ putStrLn (name++":"))
+      items_ <- selectList [ItemParent ==. uuid_] []
       let items = map entityVal items_
-      mapM_ lsitem items
+      liftIO $ lsitems items
       return mempty
+
+
+--    -- 'ls' for each arg
+--    lsone :: [FilePath] -> SqlActionResult
+--    lsone chain recurse = do
+--      uuid_ <- pathChainToUuid chain
+--      case uuid_ of
+--        Left msgs -> return (ActionResult False False [] msgs)
+--        Right Nothing -> do
+--          when doShowFolderName (liftIO $ putStrLn "/:")
+--          when recurse $ do { lschildren Nothing; return () }
+--          return mempty
+--        Right (Just uuid) -> do
+--          item__ <- getBy $ ItemUniqUuid uuid
+--          case item__ of
+--            Nothing ->
+--              return (ActionResult False False [] ["couldn't load item from database: "++uuid])
+--            Just item_ -> do
+--              lsitem (entityVal item_)
+--    lsFolder
+--    -- 'ls' for an item
+--    lsitem :: Item -> SqlActionResult
+--    lsitem item =
+--      case itemType item of
+--        "folder" -> do
+--          when doShowFolderName (liftIO $ putStrLn $ (itemToName item) ++ "/")
+--          when isRecursive $ do { lschildren (Just $ itemUuid item); return () }
+--          return mempty
+--        "list" -> do
+--          when doShowFolderName (liftIO $ putStrLn $ (itemToName item) ++ "/")
+--          when isRecursive $ do { lschildren (Just $ itemUuid item); return () }
+--          return mempty
+--        "task" -> do
+--          liftIO $ putStrLn $ (itemToName item)
+--          when isRecursive $ do { lschildren (Just $ itemUuid item); return () }
+--          return mempty
+--    lschildren :: Maybe String -> SqlActionResult
+--    lschildren parent = do
+--      items_ <- selectList [ItemParent ==. parent] []
+--      let items = map entityVal items_
+--      mapM_ lsitem items
+--      return mempty
 
 itemToName :: Item -> String
 itemToName item =

@@ -38,11 +38,13 @@ import qualified Data.UUID as U
 import qualified Data.UUID.V4 as U4
 
 import Args
+import Command (CommandRecord)
 import Utils
 import OnTopOfThings.Actions.Env
 
 data ActionLs = ActionLs
     { lsArgs :: [String]
+    , lsRecursive :: Bool
     } deriving (Show)
 
 data ActionMkdir = ActionMkdir
@@ -74,4 +76,5 @@ type SqlActionResult = SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 class Action a where
   runAction :: Env -> a -> SqlPersistT (NoLoggingT (ResourceT IO)) (Env, ActionResult)
   actionFromOptions :: (Action a) => Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation a)
+  actionToRecordArgs :: (Action a) => a -> Maybe [String]
 

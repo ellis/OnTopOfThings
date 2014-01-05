@@ -89,7 +89,7 @@ main = do
   repl ["/"]
 
 repl cwd = do
-  putStr "> "
+  putStr "otot> "
   hFlush stdout
   input <- getLine
   time <- getCurrentTime
@@ -102,18 +102,28 @@ repl cwd = do
         case process mode_ls args of
           Left msg -> return (env0, ActionResult False False [] [msg])
           Right opts -> do
-            action_ <- actionFromOptions opts
-            case (action_ :: Validation ActionLs) of
-              Left msgs -> return (env0, ActionResult False False [] msgs)
-              Right action -> runAction env0 action
+            if optionsHelp opts
+              then do
+                liftIO $ print $ helpText [] HelpFormatDefault mode_ls
+                return (env0, mempty)
+              else do
+                action_ <- actionFromOptions opts
+                case (action_ :: Validation ActionLs) of
+                  Left msgs -> return (env0, ActionResult False False [] msgs)
+                  Right action -> runAction env0 action
       "mkdir":args -> do
         case process mode_mkdir args of
           Left msg -> return (env0, ActionResult False False [] [msg])
           Right opts -> do
-            action_ <- actionFromOptions opts
-            case (action_ :: Validation ActionMkdir) of
-              Left msgs -> return (env0, ActionResult False False [] msgs)
-              Right action -> runAction env0 action
+            if optionsHelp opts
+              then do
+                liftIO $ print $ helpText [] HelpFormatDefault mode_mkdir
+                return (env0, mempty)
+              else do
+                action_ <- actionFromOptions opts
+                case (action_ :: Validation ActionMkdir) of
+                  Left msgs -> return (env0, ActionResult False False [] msgs)
+                  Right action -> runAction env0 action
       cmd:_ -> do
         liftIO $ processMode args0
         return (env0, ActionResult False False [] ["command not found: "++cmd])

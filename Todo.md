@@ -12,7 +12,13 @@ Ideas:
 - [x] Add: option -F, automatically create required folders
 - [x] Repl: create CmdArgs Options for ls, mkdir
 - [x] Repl: convert Options to Action
-- [ ] Repl: convert Action to Options
+- [x] Repl: convert Action to CommandRecord arguments
+- [x] Repl: ls: don't display recursively unless `-R` flag
+- [ ] mkdir: consider automatically creating a root folder with uuid = 0's
+- [ ] Repl: `ls`: should display items in current folder
+- [ ] Repl: `ls -R`: should display items in current folder, then recursively for each item
+- [ ] Repl: ls -R
+- [ ] Repl: create CommandRecord when appropriate for actions
 - [ ] Repl: newtask
 - [ ] Import: use `add -F` when creating projects
 - [ ] Item: add name, creator, owner fields
