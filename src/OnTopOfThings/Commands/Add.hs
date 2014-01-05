@@ -50,6 +50,9 @@ import Command
 import DatabaseTables
 import DatabaseUtils
 import Utils
+import OnTopOfThings.Actions.Action
+import OnTopOfThings.Actions.Env
+import OnTopOfThings.Actions.Run
 import OnTopOfThings.Commands.Utils
 
 modeInfo_add :: ModeInfo
@@ -75,7 +78,7 @@ mode_add = Mode
     , flagReq ["tag", "t"] (updN "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
     , flagReq ["title"] (upd1 "title") "TITLE" "Title of the item."
     , flagReq ["type"] (upd1 "type") "TYPE" "list|task. (default=task)"
-    , flagReq ["newfolder", "F"] (upd1 "newfolder") "Place item in folder, and create the folder if necessary."
+    , flagReq ["newfolder", "F"] (upd1 "newfolder") "FOLDER" "Place item in folder, and create the folder if necessary."
     , flagHelpSimple updHelp
     ]
   }
@@ -109,7 +112,7 @@ optsProcess2_add opts = return (Right opts') where
 optsRun_add :: CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
 optsRun_add record opts0 = do
   let time = Command.commandTime record
-  opts1_ <- case M.lookup "newfolder" (optionsParams1 opts) of
+  opts1_ <- case M.lookup "newfolder" (optionsParams1 opts0) of
     Nothing -> return (Right opts0)
     Just folder -> do
       let env0 = Env time "default" ["/"]
@@ -118,11 +121,12 @@ optsRun_add record opts0 = do
       parent_ <- fullPathStringToUuid folder
       case parent_ of
         Left msgs -> return (Left msgs)
-        Right parent -> do
+        Right Nothing -> return (Right opts0)
+        Right (Just parent) -> do
           let opts1_ = upd1 "parent" parent opts0
           case opts1_ of
             Left msg -> return (Left [msg])
-            Right opts1 -> return opts1
+            Right opts1 -> return (Right opts1)
   case opts1_ of
     Left msgs -> return (Left msgs)
     Right opts1 -> do

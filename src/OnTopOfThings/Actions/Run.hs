@@ -17,9 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 {-# LANGUAGE OverloadedStrings #-}
 
-module OnTopOfThings.Actions.Run
-(
-) where
+module OnTopOfThings.Actions.Run where
 
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger (NoLoggingT)

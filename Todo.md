@@ -9,7 +9,7 @@ Ideas:
 - make a terminal-like repl for: cd, cat, mv, ln, ls, find, mkdir, rmdir as well as special commands like new, close, show, mod
 
 - [x] Create a REPL
-- [ ] Add: option -F, automatically create required folders
+- [x] Add: option -F, automatically create required folders
 - [ ] Import: use `add -F` when creating projects
 - [ ] Item: add name, creator, owner fields
 - [ ] Create CmdArgs for mkdir
