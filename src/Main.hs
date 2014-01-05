@@ -127,16 +127,13 @@ repl cwd = do
       "newtask":args -> do
         case process mode_newtask args of
           Left msg -> return (env0, ActionResult False False [] [msg])
-          Right opts -> do
-            if optionsHelp opts
+          Right action -> do
+            if newTaskHelp action
               then do
-                liftIO $ print $ helpText [] HelpFormatDefault mode_mkdir
+                liftIO $ print $ helpText [] HelpFormatDefault mode_newtask
                 return (env0, mempty)
               else do
-                action_ <- actionFromOptions opts
-                case (action_ :: Validation ActionNewTask) of
-                  Left msgs -> return (env0, ActionResult False False [] msgs)
-                  Right action -> runAction env0 action
+                runAction env0 action
       cmd:_ -> do
         liftIO $ processMode args0
         return (env0, ActionResult False False [] ["command not found: "++cmd])

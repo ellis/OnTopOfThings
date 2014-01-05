@@ -16,8 +16,8 @@ Ideas:
 - [x] Repl: ls: don't display recursively unless `-R` flag
 - [x] mkdir: consider automatically creating a root folder with uuid = 0's
 - [x] Repl: ``ls``: should display items in current folder
-- [ ] Repl: newtask
-- [ ] mode_newtask should be ActionNewTask instead of Options
+- [x] Repl: newtask
+- [x] mode_newtask should be ActionNewTask instead of Options
 - [ ] Repl: create CommandRecord when appropriate for actions
 - [ ] Item: add name, creator, owner fields
 - [ ] Import: use ``add -F`` when creating projects

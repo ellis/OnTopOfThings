@@ -53,7 +53,8 @@ data ActionMkdir = ActionMkdir
     } deriving (Show)
 
 data ActionNewTask = ActionNewTask
-    { newTaskParentRef :: Maybe String
+    { newTaskHelp :: Bool
+    , newTaskParentRef :: Maybe String
     , newTaskName :: Maybe String
     , newTaskTitle :: Maybe String
     , newTaskContent :: Maybe String

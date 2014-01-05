@@ -93,7 +93,8 @@ instance Action ActionNewTask where
         due <- getMaybeDate "due"
         review <- getMaybeDate "review"
         return $ ActionNewTask
-          { newTaskParentRef = parent
+          { newTaskHelp = False
+          , newTaskParentRef = parent
           , newTaskName = label
           , newTaskTitle = Just title
           , newTaskContent = Nothing
@@ -156,25 +157,25 @@ mode_mkdir = Mode
 mode_newtask = Mode
   { modeGroupModes = mempty
   , modeNames = ["newtask"]
-  , modeValue = options_empty "newtask"
+  , modeValue = ActionNewTask False Nothing Nothing Nothing Nothing Nothing Nothing []
   , modeCheck = Right
-  , modeReform = Just . reform
+  , modeReform = const Nothing
   , modeExpandAt = True
   , modeHelp = "Add a new task"
   , modeHelpSuffix = []
-  , modeArgs = ([flagArg updArgs "TITLE"], Nothing)
+  , modeArgs = ([flagArg (\v a -> Right (a { newTaskTitle = Just v })) "TITLE"], Nothing)
   , modeGroupFlags = toGroup
-    [ flagReq ["parent", "p"] (upd1 "parent") "ID" "reference to parent of this item"
-    , flagReq ["closed"] (upd1 "closed") "TIME" "Time that this item was closed."
-    , flagReq ["id"] (upd1 "id") "ID" "A unique ID for this item. (NOT FOR NORMAL USE!)"
-    , flagReq ["label", "l"] (upd1 "label") "LABEL" "A unique label for this item."
-    , flagReq ["stage", "s"] (upd1 "stage") "STAGE" "new|incubator|today. (default=new)"
-    , flagReq ["status"] (upd1 "status") "STATUS" "open|closed|deleted. (default=open)"
-    , flagReq ["tag", "t"] (updN "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
-    , flagReq ["title"] (upd1 "title") "TITLE" "Title of the item."
-    , flagReq ["type"] (upd1 "type") "TYPE" "list|task. (default=task)"
-    , flagReq ["newfolder", "F"] (upd1 "newfolder") "FOLDER" "Place item in folder, and create the folder if necessary."
-    , flagHelpSimple updHelp
+    [ flagReq ["parent", "p"] (\v a -> Right (a { newTaskParentRef = Just v })) "ID" "reference to parent of this item"
+    --, flagReq ["closed"] (upd1 "closed") "TIME" "Time that this item was closed."
+    --, flagReq ["id"] (upd1 "id") "ID" "A unique ID for this item. (NOT FOR NORMAL USE!)"
+    , flagReq ["label", "l"] (\v a -> Right (a { newTaskName = Just v })) "LABEL" "A unique label for this item."
+    , flagReq ["stage", "s"] (\v a -> Right (a { newTaskStage = Just v })) "STAGE" "new|incubator|today. (default=new)"
+    , flagReq ["status"] (\v a -> Right (a { newTaskStatus = Just v })) "STATUS" "open|closed|deleted. (default=open)"
+    --, flagReq ["tag", "t"] (updN "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
+    --, flagReq ["title"] (upd1 "title") "TITLE" "Title of the item."
+    --, flagReq ["type"] (upd1 "type") "TYPE" "list|task. (default=task)"
+    --, flagReq ["newfolder", "F"] (upd1 "newfolder") "FOLDER" "Place item in folder, and create the folder if necessary."
+    , flagHelpSimple (\a -> a { newTaskHelp = True })
     ]
   }
 
@@ -418,7 +419,7 @@ newtask (Env time user cwd) action = do
         Left msgs -> return (ActionResult False False [] msgs)
         Right item -> do
           insert item
-          return mempty
+          return (ActionNewTask True False [] [])
   where
     parentChain = case newTaskParentRef action of
       Just s -> pathStringToPathChain cwd s
