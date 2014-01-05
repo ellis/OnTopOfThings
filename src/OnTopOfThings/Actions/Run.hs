@@ -105,14 +105,13 @@ mode_mkdir = Mode
 ls :: Env -> ActionLs -> SqlActionResult
 ls env action | trace ("ls: "++(show action)) False = undefined
 ls (Env time user cwd) (ActionLs args0 isRecursive) = do
-  uuidTop_ <- mapM pathChainToUuid chain_l
-  itemTop_ <- mapM loadItem uuidTop_
-  let (goodR, badR) = foldl partitionArgs ([], []) (zip args0 itemTop_)
+  itemTop_ <- mapM absPathChainToItem chain_l
+  let (goodR, badR) = foldl partitionArgs ([], []) (zip args' itemTop_)
   let bad = reverse badR
   liftIO $ mapM_ putStrLn bad
   let good = reverse goodR
   let (folders, tasks) = partition partitionTypes good
-  let items' = catMaybes $ map snd tasks
+  let items' = map snd tasks
   liftIO $ lsitems items'
   x_ <- mapM lsfolder folders
   return (mempty :: ActionResult)
@@ -122,22 +121,13 @@ ls (Env time user cwd) (ActionLs args0 isRecursive) = do
     args' = (\x -> if null x then ["."] else x) args0
     chain_l = map (pathStringToPathChain cwd) args'
 
-    loadItem :: Validation (Maybe String) -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (Maybe Item))
-    loadItem (Right Nothing) = return (Right Nothing)
-    loadItem (Right (Just uuid)) = do
-      entity_ <- getBy $ (ItemUniqUuid uuid)
-      case entity_ of
-        Nothing -> return (Left ["internal lookup error: "++uuid])
-        Just entity -> return (Right (Just $ entityVal entity))
-
-    partitionArgs :: ([(String, Maybe Item)], [String]) -> (String, Validation (Maybe Item)) -> ([(String, Maybe Item)], [String])
+    partitionArgs :: ([(String, Item)], [String]) -> (String, Validation Item) -> ([(String, Item)], [String])
     partitionArgs (good, bad) (arg, Right item) = ((arg, item):good, bad)
     partitionArgs (good, bad) (arg, Left msgs) = (good, (map (\s -> "ls: cannot access "++arg++": "++s) msgs) ++ bad)
 
     -- Return true if this if passed a folder or list item (or Nothing item, for the root folder)
-    partitionTypes :: (String, Maybe Item) -> Bool
-    partitionTypes (_, Nothing) = True -- TODO: but False if -d
-    partitionTypes (_, Just item) = case itemType item of
+    partitionTypes :: (String, Item) -> Bool
+    partitionTypes (_, item) = case itemType item of
       "folder" -> True -- TODO: but False if -d
       "list" -> True
       _ -> False
@@ -154,12 +144,13 @@ ls (Env time user cwd) (ActionLs args0 isRecursive) = do
 
     doShowFolderName = isRecursive || length args' > 1
 
-    lsfolder :: (String, Maybe Item) -> SqlActionResult
-    lsfolder (arg, item_) = do
-      let name = fromMaybe "/" (item_ >>= \item -> Just (itemToName item))
-      let uuid_ = (item_ >>= \item -> Just (itemUuid item))
+    lsfolder :: (String, Item) -> SqlActionResult
+    lsfolder (arg, item) = do
+      let name = itemToName item
+      let uuid = itemUuid item
+      -- TODO: I probably want to use arg here
       when doShowFolderName (liftIO $ putStrLn (name++":"))
-      items_ <- selectList [ItemParent ==. uuid_] []
+      items_ <- selectList [ItemParent ==. Just uuid] []
       let items = map entityVal items_
       liftIO $ lsitems items
       return mempty
@@ -167,6 +158,23 @@ ls (Env time user cwd) (ActionLs args0 isRecursive) = do
 itemToName :: Item -> String
 itemToName item =
   fromMaybe (itemUuid item) (itemLabel item)
+
+absPathChainToItem :: [FilePath] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
+absPathChainToItem chain = do
+  root_ <- getroot
+  case root_ of
+    Left msgs -> return (Left msgs)
+    Right root -> parentToPathChainToItem root chain' where
+      -- Only keep part of chain after the root
+      chain' = reverse $ takeWhile (/= "/") $ reverse chain
+
+parentToPathChainToItem :: Item -> [FilePath] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
+parentToPathChainToItem parent [] = return (Right parent)
+parentToPathChainToItem parent (name:rest) = do
+  item_ <- nameToItem (Just $ itemUuid parent) name
+  case item_ of
+    Left msgs -> return (Left msgs)
+    Right item -> parentToPathChainToItem item rest
 
 pathChainToUuid :: [FilePath] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (Maybe String))
 pathChainToUuid chain = parentToPathChainToUuid Nothing chain
@@ -213,34 +221,37 @@ fullPathStringToUuid path_s = pathChainToUuid chain where
 
 uuidRoot = "00000000-0000-0000-0000-000000000000"
 
+getroot :: SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
+getroot = do
+  root_ <- getBy $ ItemUniqUuid uuidRoot
+  case root_ of
+    Just root' -> return (Right (entityVal root'))
+    Nothing -> do
+      time <- liftIO $ getCurrentTime
+      let itemRoot = (itemEmpty uuidRoot time "folder" "/" "open") { itemLabel = Just "/" }
+      insert itemRoot
+      return (Right itemRoot)
+
 mkdir :: Env -> ActionMkdir -> SqlActionResult
 mkdir env cmd | trace "mkdir" False = undefined
 mkdir (Env time user cwd) cmd = do
   if null args
     then return (ActionResult False False ["mkdir: missing operand", "Try 'mkdir --help' for more information."] [])
     else do
-      mkroot
-      result_ <- mapM mkone (mkdirArgs cmd)
-      return $ mconcat result_
+      root_ <- getroot
+      case root_ of
+        Left msgs -> return (ActionResult False False [] msgs)
+        Right root -> do
+          result_ <- mapM (mkone root) (mkdirArgs cmd)
+          return $ mconcat result_
   where
     args = (mkdirArgs cmd)
     args' = args ++ (if mkdirParents cmd then ["--parents"] else [])
     --record = CommandRecord 1 time (T.pack user) (T.pack "repl-mkdir") (map T.pack args')
 
-    mkroot :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
-    mkroot = do
-      root_ <- getBy $ ItemUniqUuid uuidRoot
-      case root_ of
-        Just _ -> return ()
-        Nothing -> do
-          time <- liftIO $ getCurrentTime
-          let itemRoot = (itemEmpty uuidRoot time "folder" "/" "open") { itemLabel = Just "/" }
-          insert itemRoot
-          return ()
-
-    mkone :: String -> SqlActionResult
+    mkone :: Item -> String -> SqlActionResult
     --mkone path_s | trace ("mkone "++path_s) False = undefined
-    mkone path_s =
+    mkone root path_s =
       let
         chain = pathStringToPathChain cwd path_s
         --chains = tail $ inits chain
@@ -259,13 +270,13 @@ mkdir (Env time user cwd) cmd = do
             if mkdirParents cmd
               -- if all parents should be created
               then do
-                uuid_ <- fn True chain Nothing
+                uuid_ <- fn True chain root
                 case uuid_ of
                   Left msgs -> return (ActionResult False False [] msgs)
                   Right uuid -> return (ActionResult True False [] [])
               -- if all parents should already exist
               else do
-                parent_ <- fn False (init chain) Nothing
+                parent_ <- fn False (init chain) root
                 case parent_ of
                   Left msgs -> return (ActionResult False False [] msgs)
                   Right parent -> do
@@ -275,25 +286,25 @@ mkdir (Env time user cwd) cmd = do
                       Right new -> do
                         return (ActionResult True False [] [])
 
-    fn :: Bool -> [FilePath] -> Maybe String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (Maybe String))
+    fn :: Bool -> [FilePath] -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
     fn doMake l parent | trace ("fn "++(show l)) False = undefined
     fn _ [] parent = return (Right parent)
     fn doMake (name:rest) parent = do
-      item_ <- selectList [ItemLabel ==. (Just name), ItemParent ==. parent] [LimitTo 2]
+      item_ <- selectList [ItemLabel ==. (Just name), ItemParent ==. (Just (itemUuid parent))] [LimitTo 2]
       case item_ of
         [] -> if doMake
           then do
             new_ <- mksub parent name
             case new_ of
               Left msgs -> return (Left msgs)
-              Right new -> fn doMake rest (Just $ itemUuid new)
+              Right new -> fn doMake rest new
           else return (Left ["mkdir: cannot create directory ‘a/b/c’: No such file or directory"])
-        p:[] -> fn doMake rest (Just $ itemUuid $ entityVal p)
+        p:[] -> fn doMake rest (entityVal p)
         _ -> return (Left ["conflict: multiple items at path"])
 
-    mksub :: Maybe String -> String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
+    mksub :: Item -> String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
     mksub parent name = do
       uuid <- liftIO (U4.nextRandom >>= return . U.toString)
-      let item = (itemEmpty uuid time "folder" name "open") { itemParent = parent, itemLabel = Just name }
+      let item = (itemEmpty uuid time "folder" name "open") { itemParent = (Just $ itemUuid parent), itemLabel = Just name }
       insert item
       return (Right item)
