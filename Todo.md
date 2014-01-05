@@ -8,10 +8,20 @@ Ideas:
 - Should term for the hierarchical parent be: parent, path, directory, or folder?
 - make a terminal-like repl for: cd, cat, mv, ln, ls, find, mkdir, rmdir as well as special commands like new, close, show, mod
 
-- [ ] Create a REPL
-- [ ] Item: add creator, assignedTo
+- [x] Create a REPL
+- [ ] Item: add name, creator, owner fields
+- [ ] Add: option -F, automatically create required folders
+- [ ] Import: use `add -F` when creating projects
+- [ ] Edit my data in 'testdata' to create folders instead of lists
+- [ ] Repl: cd
+- [ ] Repl: ls -l
+- [ ] Repl: ls -a
+- [ ] Repl: mv
+- [ ] Repl: cat, to show low-level details, perhaps YAML or MD
+- [ ] Repl: ln
+- [ ] Item: remove label field once I've transitioned everything to use 'name' instead
 - [ ] Add: rename to new?
-- [ ] New: add -F --newfolder to create a folder with the given name if not already present
+- [ ] Add: option -F,--newfolder to create a folder with the given name if not already present
 - [ ] Add support for folders, taking the place of the old list concept
 - [ ] Add support for lists as an ordered sequence of items
 

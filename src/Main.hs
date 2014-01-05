@@ -103,7 +103,9 @@ repl = do
         let cmd = CommandMkdir args False
         result <- mkdir time "default" ["/"] cmd
         return result
-      cmd:_ -> return (Nothing, [], ["command not found: "++cmd])
+      cmd:_ -> do
+        liftIO $ processMode args0
+        return (Nothing, [], ["command not found: "++cmd])
   case record_ of
     (record', warn, err) -> do
       liftIO $ mapM_ putStrLn err
@@ -291,9 +293,14 @@ mkdir time user cwd cmd = do
 
 mainOld :: IO ()
 mainOld = do
+  args <- getArgs
+  processMode args
+
+processMode :: [String] -> IO ()
+processMode args = do
   -- Options read by CmdArgs
-  opts <- processArgs mode_root
-  toStdErr opts
+  let opts = processValue mode_root args
+  --toStdErr opts
   -- find info for the chosen command mode
   let cmd = optionsCmd opts
   case M.lookup cmd modeInfo of
