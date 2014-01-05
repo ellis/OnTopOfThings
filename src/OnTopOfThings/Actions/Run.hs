@@ -145,6 +145,10 @@ pathStringToPathChain cwd path_s = chain3 where
   dropDotDot (x:rest) acc = dropDotDot rest (x:acc)
   chain3 = dropDotDot chain2 []
 
+fullPathStringToUuid :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (Maybe String))
+fullPathStringToUuid path_s = pathChainToUuid chain where
+  chain = pathStringToPathChain [] path_s
+
 mkdir :: Env -> ActionMkdir -> SqlActionResult
 --mkdir time user cwd cmd | trace "mkdir" False = undefined
 mkdir (Env time user cwd) cmd = do

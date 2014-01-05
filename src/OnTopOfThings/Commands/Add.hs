@@ -75,7 +75,7 @@ mode_add = Mode
     , flagReq ["tag", "t"] (updN "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
     , flagReq ["title"] (upd1 "title") "TITLE" "Title of the item."
     , flagReq ["type"] (upd1 "type") "TYPE" "list|task. (default=task)"
-    , flagNone ["newfolder", "F"] (upd0 "newfolder") "If a parent path is given which doesn't exist yet, create it first."
+    , flagReq ["newfolder", "F"] (upd1 "newfolder") "Place item in folder, and create the folder if necessary."
     , flagHelpSimple updHelp
     ]
   }
@@ -107,13 +107,31 @@ optsProcess2_add opts = return (Right opts') where
   opts' = foldl optionsSetDefault opts defaults where
 
 optsRun_add :: CommandRecord -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
-optsRun_add record opts = do
-  case createItem (Command.commandTime record) opts of
+optsRun_add record opts0 = do
+  let time = Command.commandTime record
+  opts1_ <- case M.lookup "newfolder" (optionsParams1 opts) of
+    Nothing -> return (Right opts0)
+    Just folder -> do
+      let env0 = Env time "default" ["/"]
+      let actionMkdir = ActionMkdir [folder] True
+      runAction env0 actionMkdir
+      parent_ <- fullPathStringToUuid folder
+      case parent_ of
+        Left msgs -> return (Left msgs)
+        Right parent -> do
+          let opts1_ = upd1 "parent" parent opts0
+          case opts1_ of
+            Left msg -> return (Left [msg])
+            Right opts1 -> return opts1
+  case opts1_ of
     Left msgs -> return (Left msgs)
-    Right item -> do
-      insert item
-      mapM_ (saveProperty (itemUuid item)) (optionsMods opts)
-      return $ Right ()
+    Right opts1 -> do
+      case createItem time opts1 of
+        Left msgs -> return (Left msgs)
+        Right item -> do
+          insert item
+          mapM_ (saveProperty (itemUuid item)) (optionsMods opts1)
+          return $ Right ()
 
 --refToUuid :: (String, String) -> SqlPersistT (NoLoggingT (ResourceT IO)) (Either String (String, String))
 refToUuid' ("parent", ref) = do

@@ -9,10 +9,11 @@ Ideas:
 - make a terminal-like repl for: cd, cat, mv, ln, ls, find, mkdir, rmdir as well as special commands like new, close, show, mod
 
 - [x] Create a REPL
-- [ ] Item: add name, creator, owner fields
 - [ ] Add: option -F, automatically create required folders
 - [ ] Import: use `add -F` when creating projects
-- [ ] Edit my data in 'testdata' to create folders instead of lists
+- [ ] Item: add name, creator, owner fields
+- [ ] Create CmdArgs for mkdir
+- [ ] Edit my data in 'testdata' to create folders instead of lists; also no use of 'label'
 - [ ] Repl: cd
 - [ ] Repl: ls -l
 - [ ] Repl: ls -a
