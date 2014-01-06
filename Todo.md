@@ -28,6 +28,7 @@ Ideas:
 - [ ] Rebuild: use new commands
 - [ ] Rebuild: add an option to build from internal change table or reload the change table from files
 - [ ] Edit my data in 'testdata' to create folders instead of lists; also no use of 'label'
+- [ ] Repl: ``ls`` should put blank lines between folder listings
 - [ ] Repl: cd
 - [ ] Repl: ls -l
 - [ ] Repl: ls -a

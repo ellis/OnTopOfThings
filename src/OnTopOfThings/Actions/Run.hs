@@ -188,10 +188,9 @@ ls (Env time user cwd) action@(ActionLs args0 isRecursive) = do
   liftIO $ mapM_ putStrLn bad
   let good = reverse goodR
   let (folders, tasks) = partition partitionTypes good
-  let items' = map snd tasks
-  liftIO $ lsitems items'
-  x_ <- mapM lsfolder folders
-  return (fromMaybe [] $ actionToRecordArgs action, mconcat x_)
+  lsitems tasks
+  mapM_ lsfolder folders
+  return (fromMaybe [] $ actionToRecordArgs action, mempty)
   where
     args' = (\x -> if null x then ["."] else x) args0
     chain_l = map (pathStringToPathChain cwd) args'
@@ -207,27 +206,31 @@ ls (Env time user cwd) action@(ActionLs args0 isRecursive) = do
       "list" -> True
       _ -> False
 
-    lsitems :: [Item] -> IO ()
-    lsitems items = do
-      mapM_ (\l -> (putStrLn . intercalate " ") l) ll
+    lsitems :: [(String, Item)] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+    lsitems nameToItem_l = do
+      liftIO $ mapM_ (\l -> (putStrLn . intercalate "  ") l) ll
+      when isRecursive $ do
+        let (folders, _) = partition partitionTypes nameToItem_l
+        mapM_ lsfolder folders
       where
-        ll = map strings items
-        strings item = case itemType item of
-          "folder" -> [(itemToName item) ++ "/"]
-          "list" -> [(itemToName item) ++ "/"]
-          _ -> [(itemToName item)]
+        ll = map strings nameToItem_l
+        strings (name, item) = case itemType item of
+          "folder" -> [name ++ "/"]
+          "list" -> [name ++ "/"]
+          _ -> [name]
 
     doShowFolderName = isRecursive || length args' > 1
 
-    lsfolder :: (String, Item) -> SqlActionResult
-    lsfolder (arg, item) = do
+    lsfolder :: (String, Item) -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+    lsfolder (name, item) = do
       let name = itemToName item
       let uuid = itemUuid item
-      -- TODO: I probably want to use arg here
+      -- TODO: I probably want to use name here
       when doShowFolderName (liftIO $ putStrLn (name++":"))
       items_ <- selectList [ItemParent ==. Just uuid] []
       let items = map entityVal items_
-      liftIO $ lsitems items
+      let nameToItem_l = map (\item -> (itemToName item, item)) items
+      lsitems nameToItem_l
       return mempty
 
 itemToName :: Item -> String
