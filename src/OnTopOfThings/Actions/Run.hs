@@ -31,7 +31,7 @@ import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.ISO8601
 import System.Console.CmdArgs.Explicit
 import System.Environment
-import System.FilePath.Posix (splitDirectories)
+import System.FilePath.Posix (joinPath, splitDirectories)
 import System.IO
 import Database.Persist (insert)
 import Database.Persist.Sqlite
@@ -188,8 +188,9 @@ ls (Env time user cwd) action@(ActionLs args0 isRecursive) = do
   liftIO $ mapM_ putStrLn bad
   let good = reverse goodR
   let (folders, tasks) = partition partitionTypes good
-  lsitems tasks
-  mapM_ lsfolder folders
+  lsitems [] tasks
+  -- TODO: only tell lsfolder to print a blank line in front of the first folder if items were aren't printed
+  mapM_ (lsfolder True []) folders
   return (fromMaybe [] $ actionToRecordArgs action, mempty)
   where
     args' = (\x -> if null x then ["."] else x) args0
@@ -206,32 +207,36 @@ ls (Env time user cwd) action@(ActionLs args0 isRecursive) = do
       "list" -> True
       _ -> False
 
-    lsitems :: [(String, Item)] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
-    lsitems nameToItem_l = do
+    lsitems :: [FilePath] -> [(String, Item)] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+    lsitems chainPrefix nameToItem_l = do
+      -- show all the items
       liftIO $ mapM_ (\l -> (putStrLn . intercalate "  ") l) ll
+      -- if we want to recurse into folders:
       when isRecursive $ do
         let (folders, _) = partition partitionTypes nameToItem_l
-        mapM_ lsfolder folders
+        when ((not . null) folders) $ do
+          mapM_ (lsfolder True chainPrefix) folders
       where
         ll = map strings nameToItem_l
         strings (name, item) = case itemType item of
-          "folder" -> [name ++ "/"]
-          "list" -> [name ++ "/"]
-          _ -> [name]
+          "folder" -> [(joinPath (chainPrefix ++ [name])) ++ "/"]
+          "list" -> [(joinPath (chainPrefix ++ [name])) ++ "/"]
+          _ -> [(joinPath (chainPrefix ++ [name]))]
 
     doShowFolderName = isRecursive || length args' > 1
 
-    lsfolder :: (String, Item) -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
-    lsfolder (name, item) = do
+    lsfolder :: Bool -> [FilePath] -> (String, Item) -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+    lsfolder needBlankLine chainPrefix0 (name, item) = do
       let name = itemToName item
       let uuid = itemUuid item
+      when needBlankLine (liftIO $ putStrLn "")
       -- TODO: I probably want to use name here
-      when doShowFolderName (liftIO $ putStrLn (name++":"))
+      let chainPrefix = chainPrefix0 ++ [name]
+      when doShowFolderName (liftIO $ putStrLn ((joinPath chainPrefix)++":"))
       items_ <- selectList [ItemParent ==. Just uuid] []
       let items = map entityVal items_
       let nameToItem_l = map (\item -> (itemToName item, item)) items
-      lsitems nameToItem_l
-      return mempty
+      lsitems chainPrefix nameToItem_l
 
 itemToName :: Item -> String
 itemToName item =

@@ -19,7 +19,7 @@ Ideas:
 - [x] Repl: newtask
 - [x] mode_newtask should be ActionNewTask instead of Options
 - [x] Repl: create CommandRecord when appropriate for actions
-- [ ] Repl: ``ls -R``: should display items in current folder, then recursively for each item, with proper relative paths
+- [x] Repl: ``ls -R``: should display items in current folder, then recursively for each item, with proper relative paths
 - [ ] mkdir: add --id argument to record; also need to figure out how to do that for parents when --parents is set.
 - [ ] CommandRecord: add optional cwd field
 - [ ] Command: add a uuid field
