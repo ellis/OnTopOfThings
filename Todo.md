@@ -20,6 +20,9 @@ Ideas:
 - [x] mode_newtask should be ActionNewTask instead of Options
 - [x] Repl: create CommandRecord when appropriate for actions
 - [x] Repl: ``ls -R``: should display items in current folder, then recursively for each item, with proper relative paths
+- [x] Repl: ``ls`` should put blank lines between folder listings
+- [x] Repl: add some color to ``ls``
+- [ ] Repl: ``ls -R`` should prefix everything with '/'
 - [ ] mkdir: add --id argument to record; also need to figure out how to do that for parents when --parents is set.
 - [ ] CommandRecord: add optional cwd field
 - [ ] Command: add a uuid field
@@ -28,7 +31,6 @@ Ideas:
 - [ ] Rebuild: use new commands
 - [ ] Rebuild: add an option to build from internal change table or reload the change table from files
 - [ ] Edit my data in 'testdata' to create folders instead of lists; also no use of 'label'
-- [ ] Repl: ``ls`` should put blank lines between folder listings
 - [ ] Repl: cd
 - [ ] Repl: ls -l
 - [ ] Repl: ls -a

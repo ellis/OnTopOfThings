@@ -29,6 +29,7 @@ import Data.Maybe
 import Data.Monoid
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.ISO8601
+import System.Console.ANSI
 import System.Console.CmdArgs.Explicit
 import System.Environment
 import System.FilePath.Posix (joinPath, splitDirectories)
@@ -185,12 +186,17 @@ ls (Env time user cwd) action@(ActionLs args0 isRecursive) = do
   itemTop_ <- mapM absPathChainToItem chain_l
   let (goodR, badR) = foldl partitionArgs ([], []) (zip args' itemTop_)
   let bad = reverse badR
-  liftIO $ mapM_ putStrLn bad
   let good = reverse goodR
+  let -- Split folders and non-folders
   let (folders, tasks) = partition partitionTypes good
+  let -- Only tell lsfolder to print a blank line in front of the first folder if items were aren't printed
+  let blankToFolder_l = zip ((if null tasks then False else True) : repeat True) folders
+  -- Show errors
+  liftIO $ mapM_ putStrLn bad
+  -- Show non-folder items
   lsitems [] tasks
-  -- TODO: only tell lsfolder to print a blank line in front of the first folder if items were aren't printed
-  mapM_ (lsfolder True []) folders
+  -- Show folders
+  mapM_ (\(blank, folder) -> lsfolder blank [] folder) blankToFolder_l
   return (fromMaybe [] $ actionToRecordArgs action, mempty)
   where
     args' = (\x -> if null x then ["."] else x) args0
@@ -219,7 +225,7 @@ ls (Env time user cwd) action@(ActionLs args0 isRecursive) = do
       where
         ll = map strings nameToItem_l
         strings (name, item) = case itemType item of
-          "folder" -> [(joinPath (chainPrefix ++ [name])) ++ "/"]
+          "folder" -> [ (setSGRCode [SetColor Foreground Vivid Blue]) ++ (joinPath (chainPrefix ++ [name])) ++ "/" ++ (setSGRCode [])]
           "list" -> [(joinPath (chainPrefix ++ [name])) ++ "/"]
           _ -> [(joinPath (chainPrefix ++ [name]))]
 
@@ -232,7 +238,10 @@ ls (Env time user cwd) action@(ActionLs args0 isRecursive) = do
       when needBlankLine (liftIO $ putStrLn "")
       -- TODO: I probably want to use name here
       let chainPrefix = chainPrefix0 ++ [name]
-      when doShowFolderName (liftIO $ putStrLn ((joinPath chainPrefix)++":"))
+      when doShowFolderName $ liftIO $ do
+        setSGR [SetConsoleIntensity BoldIntensity]
+        putStrLn ((joinPath chainPrefix)++":")
+        setSGR [Reset]
       items_ <- selectList [ItemParent ==. Just uuid] []
       let items = map entityVal items_
       let nameToItem_l = map (\item -> (itemToName item, item)) items
