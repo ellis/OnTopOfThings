@@ -77,7 +77,7 @@ instance Monoid ActionResult where
 type SqlActionResult = SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 
 class Action a where
-  runAction :: Env -> a -> SqlPersistT (NoLoggingT (ResourceT IO)) (Env, a, ActionResult)
+  runAction :: Env -> a -> SqlPersistT (NoLoggingT (ResourceT IO)) (Env, [String], ActionResult)
   actionFromOptions :: (Action a) => Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation a)
   actionToRecordArgs :: (Action a) => a -> Maybe [String]
 

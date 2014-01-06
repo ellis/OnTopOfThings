@@ -52,7 +52,7 @@ import OnTopOfThings.Actions.Env
 
 
 instance Action ActionLs where
-  runAction env action = ls env action >>= \x -> return (env, action, x)
+  runAction env action = ls env action >>= \(args, result) -> return (env, args, result)
   --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionLs)
   actionFromOptions opts = let
       args = optionsArgs opts
@@ -63,7 +63,7 @@ instance Action ActionLs where
   actionToRecordArgs action = Nothing
 
 instance Action ActionMkdir where
-  runAction env action = mkdir env action >>= \x -> return (env, action, x)
+  runAction env action = mkdir env action >>= \(args, result) -> return (env, args, result)
   --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionMkdir)
   actionFromOptions opts = do
     return (Right (ActionMkdir (optionsArgs opts) (Set.member "parents" (optionsParams0 opts))))
@@ -72,7 +72,7 @@ instance Action ActionMkdir where
     flags = catMaybes $ [if mkdirParents action then Just "--parents" else Nothing]
 
 instance Action ActionNewTask where
-  runAction env action = newtask env action >>= \x -> return (env, action, x)
+  runAction env action = newtask env action >>= \(args, result) -> return (env, args, result)
   --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionMkdir)
   actionFromOptions opts = do
     let action_ = createAction
@@ -179,9 +179,9 @@ mode_newtask = Mode
     ]
   }
 
-ls :: Env -> ActionLs -> SqlActionResult
+ls :: Env -> ActionLs -> SqlPersistT (NoLoggingT (ResourceT IO)) ([String], ActionResult)
 ls env action | trace ("ls: "++(show action)) False = undefined
-ls (Env time user cwd) (ActionLs args0 isRecursive) = do
+ls (Env time user cwd) action@(ActionLs args0 isRecursive) = do
   itemTop_ <- mapM absPathChainToItem chain_l
   let (goodR, badR) = foldl partitionArgs ([], []) (zip args' itemTop_)
   let bad = reverse badR
@@ -191,9 +191,7 @@ ls (Env time user cwd) (ActionLs args0 isRecursive) = do
   let items' = map snd tasks
   liftIO $ lsitems items'
   x_ <- mapM lsfolder folders
-  return (mempty :: ActionResult)
-
-  return (mconcat x_)
+  return (fromMaybe [] $ actionToRecordArgs action, mconcat x_)
   where
     args' = (\x -> if null x then ["."] else x) args0
     chain_l = map (pathStringToPathChain cwd) args'
@@ -309,18 +307,18 @@ getroot = do
       insert itemRoot
       return (Right itemRoot)
 
-mkdir :: Env -> ActionMkdir -> SqlActionResult
+mkdir :: Env -> ActionMkdir -> SqlPersistT (NoLoggingT (ResourceT IO)) ([String], ActionResult)
 mkdir env cmd | trace "mkdir" False = undefined
 mkdir (Env time user cwd) cmd = do
   if null args
-    then return (ActionResult False False ["mkdir: missing operand", "Try 'mkdir --help' for more information."] [])
+    then return ([], ActionResult False False ["mkdir: missing operand", "Try 'mkdir --help' for more information."] [])
     else do
       root_ <- getroot
       case root_ of
-        Left msgs -> return (ActionResult False False [] msgs)
+        Left msgs -> return ([], ActionResult False False [] msgs)
         Right root -> do
           result_ <- mapM (mkone root) (mkdirArgs cmd)
-          return $ mconcat result_
+          return (fromMaybe [] $ actionToRecordArgs cmd, mconcat result_)
   where
     args = (mkdirArgs cmd)
     args' = args ++ (if mkdirParents cmd then ["--parents"] else [])
@@ -386,12 +384,12 @@ mkdir (Env time user cwd) cmd = do
       insert item
       return (Right item)
 
-newtask :: Env -> ActionNewTask -> SqlActionResult
+newtask :: Env -> ActionNewTask -> SqlPersistT (NoLoggingT (ResourceT IO)) ([String], ActionResult)
 newtask env cmd | trace "newtask" False = undefined
 newtask (Env time user cwd) action = do
   parent_ <- absPathChainToItem parentChain
   case parent_ of
-    Left msgs -> return (ActionResult False False [] msgs)
+    Left msgs -> return ([], ActionResult False False [] msgs)
     Right parent -> do
       uuid <- liftIO (U4.nextRandom >>= return . U.toString)
       item_ <- return $ do
@@ -416,10 +414,10 @@ newtask (Env time user cwd) action = do
           , itemReview = Nothing
           }
       case item_ of
-        Left msgs -> return (ActionResult False False [] msgs)
+        Left msgs -> return ([], ActionResult False False [] msgs)
         Right item -> do
           insert item
-          return (ActionResult True False [] [])
+          return (fromMaybe [] $ actionToRecordArgs action, ActionResult True False [] [])
   where
     parentChain = case newTaskParentRef action of
       Just s -> pathStringToPathChain cwd s

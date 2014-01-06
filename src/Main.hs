@@ -111,61 +111,58 @@ repl cwd = do
                 case (action_ :: Validation ActionLs) of
                   Left msgs -> return (env0, [], ActionResult False False [] msgs)
                   Right action -> do
-                    result_ <- runAction env0 action
-                    case result_ of
-                      (env', action', result') -> return (env', Just action', result')
+                    runAction env0 action
       "mkdir":args -> do
         case process mode_mkdir args of
-          Left msg -> return (env0, Nothing, ActionResult False False [] [msg])
+          Left msg -> return (env0, [], ActionResult False False [] [msg])
           Right opts -> do
             if optionsHelp opts
               then do
                 liftIO $ print $ helpText [] HelpFormatDefault mode_mkdir
-                return (env0, Nothing, mempty)
+                return (env0, [], mempty)
               else do
                 action_ <- actionFromOptions opts
                 case (action_ :: Validation ActionMkdir) of
-                  Left msgs -> return (env0, ActionResult False False [] msgs)
+                  Left msgs -> return (env0, [], ActionResult False False [] msgs)
                   Right action -> do
-                    result_ <- runAction env0 action
-                    case result_ of
-                      (env', action', result') -> return (env', Just action', result')
+                    runAction env0 action
       "newtask":args -> do
         case process mode_newtask args of
-          Left msg -> return (env0, ActionResult False False [] [msg])
+          Left msg -> return (env0, [], ActionResult False False [] [msg])
           Right action -> do
             if newTaskHelp action
               then do
                 liftIO $ print $ helpText [] HelpFormatDefault mode_newtask
-                return (env0, mempty)
+                return (env0, [], mempty)
               else do
-                result_ <- runAction env0 action
-                case result_ of
-                  (env', action', result') -> return (env', Just (actionToRecordArgs action'), result')
+                runAction env0 action
       cmd:_ -> do
         liftIO $ processMode args0
-        return (env0, Nothing, ActionResult False False [] ["command not found: "++cmd])
+        return (env0, [], ActionResult False False [] ["command not found: "++cmd])
   case result_ of
     (ActionResult change rollback warn err) -> do
       liftIO $ mapM_ putStrLn err
       liftIO $ mapM_ putStrLn warn
       if rollback
-        then liftIO $ putStrLn "ERROR: NEED TO `rebuild`"
+        then do
+          liftIO $ putStrLn "ERROR: NEED TO `rebuild`"
+          -- TODO: if change && rollback: rebuild the database using records (i.e., don't reload from disk)
+        -- if change && not rollback: create and save command record
         else if change
           then do
-            case action_ of
-              Nothing -> return ()
-              Just action ->
-                case actionToRecordArgs action of
-                  Nothing -> return ()
-                  Just args -> do
-                    let record = CommandRecord 1 time (T.pack $ envUser env0) (T.pack $ head args0) (map T.pack args)
-                    liftIO $ print record
+            let record = CommandRecord 1 time (T.pack $ envUser env0) (T.pack $ head args0) (map T.pack recordArgs)
+            chguuid <- liftIO $ U4.nextRandom >>= return . U.toString
+            liftIO $ print record
+            -- Save record to disk
+            saveCommandRecord record chguuid
+            runSqlite "repl.db" $ do
+              -- Convert CommandRecord to Command
+              let command = DB.recordToCommand record
+              -- Command saved to DB
+              insert command
+            return ()
           else
             return ()
-      -- TODO: if change && not rollback: create and save command record
-      -- TODO: if change && rollback: rebuild the database
-      --liftIO $ print result_
   repl (envCwdChain env1)
 
 -------------------------------------------------------------

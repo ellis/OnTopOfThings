@@ -18,12 +18,15 @@ Ideas:
 - [x] Repl: ``ls``: should display items in current folder
 - [x] Repl: newtask
 - [x] mode_newtask should be ActionNewTask instead of Options
-- [ ] CommandRecord put cwd in there?
-- [ ] Repl: create CommandRecord when appropriate for actions
-- [ ] Item: add name, creator, owner fields
-- [ ] Import: use ``add -F`` when creating projects
-- [ ] Rebuild: use new commands
+- [x] Repl: create CommandRecord when appropriate for actions
 - [ ] Repl: ``ls -R``: should display items in current folder, then recursively for each item, with proper relative paths
+- [ ] mkdir: add --id argument to record; also need to figure out how to do that for parents when --parents is set.
+- [ ] CommandRecord: add optional cwd field
+- [ ] Command: add a uuid field
+- [ ] Item: add name, creator, owner fields
+- [ ] Import: adapt for the new actions
+- [ ] Rebuild: use new commands
+- [ ] Rebuild: add an option to build from internal change table or reload the change table from files
 - [ ] Edit my data in 'testdata' to create folders instead of lists; also no use of 'label'
 - [ ] Repl: cd
 - [ ] Repl: ls -l
@@ -206,6 +209,7 @@ Config file:
 - [ ] interactive mode to handle ambiguities
 - [ ] interactive mode possibly for adding new item
 - [ ] web UI
+- [ ] instead of have commands alter the database, they should create a diff, and the diff should then be applied -- could be difficult for complex commands (such a importing a bunch of items) which involve multiple inter-related items
 
 ## Design 1
 - [x] Change: switch to new JSON format
