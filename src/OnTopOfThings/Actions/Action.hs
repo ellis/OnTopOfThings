@@ -49,11 +49,13 @@ data ActionLs = ActionLs
 
 data ActionMkdir = ActionMkdir
     { mkdirArgs :: [String]
+    , mkdirUuid :: Maybe String
     , mkdirParents :: Bool
     } deriving (Show)
 
 data ActionNewTask = ActionNewTask
     { newTaskHelp :: Bool
+    , newTaskUuid :: Maybe String
     , newTaskParentRef :: Maybe String
     , newTaskName :: Maybe String
     , newTaskTitle :: Maybe String

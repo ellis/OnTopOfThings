@@ -22,7 +22,9 @@ Ideas:
 - [x] Repl: ``ls -R``: should display items in current folder, then recursively for each item, with proper relative paths
 - [x] Repl: ``ls`` should put blank lines between folder listings
 - [x] Repl: add some color to ``ls``
-- [ ] Repl: ``ls -R`` should prefix everything with '/'
+- [ ] ActionMkdir: add ``--folderid`` field for a list of create parent folder UUIDs --folderid=/a/b=UUID --folderid=/a/b/c=UUID
+- [ ] ActionNewTask: add ``--folderid``
+- [ ] create a common function for creating an item, whether via mkdir or newtask.
 - [ ] mkdir: add --id argument to record; also need to figure out how to do that for parents when --parents is set.
 - [ ] CommandRecord: add optional cwd field
 - [ ] Command: add a uuid field
@@ -34,6 +36,7 @@ Ideas:
 - [ ] Repl: cd
 - [ ] Repl: ls -l
 - [ ] Repl: ls -a
+- [ ] Repl: ``ls -R`` should prefix everything with '/'
 - [ ] Repl: mv
 - [ ] Repl: cat, to show low-level details, perhaps YAML or MD
 - [ ] Repl: ln

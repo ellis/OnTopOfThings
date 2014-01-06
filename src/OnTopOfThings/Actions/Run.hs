@@ -67,10 +67,13 @@ instance Action ActionMkdir where
   runAction env action = mkdir env action >>= \(args, result) -> return (env, args, result)
   --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionMkdir)
   actionFromOptions opts = do
-    return (Right (ActionMkdir (optionsArgs opts) (Set.member "parents" (optionsParams0 opts))))
+    return (Right (ActionMkdir (optionsArgs opts) (M.lookup "id" (optionsParams1 opts)) (Set.member "parents" (optionsParams0 opts))))
   actionToRecordArgs action = Just $ flags ++ args where
     args = mkdirArgs action
-    flags = catMaybes $ [if mkdirParents action then Just "--parents" else Nothing]
+    flags = catMaybes
+      [ mkdirUuid action >>= \x -> Just ("--id="++x)
+      , if mkdirParents action then Just "--parents" else Nothing
+      ]
 
 instance Action ActionNewTask where
   runAction env action = newtask env action >>= \(args, result) -> return (env, args, result)
@@ -95,6 +98,7 @@ instance Action ActionNewTask where
         review <- getMaybeDate "review"
         return $ ActionNewTask
           { newTaskHelp = False
+          , newTaskUuid = id
           , newTaskParentRef = parent
           , newTaskName = label
           , newTaskTitle = Just title
@@ -116,10 +120,11 @@ instance Action ActionNewTask where
           (parseISO8601 s) `maybeToValidation` ["Could not parse time: " ++ s] >>= \time -> Right (Just time)
         _ -> Right Nothing
 
-  actionToRecordArgs action = Just $ flags ++ args where
+  actionToRecordArgs action = Just $ args ++ flags where
     args = maybeToList (newTaskTitle action)
     flags = catMaybes
-      [ newTaskParentRef action >>= \x -> Just ("--parent="++x)
+      [ newTaskUuid action >>= \x -> Just ("--id="++x)
+      , newTaskParentRef action >>= \x -> Just ("--parent="++x)
       , newTaskName action >>= \x -> Just ("--name="++x)
       ]
 
@@ -158,7 +163,7 @@ mode_mkdir = Mode
 mode_newtask = Mode
   { modeGroupModes = mempty
   , modeNames = ["newtask"]
-  , modeValue = ActionNewTask False Nothing Nothing Nothing Nothing Nothing Nothing []
+  , modeValue = ActionNewTask False Nothing Nothing Nothing Nothing Nothing Nothing Nothing []
   , modeCheck = Right
   , modeReform = const Nothing
   , modeExpandAt = True
@@ -325,8 +330,8 @@ getroot = do
       return (Right itemRoot)
 
 mkdir :: Env -> ActionMkdir -> SqlPersistT (NoLoggingT (ResourceT IO)) ([String], ActionResult)
-mkdir env cmd | trace "mkdir" False = undefined
-mkdir (Env time user cwd) cmd = do
+mkdir env action | trace "mkdir" False = undefined
+mkdir (Env time user cwd) action = do
   if null args
     then return ([], ActionResult False False ["mkdir: missing operand", "Try 'mkdir --help' for more information."] [])
     else do
@@ -334,11 +339,12 @@ mkdir (Env time user cwd) cmd = do
       case root_ of
         Left msgs -> return ([], ActionResult False False [] msgs)
         Right root -> do
-          result_ <- mapM (mkone root) (mkdirArgs cmd)
-          return (fromMaybe [] $ actionToRecordArgs cmd, mconcat result_)
+          result_ <- mapM (mkone root) (mkdirArgs action)
+          --let action' = action { mkdirUuid = 
+          return (fromMaybe [] $ actionToRecordArgs action, mconcat result_)
   where
-    args = (mkdirArgs cmd)
-    args' = args ++ (if mkdirParents cmd then ["--parents"] else [])
+    args = (mkdirArgs action)
+    args' = args ++ (if mkdirParents action then ["--parents"] else [])
     --record = CommandRecord 1 time (T.pack user) (T.pack "repl-mkdir") (map T.pack args')
 
     mkone :: Item -> String -> SqlActionResult
@@ -354,12 +360,12 @@ mkdir (Env time user cwd) cmd = do
           -- if the item already exists:
           Right _ -> do
             -- if --parents flag:
-            if mkdirParents cmd
+            if mkdirParents action
               then return mempty
               else return (ActionResult False False [] ["mkdir: cannot create directory ‘"++path_s++"’: File exists"])
           -- if the item doesn't already exist:
           Left msgs -> do
-            if mkdirParents cmd
+            if mkdirParents action
               -- if all parents should be created
               then do
                 uuid_ <- fn True chain root
@@ -390,7 +396,7 @@ mkdir (Env time user cwd) cmd = do
             case new_ of
               Left msgs -> return (Left msgs)
               Right new -> fn doMake rest new
-          else return (Left ["mkdir: cannot create directory ‘a/b/c’: No such file or directory"])
+          else return (Left ["mkdir: ‘"++name++"’ not found"])
         p:[] -> fn doMake rest (entityVal p)
         _ -> return (Left ["conflict: multiple items at path"])
 
@@ -402,14 +408,16 @@ mkdir (Env time user cwd) cmd = do
       return (Right item)
 
 newtask :: Env -> ActionNewTask -> SqlPersistT (NoLoggingT (ResourceT IO)) ([String], ActionResult)
-newtask env cmd | trace "newtask" False = undefined
-newtask (Env time user cwd) action = do
+newtask env action | trace "newtask" False = undefined
+newtask (Env time user cwd) action0 = do
   parent_ <- absPathChainToItem parentChain
   case parent_ of
     Left msgs -> return ([], ActionResult False False [] msgs)
     Right parent -> do
-      uuid <- liftIO (U4.nextRandom >>= return . U.toString)
+      uuidNew <- liftIO (U4.nextRandom >>= return . U.toString)
       item_ <- return $ do
+        uuid_ <- getMaybe newTaskUuid
+        let uuid = fromMaybe uuidNew uuid_
         title <- get newTaskTitle
         status <- getMaybe newTaskStatus
         stage <- getMaybe newTaskStage
@@ -434,14 +442,15 @@ newtask (Env time user cwd) action = do
         Left msgs -> return ([], ActionResult False False [] msgs)
         Right item -> do
           insert item
+          let action = action0 { newTaskUuid = Just (itemUuid item) }
           return (fromMaybe [] $ actionToRecordArgs action, ActionResult True False [] [])
   where
-    parentChain = case newTaskParentRef action of
+    parentChain = case newTaskParentRef action0 of
       Just s -> pathStringToPathChain cwd s
       Nothing -> cwd
     get :: (ActionNewTask -> Maybe String) -> Validation String
-    get fn = case fn action of
+    get fn = case fn action0 of
       Nothing -> Left ["missing value"]
       Just s -> Right s
     getMaybe :: (ActionNewTask -> Maybe String) -> Validation (Maybe String)
-    getMaybe fn = Right (fn action)
+    getMaybe fn = Right (fn action0)
