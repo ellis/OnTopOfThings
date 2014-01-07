@@ -53,7 +53,7 @@ import OnTopOfThings.Actions.Env
 
 
 instance Action ActionLs where
-  runAction env action = ls env action >>= \(args, result) -> return (env, args, result)
+  runAction env action = ls env action >>= \result -> return (env, result)
   --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionLs)
   actionFromOptions opts = let
       args = optionsArgs opts
@@ -64,7 +64,7 @@ instance Action ActionLs where
   actionToRecordArgs action = Nothing
 
 instance Action ActionMkdir where
-  runAction env action = mkdir env action >>= \(args, result) -> return (env, args, result)
+  runAction env action = mkdir env action >>= \result -> return (env, result)
   --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionMkdir)
   actionFromOptions opts = do
     return (Right (ActionMkdir (optionsArgs opts) (M.lookup "id" (optionsParams1 opts)) (Set.member "parents" (optionsParams0 opts))))
@@ -76,7 +76,7 @@ instance Action ActionMkdir where
       ]
 
 instance Action ActionNewTask where
-  runAction env action = newtask env action >>= \(args, result) -> return (env, args, result)
+  runAction env action = newtask env action >>= \result -> return (env, result)
   --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionMkdir)
   actionFromOptions opts = do
     let action_ = createAction
@@ -185,7 +185,7 @@ mode_newtask = Mode
     ]
   }
 
-ls :: Env -> ActionLs -> SqlPersistT (NoLoggingT (ResourceT IO)) ([String], ActionResult)
+ls :: Env -> ActionLs -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 ls env action | trace ("ls: "++(show action)) False = undefined
 ls (Env time user cwd) action@(ActionLs args0 isRecursive) = do
   itemTop_ <- mapM absPathChainToItem chain_l
@@ -202,7 +202,7 @@ ls (Env time user cwd) action@(ActionLs args0 isRecursive) = do
   lsitems [] tasks
   -- Show folders
   mapM_ (\(blank, folder) -> lsfolder blank [] folder) blankToFolder_l
-  return (fromMaybe [] $ actionToRecordArgs action, mempty)
+  return mempty
   where
     args' = (\x -> if null x then ["."] else x) args0
     chain_l = map (pathStringToPathChain cwd) args'
@@ -267,6 +267,17 @@ absPathChainToItem chain = do
 
 parentToPathChainToItem :: Item -> [FilePath] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
 parentToPathChainToItem parent [] = return (Right parent)
+-- Ignore '.'
+parentToPathChainToItem parent (".":rest) = do
+  parentToPathChainToItem parent rest
+-- TODO: Handle '..'
+-- '/' is for the root
+parentToPathChainToItem _ ("/":rest) = do
+  item_ <- getroot
+  case item_ of
+    Left msgs -> return (Left msgs)
+    Right item -> parentToPathChainToItem item rest
+-- Look for subdirectory
 parentToPathChainToItem parent (name:rest) = do
   item_ <- nameToItem (Just $ itemUuid parent) name
   case item_ of
@@ -329,19 +340,93 @@ getroot = do
       insert itemRoot
       return (Right itemRoot)
 
-mkdir :: Env -> ActionMkdir -> SqlPersistT (NoLoggingT (ResourceT IO)) ([String], ActionResult)
+-- For a path, get either the first part of the path which doesn't exist or the item and its path chain
+pathStringToExistenceInfo :: Env -> String -> SqlPersistT (NoLoggingT (ResourceT IO)) ([FilePath], Either [FilePath] (Item, [FilePath]))
+pathStringToExistenceInfo env path_s = do
+  -- Split path string into a path chain
+  let chain0 = case splitDirectories path_s
+  -- Get the root item
+  root_ <- getroot
+  case root_ of
+    Left msgs -> return (chain0, Left ["/"])
+    Right root -> do
+      -- Is this an absolute path?
+      (parent_, parentChain, chain) <- if any (== "/") chain
+        then do
+          let chain' = reverse $ takeWhile (/= "/") $ reverse chain0
+          return (root_, ["/"], chain')
+        else do
+          let chain' = envCwdChain env
+          cwd_ <- parentToPathChainToItem root chain'
+          return (cwd_, chain', chain0)
+      case parent_ of
+        Left msgs -> (chain, Left ["."])
+        Right parent ->
+          result <- fn chain (parent, parentChain)
+          return (chain, result)
+  where
+    -- From a filepath, get either the first path chain that doesn't exist or the item and its path chain
+    fn :: [FilePath] -> (Item, [FilePath]) -> SqlPersistT (NoLoggingT (ResourceT IO)) (Either [FilePath] (Item, [FilePath]))
+    fn [] acc = Right acc
+    fn (name:rest) acc@(parent, parentChain) = do
+      let path = parentChain ++ [name]
+      item_ <- parentToPathChainToItem parent [name]
+      case item_ of
+        Left msgs -> Left path
+        Right item -> fn rest (parent, path)
+
+mkdir :: Env -> ActionMkdir -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 mkdir env action | trace "mkdir" False = undefined
 mkdir (Env time user cwd) action = do
   if null args
-    then return ([], ActionResult False False ["mkdir: missing operand", "Try 'mkdir --help' for more information."] [])
+    then return (ActionResult [] False ["mkdir: missing operand", "Try 'mkdir --help' for more information."] [])
+    else do
+      x <- mapM (pathStringToExistenceInfo env) (mkdirArgs action)
+      let x' = zip (mkdirArgs action) x
+      result_ <- mapM (mkone root) x'
+      return (mconcat result_)
+  where
+    mkone :: (String, ([FilePath], Either [FilePath] (Item, [FilePath]))) -> SqlActionResult
+    -- Item already exists
+    mkone (path_s, (_, Right _)) = do
+      -- if --parents flag:
+      if mkdirParents action
+        then return mempty
+        else return (ActionResult [] False [] ["mkdir: cannot create directory ‘"++path_s++"’: File exists"])
+    mkone (path_s, (chain, Left chainError)) = do
+      <== continue here: if '-parent', create directories from chainError to chain; otherwise if chainError is more than one item shorter than chain, error; otherwise create chain
+      And for each directory created, create a new CardItem
+
+---------
+  THESE ARE FROM 'ls'; ADAPT!
+  itemTop_ <- mapM absPathChainToItem chain_l
+  let (goodR, badR) = foldl partitionArgs ([], []) (zip args' itemTop_)
+  let bad = reverse badR
+  let good = reverse goodR
+  let -- Split folders and non-folders
+  let (folders, tasks) = partition partitionTypes good
+  let -- Only tell lsfolder to print a blank line in front of the first folder if items were aren't printed
+  let blankToFolder_l = zip ((if null tasks then False else True) : repeat True) folders
+  -- Show errors
+  liftIO $ mapM_ putStrLn bad
+  -- Show non-folder items
+  lsitems [] tasks
+  -- Show folders
+  mapM_ (\(blank, folder) -> lsfolder blank [] folder) blankToFolder_l
+  return mempty
+---------
+
+  if null args
+    then return (ActionResult [] False ["mkdir: missing operand", "Try 'mkdir --help' for more information."] [])
     else do
       root_ <- getroot
       case root_ of
         Left msgs -> return ([], ActionResult False False [] msgs)
         Right root -> do
+          chain_l <- mapM
           result_ <- mapM (mkone root) (mkdirArgs action)
           --let action' = action { mkdirUuid = 
-          return (fromMaybe [] $ actionToRecordArgs action, mconcat result_)
+          return (mconcat result_)
   where
     args = (mkdirArgs action)
     args' = args ++ (if mkdirParents action then ["--parents"] else [])
@@ -407,7 +492,7 @@ mkdir (Env time user cwd) action = do
       insert item
       return (Right item)
 
-newtask :: Env -> ActionNewTask -> SqlPersistT (NoLoggingT (ResourceT IO)) ([String], ActionResult)
+newtask :: Env -> ActionNewTask -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 newtask env action | trace "newtask" False = undefined
 newtask (Env time user cwd) action0 = do
   parent_ <- absPathChainToItem parentChain

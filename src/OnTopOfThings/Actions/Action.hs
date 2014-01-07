@@ -40,6 +40,7 @@ import qualified Data.UUID.V4 as U4
 import Args
 import Command (CommandRecord)
 import Utils
+import OnTopOfThings.Data.Card (CardItem)
 import OnTopOfThings.Actions.Env
 
 data ActionLs = ActionLs
@@ -66,20 +67,20 @@ data ActionNewTask = ActionNewTask
     } deriving (Show)
 
 data ActionResult = ActionResult
-  { actionResultChange :: Bool
+  { actionResultCards :: [CardItem]
   , actionResultRollback :: Bool
   , actionResultWarnings :: [String]
   , actionResultErrors :: [String]
   } deriving (Show)
 
 instance Monoid ActionResult where
-  mempty = ActionResult False False [] []
-  mappend (ActionResult c r w e) (ActionResult c' r' w' e') = ActionResult (c || c') (r || r') (w ++ w') (e ++ e')
+  mempty = ActionResult [] False [] []
+  mappend (ActionResult c r w e) (ActionResult c' r' w' e') = ActionResult (c ++ c') (r || r') (w ++ w') (e ++ e')
 
 type SqlActionResult = SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 
 class Action a where
-  runAction :: Env -> a -> SqlPersistT (NoLoggingT (ResourceT IO)) (Env, [String], ActionResult)
+  runAction :: Env -> a -> SqlPersistT (NoLoggingT (ResourceT IO)) (Env, ActionResult)
   actionFromOptions :: (Action a) => Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation a)
   actionToRecordArgs :: (Action a) => a -> Maybe [String]
 

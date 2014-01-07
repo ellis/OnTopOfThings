@@ -210,6 +210,22 @@ Or in card format:
 F [FORMAT]
 T [TIME]
 U [USER]
+I [UUID FOR THIS DIFF]
+P [UUID OF PREVIOUS DIFF]
+D [DIFFTYPE=item]
+K [KEY=UUID of item]
+= type item
++ tag repos
+= longtext
+  MY LONG TEXT
+  AND MORE OF IT
+  AND SO ON
+```
+
+```
+F [FORMAT]
+T [TIME]
+U [USER]
 C [COMMAND]
 = type item
 + tag repos
