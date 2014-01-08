@@ -24,7 +24,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
-import Data.List (intercalate, partition)
+import Data.List (inits, intercalate, partition, sort, sortBy)
 import Data.Maybe
 import Data.Monoid
 import Data.Time.Clock (UTCTime, getCurrentTime)
@@ -50,6 +50,7 @@ import Utils
 import OnTopOfThings.Parsers.NumberList
 import OnTopOfThings.Actions.Action
 import OnTopOfThings.Actions.Env
+import OnTopOfThings.Data.Card
 
 
 instance Action ActionLs where
@@ -256,6 +257,25 @@ itemToName :: Item -> String
 itemToName item =
   fromMaybe (itemUuid item) (itemLabel item)
 
+absPathChainToItems :: [FilePath] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation [Maybe Item])
+absPathChainToItems chain = do
+  root_ <- getroot
+  case root_ of
+    Left msgs -> return (Left msgs)
+    Right root -> do
+      -- REFACTOR: this is a very inefficient way to get the items
+      items_ <- mapM (parentToPathChainToItem root) chain_l
+      let items = map fn items_
+      return (Right items)
+  where
+    -- Only keep part of chain after the root
+    chain' = reverse $ takeWhile (/= "/") $ reverse chain
+    chain_l = tail $ inits chain'
+    -- Validation to Maybe
+    fn :: Validation Item -> Maybe Item
+    fn (Left _) = Nothing
+    fn (Right item) = Just item
+
 absPathChainToItem :: [FilePath] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
 absPathChainToItem chain = do
   root_ <- getroot
@@ -304,14 +324,35 @@ nameToItem parent name = do
     p:[] -> return (Right $ entityVal p)
     _ -> return (Left ["conflict: multiple items at path"])
 
+pathStringToAbsPathChain :: [FilePath] -> String -> [FilePath]
+pathStringToAbsPathChain cwd path_s = chain4 where
+  -- Prepend cwd if relative path is given
+  chain0 = case splitDirectories path_s of
+    l@("/":rest) -> l
+    rest -> cwd ++ rest
+  -- Drop everything before last '/'
+  chain1 = reverse $ takeWhile (/= "/") $ reverse chain0
+  -- Drop '.' infixes
+  chain2 = filter (/= ".") chain1
+  -- Drop x:".."
+  dropDotDot :: [FilePath] -> [FilePath] -> [FilePath]
+  dropDotDot [] acc = reverse acc
+  dropDotDot ("..":rest) acc = dropDotDot rest acc
+  dropDotDot (_:"..":rest) acc = dropDotDot rest acc
+  dropDotDot (x:rest) acc = dropDotDot rest (x:acc)
+  chain3 = dropDotDot chain2 []
+  -- Prefix root '/'
+  chain4 = "/":chain3
+
+-- REFACTOR: remove this function
 pathStringToPathChain :: [FilePath] -> String -> [FilePath]
 pathStringToPathChain cwd path_s = chain3 where
   -- Prepend cwd if relative path is given
   chain0 = case splitDirectories path_s of
     l@("/":rest) -> l
     rest -> cwd ++ rest
-  -- Drop '/' prefixes
-  chain1 = dropWhile (== "/") chain0
+  -- Drop everything before last '/'
+  chain1 = reverse $ takeWhile (/= "/") $ reverse chain0
   -- Drop '.' infixes
   chain2 = filter (/= ".") chain1
   -- Drop x:".."
@@ -340,164 +381,221 @@ getroot = do
       insert itemRoot
       return (Right itemRoot)
 
--- For a path, get either the first part of the path which doesn't exist or the item and its path chain
-pathStringToExistenceInfo :: Env -> String -> SqlPersistT (NoLoggingT (ResourceT IO)) ([FilePath], Either [FilePath] (Item, [FilePath]))
-pathStringToExistenceInfo env path_s = do
+data PathInfo = PathInfo
+  { pathInfoString :: String
+  , pathInfoChainRel :: [FilePath]
+  , pathInfoChainAbs :: [FilePath]
+  , pathInfoItems :: [Maybe Item]
+  } deriving (Show)
+
+pathStringToPathInfo :: Env -> String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation PathInfo)
+pathStringToPathInfo env path_s = do
   -- Split path string into a path chain
-  let chain0 = case splitDirectories path_s
+  let chainRel = splitDirectories path_s
+  let chainAbs = pathStringToAbsPathChain (envCwdChain env) path_s
   -- Get the root item
   root_ <- getroot
   case root_ of
-    Left msgs -> return (chain0, Left ["/"])
+    Left msgs -> return (Left ["couldn't find root item"])
     Right root -> do
-      -- Is this an absolute path?
-      (parent_, parentChain, chain) <- if any (== "/") chain
-        then do
-          let chain' = reverse $ takeWhile (/= "/") $ reverse chain0
-          return (root_, ["/"], chain')
-        else do
-          let chain' = envCwdChain env
-          cwd_ <- parentToPathChainToItem root chain'
-          return (cwd_, chain', chain0)
-      case parent_ of
-        Left msgs -> (chain, Left ["."])
-        Right parent ->
-          result <- fn chain (parent, parentChain)
-          return (chain, result)
+      items_ <- fn (tail chainAbs) (Just root)
+      let items = (Just root) : items_
+      return (Right $ PathInfo path_s chainRel chainAbs items)
   where
     -- From a filepath, get either the first path chain that doesn't exist or the item and its path chain
-    fn :: [FilePath] -> (Item, [FilePath]) -> SqlPersistT (NoLoggingT (ResourceT IO)) (Either [FilePath] (Item, [FilePath]))
-    fn [] acc = Right acc
-    fn (name:rest) acc@(parent, parentChain) = do
-      let path = parentChain ++ [name]
+    fn :: [FilePath] -> Maybe Item -> SqlPersistT (NoLoggingT (ResourceT IO)) ([Maybe Item])
+    fn [] _ = return []
+    fn (_:rest) Nothing = return $ Nothing : map (const Nothing) rest
+    fn (name:rest) (Just parent) = do
       item_ <- parentToPathChainToItem parent [name]
       case item_ of
-        Left msgs -> Left path
-        Right item -> fn rest (parent, path)
+        Left msgs -> return $ Nothing : map (const Nothing) rest
+        Right item -> do
+          rest_ <- fn rest (Just item)
+          return $ (Just item) : rest_
 
 mkdir :: Env -> ActionMkdir -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 mkdir env action | trace "mkdir" False = undefined
-mkdir (Env time user cwd) action = do
-  if null args
+mkdir env@(Env time user cwd) action = do
+  if null (mkdirArgs action)
     then return (ActionResult [] False ["mkdir: missing operand", "Try 'mkdir --help' for more information."] [])
     else do
-      x <- mapM (pathStringToExistenceInfo env) (mkdirArgs action)
-      let x' = zip (mkdirArgs action) x
-      result_ <- mapM (mkone root) x'
-      return (mconcat result_)
-  where
-    mkone :: (String, ([FilePath], Either [FilePath] (Item, [FilePath]))) -> SqlActionResult
-    -- Item already exists
-    mkone (path_s, (_, Right _)) = do
-      -- if --parents flag:
+
+      -- REFACTOR: consider ``mkdir -p a a/b``.  To handle this, we should
+      -- build a map of chain to uuids, and add each new folder to the map,
+      -- so that we can then also create subfolders all in one go.
       if mkdirParents action
-        then return mempty
-        else return (ActionResult [] False [] ["mkdir: cannot create directory ‘"++path_s++"’: File exists"])
-    mkone (path_s, (chain, Left chainError)) = do
-      <== continue here: if '-parent', create directories from chainError to chain; otherwise if chainError is more than one item shorter than chain, error; otherwise create chain
-      And for each directory created, create a new CardItem
-
----------
-  THESE ARE FROM 'ls'; ADAPT!
-  itemTop_ <- mapM absPathChainToItem chain_l
-  let (goodR, badR) = foldl partitionArgs ([], []) (zip args' itemTop_)
-  let bad = reverse badR
-  let good = reverse goodR
-  let -- Split folders and non-folders
-  let (folders, tasks) = partition partitionTypes good
-  let -- Only tell lsfolder to print a blank line in front of the first folder if items were aren't printed
-  let blankToFolder_l = zip ((if null tasks then False else True) : repeat True) folders
-  -- Show errors
-  liftIO $ mapM_ putStrLn bad
-  -- Show non-folder items
-  lsitems [] tasks
-  -- Show folders
-  mapM_ (\(blank, folder) -> lsfolder blank [] folder) blankToFolder_l
-  return mempty
----------
-
-  if null args
-    then return (ActionResult [] False ["mkdir: missing operand", "Try 'mkdir --help' for more information."] [])
-    else do
-      root_ <- getroot
-      case root_ of
-        Left msgs -> return ([], ActionResult False False [] msgs)
-        Right root -> do
-          chain_l <- mapM
-          result_ <- mapM (mkone root) (mkdirArgs action)
-          --let action' = action { mkdirUuid = 
+        -- If parent folders should also be created
+        then do
+          let chain_l = map (pathStringToAbsPathChain (envCwdChain env)) (mkdirArgs action)
+          -- Get all unique path chains in sorted order
+          let chain_l' = sort $ Set.toList $ Set.delete [] $ Set.fromList $ concat $ map inits chain_l
+          result_ <- mapM mkdir' chain_l'
           return (mconcat result_)
+        -- Otherwise only create given folders
+        else do
+          infos0 <- mapM (pathStringToPathInfo env) (mkdirArgs action)
+          let infos_ = concatEithersN infos0
+          case infos_ of
+            -- TODO: rather than returning, we should print errors for the errors and go ahead with the good ones
+            Left msgs -> return (ActionResult [] False [] msgs)
+            Right infos1 -> do
+              -- TODO: remove duplicates
+              let infos = sortBy (\a b -> compare (pathInfoChainAbs a) (pathInfoChainAbs b)) infos1
+              result_ <- mapM mkdir'' infos
+              return (mconcat result_)
   where
-    args = (mkdirArgs action)
-    args' = args ++ (if mkdirParents action then ["--parents"] else [])
-    --record = CommandRecord 1 time (T.pack user) (T.pack "repl-mkdir") (map T.pack args')
-
-    mkone :: Item -> String -> SqlActionResult
-    --mkone path_s | trace ("mkone "++path_s) False = undefined
-    mkone root path_s =
-      let
-        chain = pathStringToPathChain cwd path_s
-        --chains = tail $ inits chain
-      in do
-        -- Check whether the item already exists
-        uuid_ <- pathChainToUuid chain
-        case uuid_ of
-          -- if the item already exists:
-          Right _ -> do
-            -- if --parents flag:
-            if mkdirParents action
-              then return mempty
-              else return (ActionResult False False [] ["mkdir: cannot create directory ‘"++path_s++"’: File exists"])
-          -- if the item doesn't already exist:
-          Left msgs -> do
-            if mkdirParents action
-              -- if all parents should be created
-              then do
-                uuid_ <- fn True chain root
-                case uuid_ of
-                  Left msgs -> return (ActionResult False False [] msgs)
-                  Right uuid -> return (ActionResult True False [] [])
-              -- if all parents should already exist
-              else do
-                parent_ <- fn False (init chain) root
-                case parent_ of
-                  Left msgs -> return (ActionResult False False [] msgs)
-                  Right parent -> do
-                    new_ <- mksub parent (last chain)
-                    case new_ of
-                      Left msgs -> return (ActionResult False False [] msgs)
-                      Right new -> do
-                        return (ActionResult True False [] [])
-
-    fn :: Bool -> [FilePath] -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
-    fn doMake l parent | trace ("fn "++(show l)) False = undefined
-    fn _ [] parent = return (Right parent)
-    fn doMake (name:rest) parent = do
-      item_ <- selectList [ItemLabel ==. (Just name), ItemParent ==. (Just (itemUuid parent))] [LimitTo 2]
+    mkdir' :: [FilePath] -> SqlActionResult
+    mkdir' [] = return $ (ActionResult [] False [] ["mkdir': empty argument not allowed"])
+    mkdir' ["/"] = return mempty
+    mkdir' chain = do
+      item_ <- absPathChainToItem chain
       case item_ of
-        [] -> if doMake
-          then do
-            new_ <- mksub parent name
-            case new_ of
-              Left msgs -> return (Left msgs)
-              Right new -> fn doMake rest new
-          else return (Left ["mkdir: ‘"++name++"’ not found"])
-        p:[] -> fn doMake rest (entityVal p)
-        _ -> return (Left ["conflict: multiple items at path"])
+        -- Item already exists:
+        Right item ->
+          -- if --parents flag:
+          if mkdirParents action
+            then return mempty
+            else return (ActionResult [] False [] ["mkdir: cannot create directory ‘"++(show chain)++"’: File exists"])
+        -- Item doesn't exist yet:
+        Left _ -> do
+          parent_ <- absPathChainToItem (init chain)
+          case parent_ of
+            Left msgs -> return (ActionResult [] False [] msgs)
+            Right parent -> do
+              uuid <- liftIO (U4.nextRandom >>= return . U.toString)
+              let carditem = CardItem [uuid] diffs
+              return (ActionResult [carditem] False [] [])
+              where
+                diffs =
+                  [ DiffEqual "type" "folder"
+                  , DiffEqual "title" (last chain)
+                  , DiffEqual "status" "open"
+                  , DiffEqual "label" (last chain)
+                  , DiffEqual "parent" (itemUuid parent)
+                  ]
 
-    mksub :: Item -> String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
-    mksub parent name = do
-      uuid <- liftIO (U4.nextRandom >>= return . U.toString)
-      let item = (itemEmpty uuid time "folder" name "open") { itemParent = (Just $ itemUuid parent), itemLabel = Just name }
-      insert item
-      return (Right item)
+    mkdir'' :: PathInfo -> SqlActionResult
+    mkdir'' info = do
+      let chain = pathInfoChainAbs info
+      mkdir' chain
+--    mkone :: PathInfo -> SqlActionResult
+--    -- Item already exists
+--    mkone (PathInfo path_s chainRel chainAbs items) = do
+--      -- if --parents flag:
+--      if mkdirParents action
+--        then return mempty
+--        else return (ActionResult [] False [] ["mkdir: cannot create directory ‘"++path_s++"’: File exists"])
+--    mkone (path_s, (chain, Left chainError)) = do
+--      if mkdirParents action
+--        then do
+--          let more = drop (length chainError) chain
+--          
+--      <== continue here: if '-parent', create directories from chainError to chain; otherwise if chainError is more than one item shorter than chain, error; otherwise create chain
+--      And for each directory created, create a new CardItem
+--    createFolders chain more 
+--
+-----------
+--  THESE ARE FROM 'ls'; ADAPT!
+--  itemTop_ <- mapM absPathChainToItem chain_l
+--  let (goodR, badR) = foldl partitionArgs ([], []) (zip args' itemTop_)
+--  let bad = reverse badR
+--  let good = reverse goodR
+--  let -- Split folders and non-folders
+--  let (folders, tasks) = partition partitionTypes good
+--  let -- Only tell lsfolder to print a blank line in front of the first folder if items were aren't printed
+--  let blankToFolder_l = zip ((if null tasks then False else True) : repeat True) folders
+--  -- Show errors
+--  liftIO $ mapM_ putStrLn bad
+--  -- Show non-folder items
+--  lsitems [] tasks
+--  -- Show folders
+--  mapM_ (\(blank, folder) -> lsfolder blank [] folder) blankToFolder_l
+--  return mempty
+-----------
+--
+--  if null args
+--    then return (ActionResult [] False ["mkdir: missing operand", "Try 'mkdir --help' for more information."] [])
+--    else do
+--      root_ <- getroot
+--      case root_ of
+--        Left msgs -> return ([], ActionResult False False [] msgs)
+--        Right root -> do
+--          chain_l <- mapM
+--          result_ <- mapM (mkone root) (mkdirArgs action)
+--          --let action' = action { mkdirUuid = 
+--          return (mconcat result_)
+--  where
+--    args = (mkdirArgs action)
+--    args' = args ++ (if mkdirParents action then ["--parents"] else [])
+--    --record = CommandRecord 1 time (T.pack user) (T.pack "repl-mkdir") (map T.pack args')
+--
+--    mkone :: Item -> String -> SqlActionResult
+--    --mkone path_s | trace ("mkone "++path_s) False = undefined
+--    mkone root path_s =
+--      let
+--        chain = pathStringToPathChain cwd path_s
+--        --chains = tail $ inits chain
+--      in do
+--        -- Check whether the item already exists
+--        uuid_ <- pathChainToUuid chain
+--        case uuid_ of
+--          -- if the item already exists:
+--          Right _ -> do
+--            -- if --parents flag:
+--            if mkdirParents action
+--              then return mempty
+--              else return (ActionResult False False [] ["mkdir: cannot create directory ‘"++path_s++"’: File exists"])
+--          -- if the item doesn't already exist:
+--          Left msgs -> do
+--            if mkdirParents action
+--              -- if all parents should be created
+--              then do
+--                uuid_ <- fn True chain root
+--                case uuid_ of
+--                  Left msgs -> return (ActionResult False False [] msgs)
+--                  Right uuid -> return (ActionResult True False [] [])
+--              -- if all parents should already exist
+--              else do
+--                parent_ <- fn False (init chain) root
+--                case parent_ of
+--                  Left msgs -> return (ActionResult False False [] msgs)
+--                  Right parent -> do
+--                    new_ <- mksub parent (last chain)
+--                    case new_ of
+--                      Left msgs -> return (ActionResult False False [] msgs)
+--                      Right new -> do
+--                        return (ActionResult True False [] [])
+--
+--    fn :: Bool -> [FilePath] -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
+--    fn doMake l parent | trace ("fn "++(show l)) False = undefined
+--    fn _ [] parent = return (Right parent)
+--    fn doMake (name:rest) parent = do
+--      item_ <- selectList [ItemLabel ==. (Just name), ItemParent ==. (Just (itemUuid parent))] [LimitTo 2]
+--      case item_ of
+--        [] -> if doMake
+--          then do
+--            new_ <- mksub parent name
+--            case new_ of
+--              Left msgs -> return (Left msgs)
+--              Right new -> fn doMake rest new
+--          else return (Left ["mkdir: ‘"++name++"’ not found"])
+--        p:[] -> fn doMake rest (entityVal p)
+--        _ -> return (Left ["conflict: multiple items at path"])
+--
+--    mksub :: Item -> String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
+--    mksub parent name = do
+--      uuid <- liftIO (U4.nextRandom >>= return . U.toString)
+--      let item = (itemEmpty uuid time "folder" name "open") { itemParent = (Just $ itemUuid parent), itemLabel = Just name }
+--      insert item
+--      return (Right item)
 
 newtask :: Env -> ActionNewTask -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 newtask env action | trace "newtask" False = undefined
 newtask (Env time user cwd) action0 = do
   parent_ <- absPathChainToItem parentChain
   case parent_ of
-    Left msgs -> return ([], ActionResult False False [] msgs)
+    Left msgs -> return (ActionResult [] False [] msgs)
     Right parent -> do
       uuidNew <- liftIO (U4.nextRandom >>= return . U.toString)
       item_ <- return $ do
@@ -524,11 +622,11 @@ newtask (Env time user cwd) action0 = do
           , itemReview = Nothing
           }
       case item_ of
-        Left msgs -> return ([], ActionResult False False [] msgs)
+        Left msgs -> return (ActionResult [] False [] msgs)
         Right item -> do
           insert item
           let action = action0 { newTaskUuid = Just (itemUuid item) }
-          return (fromMaybe [] $ actionToRecordArgs action, ActionResult True False [] [])
+          return (ActionResult [] False [] [])
   where
     parentChain = case newTaskParentRef action0 of
       Just s -> pathStringToPathChain cwd s

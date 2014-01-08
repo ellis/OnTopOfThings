@@ -1,5 +1,5 @@
 {-
-Copyright (C) 2013  Ellis Whitehead
+Copyright (C) 2013,2014  Ellis Whitehead
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 {-# LANGUAGE OverloadedStrings #-}
 
+import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
@@ -95,52 +96,52 @@ repl cwd = do
   time <- getCurrentTime
   let args0 = splitArgs input
   let env0 = Env time "default" cwd
-  (env1, recordArgs, result_) <- runSqlite "repl.db" $ do
+  (env1, result_) <- runSqlite "repl.db" $ do
     case args0 of
-      [] -> return (env0, [], mempty)
+      [] -> return (env0, mempty)
       "ls":args -> do
         case process mode_ls args of
-          Left msg -> return (env0, [], ActionResult False False [] [msg])
+          Left msg -> return (env0, ActionResult [] False [] [msg])
           Right opts -> do
             if optionsHelp opts
               then do
                 liftIO $ print $ helpText [] HelpFormatDefault mode_ls
-                return (env0, [], mempty)
+                return (env0, mempty)
               else do
                 action_ <- actionFromOptions opts
                 case (action_ :: Validation ActionLs) of
-                  Left msgs -> return (env0, [], ActionResult False False [] msgs)
+                  Left msgs -> return (env0, ActionResult [] False [] msgs)
                   Right action -> do
                     runAction env0 action
       "mkdir":args -> do
         case process mode_mkdir args of
-          Left msg -> return (env0, [], ActionResult False False [] [msg])
+          Left msg -> return (env0, ActionResult [] False [] [msg])
           Right opts -> do
             if optionsHelp opts
               then do
                 liftIO $ print $ helpText [] HelpFormatDefault mode_mkdir
-                return (env0, [], mempty)
+                return (env0, mempty)
               else do
                 action_ <- actionFromOptions opts
                 case (action_ :: Validation ActionMkdir) of
-                  Left msgs -> return (env0, [], ActionResult False False [] msgs)
+                  Left msgs -> return (env0, ActionResult [] False [] msgs)
                   Right action -> do
                     runAction env0 action
       "newtask":args -> do
         case process mode_newtask args of
-          Left msg -> return (env0, [], ActionResult False False [] [msg])
+          Left msg -> return (env0, ActionResult [] False [] [msg])
           Right action -> do
             if newTaskHelp action
               then do
                 liftIO $ print $ helpText [] HelpFormatDefault mode_newtask
-                return (env0, [], mempty)
+                return (env0, mempty)
               else do
                 runAction env0 action
       cmd:_ -> do
         liftIO $ processMode args0
-        return (env0, [], ActionResult False False [] ["command not found: "++cmd])
+        return (env0, ActionResult [] False [] ["command not found: "++cmd])
   case result_ of
-    (ActionResult change rollback warn err) -> do
+    (ActionResult cards rollback warn err) -> do
       liftIO $ mapM_ putStrLn err
       liftIO $ mapM_ putStrLn warn
       if rollback
@@ -148,20 +149,19 @@ repl cwd = do
           liftIO $ putStrLn "ERROR: NEED TO `rebuild`"
           -- TODO: if change && rollback: rebuild the database using records (i.e., don't reload from disk)
         -- if change && not rollback: create and save command record
-        else if change
-          then do
-            let record = CommandRecord 1 time (T.pack $ envUser env0) (T.pack $ head args0) (map T.pack recordArgs)
-            chguuid <- liftIO $ U4.nextRandom >>= return . U.toString
-            liftIO $ print record
-            -- Save record to disk
-            saveCommandRecord record chguuid
-            runSqlite "repl.db" $ do
-              -- Convert CommandRecord to Command
-              let command = DB.recordToCommand record
-              -- Command saved to DB
-              insert command
-            return ()
-          else
+        else
+          when (not $ null cards) $ do
+--            let record = CommandRecord 1 time (T.pack $ envUser env0) (T.pack $ head args0) (map T.pack recordArgs)
+--            chguuid <- liftIO $ U4.nextRandom >>= return . U.toString
+--            liftIO $ print record
+--            -- Save record to disk
+--            saveCommandRecord record chguuid
+--            runSqlite "repl.db" $ do
+--              -- Convert CommandRecord to Command
+--              let command = DB.recordToCommand record
+--              -- Command saved to DB
+--              insert command
+            liftIO $ print cards
             return ()
   repl (envCwdChain env1)
 
