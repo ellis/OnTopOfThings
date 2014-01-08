@@ -56,3 +56,26 @@ diffName x = case x of
   DiffAdd name _ -> name
   DiffUnset name -> name
   DiffRemove name _ -> name
+
+data ItemUpdate = ItemUpdate
+  { itemUpdateType :: Maybe String
+  , itemUpdateStatus :: Maybe String
+  , itemUpdateParent :: Maybe String
+  , itemUpdateName :: Maybe String
+  , itemUpdateTitle :: Maybe String
+  , itemUpdate
+  uuid String
+  ItemUniqUuid uuid
+  ctime UTCTime
+  type String
+  title String
+  status String
+  parent String Maybe
+  stage String Maybe
+  label String Maybe
+  index Int Maybe
+  closed UTCTime Maybe
+  start UTCTime Maybe
+  end UTCTime Maybe
+  due UTCTime Maybe
+  review UTCTime Maybe -- When to next review this item (like GTD tickler)
