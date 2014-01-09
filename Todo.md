@@ -28,6 +28,7 @@ Ideas:
 - [ ] Repl: ``cat`` action should print item as yaml
 - [ ] Create a yaml import format
 - [ ] Import: create a yaml file instead
+- [ ] Consider having DiffEqual, DiffNull, and DiffRemove also contain the old values
 - [ ] Repl: decide on file format for patches
 - [ ] create a common function for creating an item, whether via mkdir or newtask.
 - [ ] Item: add owner field
