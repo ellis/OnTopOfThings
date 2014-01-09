@@ -596,38 +596,11 @@ newtask (Env time user cwd) action0 = do
   case parent_ of
     Left msgs -> return (ActionResult [] False [] msgs)
     Right parent -> do
-      uuidNew <- liftIO (U4.nextRandom >>= return . U.toString)
-      item_ <- return $ do
-        uuid_ <- getMaybe newTaskUuid
-        let uuid = fromMaybe uuidNew uuid_
-        status <- getMaybe newTaskStatus
-        name <- getMaybe newTaskName
-        title <- getMaybe newTaskTitle
-        stage <- getMaybe newTaskStage
-        return $ Item
-          { itemUuid = uuid
-          , itemCtime = time
-          , itemCreator = user
-          , itemType = "task"
-          , itemStatus = fromMaybe "open" status
-          , itemParent = Just (itemUuid parent)
-          , itemName = name
-          , itemTitle = title
-          , itemContent = Nothing
-          , itemStage = stage `mplus` Just "new"
-          , itemClosed = Nothing
-          , itemStart = Nothing
-          , itemEnd = Nothing
-          , itemDue = Nothing
-          , itemReview = Nothing
-          , itemIndex = Nothing
-          }
-      case item_ of
+      uuid <- liftIO (U4.nextRandom >>= return . U.toString)
+      let hunk_ = createHunk uuid parent
+      case hunk_ of
         Left msgs -> return (ActionResult [] False [] msgs)
-        Right item -> do
-          insert item
-          let action = action0 { newTaskUuid = Just (itemUuid item) }
-          return (ActionResult [] False [] [])
+        Right hunk -> return (ActionResult [hunk] False [] [])
   where
     parentChain = case newTaskParentRef action0 of
       Just s -> pathStringToPathChain cwd s
@@ -638,6 +611,21 @@ newtask (Env time user cwd) action0 = do
       Just s -> Right s
     getMaybe :: (ActionNewTask -> Maybe String) -> Validation (Maybe String)
     getMaybe fn = Right (fn action0)
+    createHunk :: String -> Item -> Validation PatchHunk
+    createHunk uuid parent = do
+      status <- getMaybe newTaskStatus
+      name <- getMaybe newTaskName
+      title <- getMaybe newTaskTitle
+      stage <- getMaybe newTaskStage
+      let diffs = catMaybes
+            [ Just $ DiffEqual "type" "task"
+            , Just $ DiffEqual "status" $ fromMaybe "open" status
+            , Just $ DiffEqual "parent" (itemUuid parent)
+            , fmap (DiffEqual "name") name
+            , fmap (DiffEqual "title") title
+            , Just $ DiffEqual "stage" $ fromMaybe "new" stage
+            ]
+      return (PatchHunk [uuid] diffs)
 
 patch :: Patch -> PatchHunk -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
 patch _ hunk | trace ("patch: "++(show hunk)) False = undefined

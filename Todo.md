@@ -22,17 +22,15 @@ Ideas:
 - [x] Repl: ``ls -R``: should display items in current folder, then recursively for each item, with proper relative paths
 - [x] Repl: ``ls`` should put blank lines between folder listings
 - [x] Repl: add some color to ``ls``
-- [x] Rename Card to Patch?
-- [ ] Repl: newitem should return a diff, like mkdir
+- [x] Item: add name, creator
+- [x] Rename Card to Patch
+- [x] Repl: newitem should return a diff, like mkdir
+- [ ] Repl: ``cat`` action should print item as yaml
+- [ ] Create a yaml import format
+- [ ] Import: create a yaml file instead
 - [ ] Repl: decide on file format for patches
-- [ ] ActionMkdir: add ``--folderid`` field for a list of create parent folder UUIDs --folderid=/a/b=UUID --folderid=/a/b/c=UUID
-- [ ] ActionNewTask: add ``--folderid``
 - [ ] create a common function for creating an item, whether via mkdir or newtask.
-- [ ] mkdir: add --id argument to record; also need to figure out how to do that for parents when --parents is set.
-- [ ] CommandRecord: add optional cwd field
-- [ ] Command: add a uuid field
-- [ ] Item: add name, creator, owner fields
-- [ ] Import: adapt for the new actions
+- [ ] Item: add owner field
 - [ ] Rebuild: use new commands
 - [ ] Rebuild: add an option to build from internal change table or reload the change table from files
 - [ ] Edit my data in 'testdata' to create folders instead of lists; also no use of 'label'

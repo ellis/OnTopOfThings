@@ -237,6 +237,27 @@ C [COMMAND]
 
 The above format is inspired by the fossil file format: <http://www.fossil-scm.org/fossil/doc/trunk/www/fileformat.wiki>
 
+## Diff format
+
+Perhaps instead of command records, use diff records.
+
+```
+--- /path/to/original ''timestamp''
++++ /path/to/new ''timestamp''
+status:
+-new
++queue
+content:
+@@ -22,3 +22,7 @@
+ this paragraph needs to
+ be changed. Things can
+ be added after it.
++
++This paragraph contains
++important new additions
++to this document.
+```
+
 ## Reports
 
 Sample Report of pending stuff:
