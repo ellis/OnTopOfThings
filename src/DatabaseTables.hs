@@ -53,22 +53,24 @@ Item
   uuid String
   ItemUniqUuid uuid
   ctime UTCTime
+  creator String
   type String
-  title String
   status String
   parent String Maybe
+  name String Maybe
+  title String Maybe
+  content String Maybe
   stage String Maybe
-  label String Maybe
-  index Int Maybe
   closed UTCTime Maybe
   start UTCTime Maybe
   end UTCTime Maybe
   due UTCTime Maybe
   review UTCTime Maybe -- When to next review this item (like GTD tickler)
   --reviewed UTCTime Maybe -- Last time reviewed
+  index Int Maybe
   deriving Show
 |]
 
 itemEmpty :: String -> UTCTime -> String -> String -> String -> Item
-itemEmpty uuid ctime type_ title status =
-  Item uuid ctime type_ title status Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+itemEmpty uuid ctime creator type_ status =
+  Item uuid ctime creator type_ status Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing

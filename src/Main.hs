@@ -54,6 +54,7 @@ import OnTopOfThings.Commands.Import
 import OnTopOfThings.Commands.Show
 import OnTopOfThings.Commands.Mod
 import OnTopOfThings.Commands.Rebuild
+import OnTopOfThings.Data.Card
 import OnTopOfThings.Parsers.NumberList
 import qualified Database as DB
 
@@ -96,61 +97,69 @@ repl cwd = do
   time <- getCurrentTime
   let args0 = splitArgs input
   let env0 = Env time "default" cwd
-  (env1, result_) <- runSqlite "repl.db" $ do
-    case args0 of
-      [] -> return (env0, mempty)
-      "ls":args -> do
-        case process mode_ls args of
-          Left msg -> return (env0, ActionResult [] False [] [msg])
-          Right opts -> do
-            if optionsHelp opts
-              then do
-                liftIO $ print $ helpText [] HelpFormatDefault mode_ls
-                return (env0, mempty)
-              else do
-                action_ <- actionFromOptions opts
-                case (action_ :: Validation ActionLs) of
-                  Left msgs -> return (env0, ActionResult [] False [] msgs)
-                  Right action -> do
-                    runAction env0 action
-      "mkdir":args -> do
-        case process mode_mkdir args of
-          Left msg -> return (env0, ActionResult [] False [] [msg])
-          Right opts -> do
-            if optionsHelp opts
-              then do
-                liftIO $ print $ helpText [] HelpFormatDefault mode_mkdir
-                return (env0, mempty)
-              else do
-                action_ <- actionFromOptions opts
-                case (action_ :: Validation ActionMkdir) of
-                  Left msgs -> return (env0, ActionResult [] False [] msgs)
-                  Right action -> do
-                    runAction env0 action
-      "newtask":args -> do
-        case process mode_newtask args of
-          Left msg -> return (env0, ActionResult [] False [] [msg])
-          Right action -> do
-            if newTaskHelp action
-              then do
-                liftIO $ print $ helpText [] HelpFormatDefault mode_newtask
-                return (env0, mempty)
-              else do
-                runAction env0 action
-      cmd:_ -> do
-        liftIO $ processMode args0
-        return (env0, ActionResult [] False [] ["command not found: "++cmd])
-  case result_ of
-    (ActionResult cards rollback warn err) -> do
-      liftIO $ mapM_ putStrLn err
-      liftIO $ mapM_ putStrLn warn
-      if rollback
-        then do
-          liftIO $ putStrLn "ERROR: NEED TO `rebuild`"
-          -- TODO: if change && rollback: rebuild the database using records (i.e., don't reload from disk)
-        -- if change && not rollback: create and save command record
-        else
+  env1 <- runSqlite "repl.db" $ do
+    (env1, result_) <-
+      case args0 of
+        [] -> return (env0, mempty)
+        "ls":args -> do
+          case process mode_ls args of
+            Left msg -> return (env0, ActionResult [] False [] [msg])
+            Right opts -> do
+              if optionsHelp opts
+                then do
+                  liftIO $ print $ helpText [] HelpFormatDefault mode_ls
+                  return (env0, mempty)
+                else do
+                  action_ <- actionFromOptions opts
+                  case (action_ :: Validation ActionLs) of
+                    Left msgs -> return (env0, ActionResult [] False [] msgs)
+                    Right action -> do
+                      runAction env0 action
+        "mkdir":args -> do
+          case process mode_mkdir args of
+            Left msg -> return (env0, ActionResult [] False [] [msg])
+            Right opts -> do
+              if optionsHelp opts
+                then do
+                  liftIO $ print $ helpText [] HelpFormatDefault mode_mkdir
+                  return (env0, mempty)
+                else do
+                  action_ <- actionFromOptions opts
+                  case (action_ :: Validation ActionMkdir) of
+                    Left msgs -> return (env0, ActionResult [] False [] msgs)
+                    Right action -> do
+                      runAction env0 action
+        "newtask":args -> do
+          case process mode_newtask args of
+            Left msg -> return (env0, ActionResult [] False [] [msg])
+            Right action -> do
+              if newTaskHelp action
+                then do
+                  liftIO $ print $ helpText [] HelpFormatDefault mode_newtask
+                  return (env0, mempty)
+                else do
+                  runAction env0 action
+        cmd:_ -> do
+          liftIO $ processMode args0
+          return (env0, ActionResult [] False [] ["command not found: "++cmd])
+    case result_ of
+      (ActionResult cards _ warn err) -> do
+        liftIO $ mapM_ putStrLn err
+        liftIO $ mapM_ putStrLn warn
+        fn time cards
+    return env1
+  repl (envCwdChain env1)
+  where
+    fn :: UTCTime -> [CardItem] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+    fn time cards =
           when (not $ null cards) $ do
+            liftIO $ print cards
+            chguuid <- liftIO $ U4.nextRandom >>= return . U.toString
+            let header = Card "1" time "default" chguuid Nothing cards
+            result_ <- mapM (patch header) cards
+            case concatEithersN result_ of
+              Left msgs -> liftIO $ mapM_ putStrLn msgs
+              Right _ -> return ()
 --            let record = CommandRecord 1 time (T.pack $ envUser env0) (T.pack $ head args0) (map T.pack recordArgs)
 --            chguuid <- liftIO $ U4.nextRandom >>= return . U.toString
 --            liftIO $ print record
@@ -161,9 +170,6 @@ repl cwd = do
 --              let command = DB.recordToCommand record
 --              -- Command saved to DB
 --              insert command
-            liftIO $ print cards
-            return ()
-  repl (envCwdChain env1)
 
 -------------------------------------------------------------
 

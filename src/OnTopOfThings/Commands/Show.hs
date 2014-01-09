@@ -109,7 +109,7 @@ optsRun_show opts = do
           --liftIO $ print uuids_
           return $ concatEithersN uuids_
 
-expr' opts fromTime t = expr4 where
+expr' opts fromTime t = expr3 where
   m = optionsMap opts
   -- select tasks which are open or were just closed today
   expr0 = (t ^. ItemType ==. val "task" &&. (t ^. ItemStatus ==. val "open" ||. t ^. ItemClosed >. val (Just fromTime)))
@@ -126,9 +126,10 @@ expr' opts fromTime t = expr4 where
     Nothing -> expr2
     Just l -> expr2 &&. (in_ (t ^. ItemParent) (valList (map Just l)))
   -- restrict by searching for text in title
-  expr4 = case M.lookup "search" (optionsParams1 opts) of
-    Nothing -> expr3
-    Just s -> expr3 &&. (t ^. ItemTitle `like` val ("%"++s++"%"))
+  -- FIXME: doesn't work with a Maybe field!
+--  expr4 = case M.lookup "search" (optionsParams1 opts) of
+--    Nothing -> expr3
+--    Just s -> expr3 &&. (t ^. ItemTitle `like` (just $ val ("%"++s++"%")))
   split :: Maybe (Maybe String) -> [String]
   split (Just (Just s)) = splitOn "," s
   split _ = []
@@ -282,9 +283,9 @@ itemToString opts item = do
     getParts :: [String] -> [String]
     getParts tags = catMaybes
       [ check
-      , fmap (\label -> "(" ++ label ++ ")") (itemLabel item)
+      , fmap (\label -> "(" ++ label ++ ")") (itemName item)
       , if null path then Nothing else Just $ intercalate "/" path ++ ":"
-      , Just $ itemTitle item
+      , itemTitle item
       , if null tags then Nothing else Just $ "(" ++ (intercalate "," tags) ++ ")"
       ]
 

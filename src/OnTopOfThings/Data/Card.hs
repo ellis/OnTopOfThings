@@ -22,7 +22,11 @@ module OnTopOfThings.Data.Card
 --) where
 where
 
+import Data.Maybe
 import Data.Time (UTCTime, getCurrentTime)
+
+import qualified Data.Map as M
+import qualified Data.Set as Set
 
 import Utils
 
@@ -57,25 +61,39 @@ diffName x = case x of
   DiffUnset name -> name
   DiffRemove name _ -> name
 
+data DiffMaps = DiffMaps
+  { diffMapsNull :: Set.Set String
+  , diffMapsEqual :: M.Map String String
+  , diffMapsAdd :: M.Map String [String]
+  , diffMapsUnset :: Set.Set String
+  , diffMapsRemove :: M.Map String [String]
+  } deriving (Show)
+
+diffsToMaps :: [Diff] -> DiffMaps
+diffsToMaps diffs = step diffs (DiffMaps Set.empty M.empty M.empty Set.empty M.empty) where
+  step :: [Diff] -> DiffMaps -> DiffMaps
+  step [] m = m
+  step (diff:rest) m = step rest m' where
+    m' = case diff of
+      DiffNull name -> m { diffMapsNull = Set.insert name (diffMapsNull m) }
+      DiffEqual name value -> m { diffMapsEqual = M.insert name value (diffMapsEqual m) }
+      DiffAdd name value -> m { diffMapsAdd = M.insert name
+        (fromMaybe [] (M.lookup name (diffMapsAdd m)) ++ [value]) (diffMapsAdd m) }
+      DiffUnset name -> m { diffMapsUnset = Set.insert name (diffMapsUnset m) }
+      DiffRemove name value -> m { diffMapsRemove = M.insert name
+        (fromMaybe [] (M.lookup name (diffMapsRemove m)) ++ [value]) (diffMapsRemove m) }
+
 data ItemUpdate = ItemUpdate
   { itemUpdateType :: Maybe String
   , itemUpdateStatus :: Maybe String
   , itemUpdateParent :: Maybe String
   , itemUpdateName :: Maybe String
   , itemUpdateTitle :: Maybe String
-  , itemUpdate
-  uuid String
-  ItemUniqUuid uuid
-  ctime UTCTime
-  type String
-  title String
-  status String
-  parent String Maybe
-  stage String Maybe
-  label String Maybe
-  index Int Maybe
-  closed UTCTime Maybe
-  start UTCTime Maybe
-  end UTCTime Maybe
-  due UTCTime Maybe
-  review UTCTime Maybe -- When to next review this item (like GTD tickler)
+  , itemUpdateStage :: Maybe String
+  , itemUpdateClosed :: Maybe UTCTime
+  , itemUpdateStart :: Maybe UTCTime
+  , itemUpdateEnd :: Maybe UTCTime
+  , itemUpdateDue :: Maybe UTCTime
+  , itemUpdateReview :: Maybe UTCTime
+  , itemUpdateIndex :: Maybe Int
+  } deriving (Show)

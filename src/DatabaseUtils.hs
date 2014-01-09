@@ -61,7 +61,7 @@ databaseLookupUuid ref = do
       case b of
         Just uuid -> return b
         _ -> do
-          c <- fn (\t -> t ^. ItemLabel ==. val (Just ref))
+          c <- fn (\t -> t ^. ItemName ==. val (Just ref))
           return c
   where
     fn expr = do

@@ -255,7 +255,7 @@ ls (Env time user cwd) action@(ActionLs args0 isRecursive) = do
 
 itemToName :: Item -> String
 itemToName item =
-  fromMaybe (itemUuid item) (itemLabel item)
+  fromMaybe (itemUuid item) (itemName item)
 
 absPathChainToItems :: [FilePath] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation [Maybe Item])
 absPathChainToItems chain = do
@@ -318,7 +318,7 @@ parentToPathChainToUuid parent (name:rest) = do
 
 nameToItem :: Maybe String -> FilePath -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
 nameToItem parent name = do
-  item_ <- selectList [ItemLabel ==. (Just name), ItemParent ==. parent] [LimitTo 2]
+  item_ <- selectList [ItemName ==. (Just name), ItemParent ==. parent] [LimitTo 2]
   case item_ of
     [] -> return (Left ["No such file or directory"])
     p:[] -> return (Right $ entityVal p)
@@ -377,7 +377,7 @@ getroot = do
     Just root' -> return (Right (entityVal root'))
     Nothing -> do
       time <- liftIO $ getCurrentTime
-      let itemRoot = (itemEmpty uuidRoot time "folder" "/" "open") { itemLabel = Just "/" }
+      let itemRoot = (itemEmpty uuidRoot time "system" "folder" "open") { itemName = Just "/" }
       insert itemRoot
       return (Right itemRoot)
 
@@ -469,9 +469,8 @@ mkdir env@(Env time user cwd) action = do
               where
                 diffs =
                   [ DiffEqual "type" "folder"
-                  , DiffEqual "title" (last chain)
                   , DiffEqual "status" "open"
-                  , DiffEqual "label" (last chain)
+                  , DiffEqual "name" (last chain)
                   , DiffEqual "parent" (itemUuid parent)
                   ]
 
@@ -601,25 +600,27 @@ newtask (Env time user cwd) action0 = do
       item_ <- return $ do
         uuid_ <- getMaybe newTaskUuid
         let uuid = fromMaybe uuidNew uuid_
-        title <- get newTaskTitle
         status <- getMaybe newTaskStatus
-        stage <- getMaybe newTaskStage
         name <- getMaybe newTaskName
+        title <- getMaybe newTaskTitle
+        stage <- getMaybe newTaskStage
         return $ Item
           { itemUuid = uuid
           , itemCtime = time
+          , itemCreator = user
           , itemType = "task"
-          , itemTitle = title
           , itemStatus = fromMaybe "open" status
           , itemParent = Just (itemUuid parent)
+          , itemName = name
+          , itemTitle = title
+          , itemContent = Nothing
           , itemStage = stage `mplus` Just "new"
-          , itemLabel = name
-          , itemIndex = Nothing
           , itemClosed = Nothing
           , itemStart = Nothing
           , itemEnd = Nothing
           , itemDue = Nothing
           , itemReview = Nothing
+          , itemIndex = Nothing
           }
       case item_ of
         Left msgs -> return (ActionResult [] False [] msgs)
@@ -637,3 +638,97 @@ newtask (Env time user cwd) action0 = do
       Just s -> Right s
     getMaybe :: (ActionNewTask -> Maybe String) -> Validation (Maybe String)
     getMaybe fn = Right (fn action0)
+
+patch :: Card -> CardItem -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+patch _ patch | trace ("patch: "++(show patch)) False = undefined
+patch header (CardItem uuids diffs) = do
+  result_ <- mapM patchone uuids
+  return $ concatEithersN result_ >>= const (Right ())
+  where
+    patchone :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+    patchone uuid = do
+      entity_ <- getBy $ ItemUniqUuid uuid
+      case entity_ of
+        -- Create a new item
+        Nothing -> do
+          let item_ = createItem header uuid diffs
+          case item_ of
+            Left msgs -> return (Left msgs)
+            Right item -> do
+              insert item
+              return (Right ())
+        Just entity -> do
+          let item_ = updateItem header diffs (entityVal entity)
+          case item_ of
+            Left msgs -> return (Left msgs)
+            Right item -> do
+              replace (entityKey entity) item
+              return (Right ())
+
+createItem :: Card -> String -> [Diff] -> Validation Item
+createItem header uuid diffs = do
+  type_ <- get "type"
+  status <- get "status"
+  parent <- getMaybe "parent"
+  name <- getMaybe "name"
+  title <- getMaybe "title"
+  content <- getMaybe "content"
+  stage <- getMaybe "stage"
+  closed <- getMaybeDate "closed"
+  start <- getMaybeDate "start"
+  end <- getMaybeDate "end"
+  due <- getMaybeDate "due"
+  review <- getMaybeDate "review"
+  return $ Item uuid ctime creator type_ status parent name title content stage closed start end due review Nothing
+  where
+    maps = diffsToMaps diffs
+    map = diffMapsEqual maps
+    creator = cardUser header
+    ctime = cardTime header
+    get name = case M.lookup name map of
+      Just x -> Right x
+      _ -> Left ["missing value for `" ++ name ++ "`"]
+    getMaybe name = case M.lookup name map of
+      Just s -> Right (Just s)
+      _ -> Right Nothing
+    getMaybeDate :: String -> Validation (Maybe UTCTime)
+    getMaybeDate name = case M.lookup name map of
+      Just s ->
+        (parseISO8601 s) `maybeToValidation` ["Could not parse time: " ++ s] >>= \time -> Right (Just time)
+      _ -> Right Nothing
+
+updateItem :: Card -> [Diff] -> Item -> Validation Item
+updateItem header diffs item0 = do
+  type_ <- get "type" itemType
+  status <- get "status" itemStatus
+  parent <- getMaybe "parent" itemParent
+  name <- getMaybe "name" itemName
+  title <- getMaybe "title" itemTitle
+  content <- getMaybe "content" itemContent
+  stage <- getMaybe "stage" itemStage
+  closed <- getMaybeDate "closed" itemClosed
+  start <- getMaybeDate "start" itemStart
+  end <- getMaybeDate "end" itemEnd
+  due <- getMaybeDate "due" itemDue
+  review <- getMaybeDate "review" itemReview
+  return $ Item uuid ctime creator type_ status parent name title content stage closed start end due review Nothing
+  where
+    maps = diffsToMaps diffs
+    map = diffMapsEqual maps
+    uuid = (itemUuid item0)
+    creator = cardUser header
+    ctime = cardTime header
+    get :: String -> (Item -> String) -> Validation String
+    get name fn = case M.lookup name map of
+      Just s -> Right s
+      _ -> Right (fn item0)
+
+    getMaybe :: String -> (Item -> Maybe String) -> Validation (Maybe String)
+    getMaybe name fn = case M.lookup name map of
+      Just s -> Right (Just s)
+      _ -> Right (fn item0)
+
+    getMaybeDate :: String -> (Item -> Maybe UTCTime) -> Validation (Maybe UTCTime)
+    getMaybeDate name fn = case M.lookup name map of
+      Just s -> (parseISO8601 s) `maybeToValidation` ["Could not parse time: " ++ s] >>= \time -> Right (Just time)
+      _ -> Right (fn item0)

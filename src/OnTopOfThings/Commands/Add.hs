@@ -130,7 +130,7 @@ optsRun_add record opts0 = do
   case opts1_ of
     Left msgs -> return (Left msgs)
     Right opts1 -> do
-      case createItem time opts1 of
+      case OnTopOfThings.Commands.Utils.createItem time opts1 of
         Left msgs -> return (Left msgs)
         Right item -> do
           insert item
