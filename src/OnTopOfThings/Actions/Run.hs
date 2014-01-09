@@ -50,7 +50,7 @@ import Utils
 import OnTopOfThings.Parsers.NumberList
 import OnTopOfThings.Actions.Action
 import OnTopOfThings.Actions.Env
-import OnTopOfThings.Data.Card
+import OnTopOfThings.Data.Patch
 
 
 instance Action ActionLs where
@@ -464,8 +464,8 @@ mkdir env@(Env time user cwd) action = do
             Left msgs -> return (ActionResult [] False [] msgs)
             Right parent -> do
               uuid <- liftIO (U4.nextRandom >>= return . U.toString)
-              let carditem = CardItem [uuid] diffs
-              return (ActionResult [carditem] False [] [])
+              let hunk = PatchHunk [uuid] diffs
+              return (ActionResult [hunk] False [] [])
               where
                 diffs =
                   [ DiffEqual "type" "folder"
@@ -491,7 +491,7 @@ mkdir env@(Env time user cwd) action = do
 --          let more = drop (length chainError) chain
 --          
 --      <== continue here: if '-parent', create directories from chainError to chain; otherwise if chainError is more than one item shorter than chain, error; otherwise create chain
---      And for each directory created, create a new CardItem
+--      And for each directory created, create a new PatchHunk
 --    createFolders chain more 
 --
 -----------
@@ -639,9 +639,9 @@ newtask (Env time user cwd) action0 = do
     getMaybe :: (ActionNewTask -> Maybe String) -> Validation (Maybe String)
     getMaybe fn = Right (fn action0)
 
-patch :: Card -> CardItem -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
-patch _ patch | trace ("patch: "++(show patch)) False = undefined
-patch header (CardItem uuids diffs) = do
+patch :: Patch -> PatchHunk -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+patch _ hunk | trace ("patch: "++(show hunk)) False = undefined
+patch header (PatchHunk uuids diffs) = do
   result_ <- mapM patchone uuids
   return $ concatEithersN result_ >>= const (Right ())
   where
@@ -665,7 +665,7 @@ patch header (CardItem uuids diffs) = do
               replace (entityKey entity) item
               return (Right ())
 
-createItem :: Card -> String -> [Diff] -> Validation Item
+createItem :: Patch -> String -> [Diff] -> Validation Item
 createItem header uuid diffs = do
   type_ <- get "type"
   status <- get "status"
@@ -683,8 +683,8 @@ createItem header uuid diffs = do
   where
     maps = diffsToMaps diffs
     map = diffMapsEqual maps
-    creator = cardUser header
-    ctime = cardTime header
+    creator = patchUser header
+    ctime = patchTime header
     get name = case M.lookup name map of
       Just x -> Right x
       _ -> Left ["missing value for `" ++ name ++ "`"]
@@ -697,7 +697,7 @@ createItem header uuid diffs = do
         (parseISO8601 s) `maybeToValidation` ["Could not parse time: " ++ s] >>= \time -> Right (Just time)
       _ -> Right Nothing
 
-updateItem :: Card -> [Diff] -> Item -> Validation Item
+updateItem :: Patch -> [Diff] -> Item -> Validation Item
 updateItem header diffs item0 = do
   type_ <- get "type" itemType
   status <- get "status" itemStatus
@@ -716,8 +716,8 @@ updateItem header diffs item0 = do
     maps = diffsToMaps diffs
     map = diffMapsEqual maps
     uuid = (itemUuid item0)
-    creator = cardUser header
-    ctime = cardTime header
+    creator = patchUser header
+    ctime = patchTime header
     get :: String -> (Item -> String) -> Validation String
     get name fn = case M.lookup name map of
       Just s -> Right s

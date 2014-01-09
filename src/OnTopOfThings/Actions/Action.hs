@@ -40,7 +40,7 @@ import qualified Data.UUID.V4 as U4
 import Args
 import Command (CommandRecord)
 import Utils
-import OnTopOfThings.Data.Card (CardItem)
+import OnTopOfThings.Data.Patch (PatchHunk)
 import OnTopOfThings.Actions.Env
 
 data ActionLs = ActionLs
@@ -67,7 +67,7 @@ data ActionNewTask = ActionNewTask
     } deriving (Show)
 
 data ActionResult = ActionResult
-  { actionResultCards :: [CardItem]
+  { actionResultPatchHunks :: [PatchHunk]
   , actionResultRollback :: Bool
   , actionResultWarnings :: [String]
   , actionResultErrors :: [String]

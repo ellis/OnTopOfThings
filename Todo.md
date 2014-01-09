@@ -22,6 +22,9 @@ Ideas:
 - [x] Repl: ``ls -R``: should display items in current folder, then recursively for each item, with proper relative paths
 - [x] Repl: ``ls`` should put blank lines between folder listings
 - [x] Repl: add some color to ``ls``
+- [x] Rename Card to Patch?
+- [ ] Repl: newitem should return a diff, like mkdir
+- [ ] Repl: decide on file format for patches
 - [ ] ActionMkdir: add ``--folderid`` field for a list of create parent folder UUIDs --folderid=/a/b=UUID --folderid=/a/b/c=UUID
 - [ ] ActionNewTask: add ``--folderid``
 - [ ] create a common function for creating an item, whether via mkdir or newtask.

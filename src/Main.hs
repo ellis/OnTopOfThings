@@ -54,7 +54,7 @@ import OnTopOfThings.Commands.Import
 import OnTopOfThings.Commands.Show
 import OnTopOfThings.Commands.Mod
 import OnTopOfThings.Commands.Rebuild
-import OnTopOfThings.Data.Card
+import OnTopOfThings.Data.Patch
 import OnTopOfThings.Parsers.NumberList
 import qualified Database as DB
 
@@ -150,12 +150,12 @@ repl cwd = do
     return env1
   repl (envCwdChain env1)
   where
-    fn :: UTCTime -> [CardItem] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+    fn :: UTCTime -> [PatchHunk] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
     fn time cards =
           when (not $ null cards) $ do
             liftIO $ print cards
             chguuid <- liftIO $ U4.nextRandom >>= return . U.toString
-            let header = Card "1" time "default" chguuid Nothing cards
+            let header = Patch "1" time "default" chguuid Nothing cards
             result_ <- mapM (patch header) cards
             case concatEithersN result_ of
               Left msgs -> liftIO $ mapM_ putStrLn msgs
