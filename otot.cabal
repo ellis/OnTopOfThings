@@ -19,4 +19,4 @@ executable otot
   main-is: Main.hs
   hs-source-dirs: src
   -- other-modules:       
-  build-depends:       base ==4.6.*, persistent, persistent-template, persistent-sqlite, esqueleto, transformers, containers, aeson, bytestring, text, unordered-containers, vector, regex-compat, filepath, directory, time, uuid, iso8601-time, monad-control, resourcet, monad-logger, syb, old-locale, hood, cmdargs, split, parsec, ansi-terminal
+  build-depends:       base ==4.6.*, persistent, persistent-template, persistent-sqlite, esqueleto, transformers, containers, aeson, bytestring, text, unordered-containers, vector, regex-compat, filepath, directory, time, uuid, iso8601-time, monad-control, resourcet, monad-logger, syb, old-locale, hood, cmdargs, split, parsec, ansi-terminal, yaml

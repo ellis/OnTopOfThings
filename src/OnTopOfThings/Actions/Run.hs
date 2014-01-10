@@ -42,6 +42,7 @@ import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.UUID as U
 import qualified Data.UUID.V4 as U4
+import qualified Data.Yaml as Yaml
 
 import Args
 import DatabaseTables
@@ -50,6 +51,7 @@ import Utils
 import OnTopOfThings.Parsers.NumberList
 import OnTopOfThings.Actions.Action
 import OnTopOfThings.Actions.Env
+import OnTopOfThings.Data.DatabaseJson
 import OnTopOfThings.Data.Patch
 
 
@@ -236,7 +238,8 @@ cat (Env time user cwd) action@(ActionCat args0) = do
 
 itemToYamlLines :: Item -> [String]
 itemToYamlLines item = l where
-  l = concat
+  l = [show $ Yaml.encode (ItemForJson item)]
+  l' = concat
     [ get "uuid" itemUuid
     , get "type" itemType
     , get "creator" itemCreator
