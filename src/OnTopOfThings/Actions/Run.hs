@@ -24,6 +24,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
+import Data.ByteString (ByteString)
 import Data.List (inits, intercalate, partition, sort, sortBy)
 import Data.Maybe
 import Data.Monoid
@@ -233,26 +234,11 @@ cat (Env time user cwd) action@(ActionCat args0) = do
     catitem :: Item -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
     catitem item = do
       let lines = itemToYamlLines item
-      liftIO $ mapM_ putStrLn lines
+      liftIO $ putStrLn lines
       return mempty
 
-itemToYamlLines :: Item -> [String]
-itemToYamlLines item = l where
-  l = [show $ Yaml.encode (ItemForJson item)]
-  l' = concat
-    [ get "uuid" itemUuid
-    , get "type" itemType
-    , get "creator" itemCreator
-    , get "status" itemStatus
-    , getMaybe "name" itemName
-    , getMaybe "title" itemTitle
-    , getMaybe "content" itemContent
-    , getMaybe "stage" itemStage
-    ]
-  get :: String -> (Item -> String) -> [String]
-  get name fn = [name ++ ": " ++ (fn item)]
-  getMaybe :: String -> (Item -> Maybe String) -> [String]
-  getMaybe name fn = maybeToList $ fmap (\x -> name ++ ": " ++ x) (fn item)
+itemToYamlLines :: Item -> ByteString
+itemToYamlLines item = Yaml.encode (ItemForJson item)
 
 ls :: Env -> ActionLs -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 ls env action | trace ("ls: "++(show action)) False = undefined
