@@ -25,7 +25,7 @@ Ideas:
 - [x] Item: add name, creator
 - [x] Rename Card to Patch
 - [x] Repl: newitem should return a diff, like mkdir
-- [ ] Repl: ``cat`` action should print item as yaml
+- [x] Repl: ``cat`` action should print item as yaml
 - [ ] Create a yaml import format
 - [ ] Import: create a yaml file instead
 - [ ] Consider having DiffEqual, DiffNull, and DiffRemove also contain the old values

@@ -43,6 +43,10 @@ import Utils
 import OnTopOfThings.Data.Patch (PatchHunk)
 import OnTopOfThings.Actions.Env
 
+data ActionCat = ActionCat
+    { catArgs :: [String]
+    } deriving (Show)
+
 data ActionLs = ActionLs
     { lsArgs :: [String]
     , lsRecursive :: Bool

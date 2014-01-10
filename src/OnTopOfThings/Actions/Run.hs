@@ -53,6 +53,15 @@ import OnTopOfThings.Actions.Env
 import OnTopOfThings.Data.Patch
 
 
+instance Action ActionCat where
+  runAction env action = cat env action >>= \result -> return (env, result)
+  --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionLs)
+  actionFromOptions opts = let
+      args = optionsArgs opts
+    in do
+      return (Right (ActionCat args))
+  actionToRecordArgs action = Nothing
+
 instance Action ActionLs where
   runAction env action = ls env action >>= \result -> return (env, result)
   --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionLs)
@@ -129,6 +138,22 @@ instance Action ActionNewTask where
       , newTaskName action >>= \x -> Just ("--name="++x)
       ]
 
+mode_cat = Mode
+  { modeGroupModes = mempty
+  , modeNames = ["cat"]
+  , modeValue = options_empty "cat"
+  , modeCheck = Right
+  , modeReform = Just . reform
+  , modeExpandAt = True
+  , modeHelp = "Concatenate FILE(s) to standard output."
+  , modeHelpSuffix = []
+  , modeArgs = ([], Just (flagArg updArgs "FILE"))
+  , modeGroupFlags = toGroup
+    [ flagNone ["help"] updHelp "display this help and exit"
+    ]
+  }
+
+
 mode_ls = Mode
   { modeGroupModes = mempty
   , modeNames = ["ls"]
@@ -137,7 +162,7 @@ mode_ls = Mode
   , modeReform = Just . reform
   , modeExpandAt = True
   , modeHelp = "List information about the FILEs (in the current directory by default)."
-  , modeHelpSuffix = ["Add a new task and be a dude"]
+  , modeHelpSuffix = []
   , modeArgs = ([], Just (flagArg updArgs "FILE"))
   , modeGroupFlags = toGroup
     [ flagNone ["recursive", "R"] (upd0 "recursive") "list subdirectories recursively"
@@ -185,6 +210,46 @@ mode_newtask = Mode
     , flagHelpSimple (\a -> a { newTaskHelp = True })
     ]
   }
+
+cat :: Env -> ActionCat -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
+cat env action | trace ("cat: "++(show action)) False = undefined
+cat (Env time user cwd) action@(ActionCat args0) = do
+  results_ <- mapM catone args0
+  return (mconcat results_)
+  where
+    catone :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
+    catone path_s = do
+      entity' <- getBy $ ItemUniqUuid path_s
+      case entity' of
+        Just entity -> catitem (entityVal entity)
+        Nothing -> do
+          let chain = pathStringToAbsPathChain cwd path_s
+          item_ <- absPathChainToItem chain
+          case item_ of
+            Left msgs -> return (ActionResult [] False [] msgs)
+            Right item -> catitem item
+    catitem :: Item -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
+    catitem item = do
+      let lines = itemToYamlLines item
+      liftIO $ mapM_ putStrLn lines
+      return mempty
+
+itemToYamlLines :: Item -> [String]
+itemToYamlLines item = l where
+  l = concat
+    [ get "uuid" itemUuid
+    , get "type" itemType
+    , get "creator" itemCreator
+    , get "status" itemStatus
+    , getMaybe "name" itemName
+    , getMaybe "title" itemTitle
+    , getMaybe "content" itemContent
+    , getMaybe "stage" itemStage
+    ]
+  get :: String -> (Item -> String) -> [String]
+  get name fn = [name ++ ": " ++ (fn item)]
+  getMaybe :: String -> (Item -> Maybe String) -> [String]
+  getMaybe name fn = maybeToList $ fmap (\x -> name ++ ": " ++ x) (fn item)
 
 ls :: Env -> ActionLs -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 ls env action | trace ("ls: "++(show action)) False = undefined
@@ -301,7 +366,11 @@ parentToPathChainToItem _ ("/":rest) = do
 parentToPathChainToItem parent (name:rest) = do
   item_ <- nameToItem (Just $ itemUuid parent) name
   case item_ of
-    Left msgs -> return (Left msgs)
+    Left msgs -> do
+      entity' <- getBy $ ItemUniqUuid name
+      case entity' of
+        Nothing -> return (Left msgs)
+        Just entity -> parentToPathChainToItem (entityVal entity) rest
     Right item -> parentToPathChainToItem item rest
 
 pathChainToUuid :: [FilePath] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (Maybe String))

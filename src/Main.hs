@@ -101,6 +101,20 @@ repl cwd = do
     (env1, result_) <-
       case args0 of
         [] -> return (env0, mempty)
+        "cat":args -> do
+          case process mode_cat args of
+            Left msg -> return (env0, ActionResult [] False [] [msg])
+            Right opts -> do
+              if optionsHelp opts
+                then do
+                  liftIO $ print $ helpText [] HelpFormatDefault mode_cat
+                  return (env0, mempty)
+                else do
+                  action_ <- actionFromOptions opts
+                  case (action_ :: Validation ActionCat) of
+                    Left msgs -> return (env0, ActionResult [] False [] msgs)
+                    Right action -> do
+                      runAction env0 action
         "ls":args -> do
           case process mode_ls args of
             Left msg -> return (env0, ActionResult [] False [] [msg])
