@@ -43,6 +43,7 @@ import System.IO
 import System.Locale (defaultTimeLocale)
 --import qualified System.FilePath.Find as FF
 import Text.Regex (mkRegex, matchRegexAll)
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.HashMap.Strict as HM
@@ -50,6 +51,7 @@ import qualified Data.Map as M
 import qualified Data.Set as Set
 import qualified Data.Text as T
 import qualified Data.Vector as V
+import qualified Data.Yaml as Yaml
 
 import Args
 import Command (CommandRecord(..))
@@ -96,10 +98,11 @@ optsRun_import opts = do
       case convert input of
         Left msgs -> return (Left msgs)
         Right records -> do
-          hPutStrLn h "["
-          mapM_ (\record -> hPutStrLn h $ ((BL.unpack . encode) record ++ ",")) (init records)
-          hPutStrLn h $ (BL.unpack . encode) (last records)
-          hPutStrLn h "]"
+          --BS.hPutStrLn h "["
+          --mapM_ (\record -> BS.hPutStrLn h $ (encode record ++ ",")) (init records)
+          --BS.hPutStrLn h $ encode (last records)
+          --hPutStrLn h "]"
+          BS.hPutStr h $ Yaml.encode records
           hClose h
           return (Right ())
 

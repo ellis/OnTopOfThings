@@ -24,7 +24,6 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
-import Data.ByteString (ByteString)
 import Data.List (inits, intercalate, partition, sort, sortBy)
 import Data.Maybe
 import Data.Monoid
@@ -38,6 +37,7 @@ import System.IO
 import Database.Persist (insert)
 import Database.Persist.Sqlite
 import Debug.Trace
+import qualified Data.ByteString as BS
 import qualified Data.Map as M
 import qualified Data.Set as Set
 import qualified Data.Text as T
@@ -234,11 +234,28 @@ cat (Env time user cwd) action@(ActionCat args0) = do
     catitem :: Item -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
     catitem item = do
       let lines = itemToYamlLines item
-      liftIO $ putStrLn lines
+      --liftIO $ mapM_ putStrLn lines
+      liftIO $ BS.putStr lines
       return mempty
 
-itemToYamlLines :: Item -> ByteString
-itemToYamlLines item = Yaml.encode (ItemForJson item)
+itemToYamlLines :: Item -> BS.ByteString
+itemToYamlLines item =
+  -- Problem with using Yaml.encode is that the properties are not ordered
+  Yaml.encode (ItemForJson item)
+--  l' = concat
+--    [ get "uuid" itemUuid
+--    , get "type" itemType
+--    , get "creator" itemCreator
+--    , get "status" itemStatus
+--    , getMaybe "name" itemName
+--    , getMaybe "title" itemTitle
+--    , getMaybe "content" itemContent
+--    , getMaybe "stage" itemStage
+--    ]
+--  get :: String -> (Item -> String) -> [String]
+--  get name fn = [name ++ ": " ++ (fn item)]
+--  getMaybe :: String -> (Item -> Maybe String) -> [String]
+--  getMaybe name fn = maybeToList $ fmap (\x -> name ++ ": " ++ x) (fn item)
 
 ls :: Env -> ActionLs -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 ls env action | trace ("ls: "++(show action)) False = undefined

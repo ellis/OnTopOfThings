@@ -86,9 +86,18 @@ mode_root = modes "otot" (options_empty "") "OnTopOfThings for managing lists an
 -- 7) print relevant output
 main :: IO ()
 main = do
-  runSqlite "repl.db" $ do
-    runMigration migrateAll
-  repl ["/"]
+  args0 <- getArgs
+  args' = dropWhile (\s -> head s == '-') args0
+  case args' of
+    [] -> putStrLn "use a command: repl, import"
+    (cmd:args) -> do
+      case cmd of
+        "repl" -> do
+          runSqlite "repl.db" $ do
+            runMigration migrateAll
+          repl ["/"]
+        "import" -> do
+          opts <-
 
 repl cwd = do
   putStr "otot> "

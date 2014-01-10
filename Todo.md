@@ -26,8 +26,10 @@ Ideas:
 - [x] Rename Card to Patch
 - [x] Repl: newitem should return a diff, like mkdir
 - [x] Repl: ``cat`` action should print item as yaml
+- [?] Import: create a yaml file instead
+- [ ] Main: manually parse arguments for now: import
+- [ ] Main: manually parse arguments for now: repl
 - [ ] Create a yaml import format
-- [ ] Import: create a yaml file instead
 - [ ] Consider having DiffEqual, DiffNull, and DiffRemove also contain the old values
 - [ ] Repl: decide on file format for patches
 - [ ] create a common function for creating an item, whether via mkdir or newtask.
