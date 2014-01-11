@@ -29,13 +29,21 @@ module DatabaseTables
 --) where
 where
 
-import           Database.Persist
-import           Database.Persist.Sqlite
-import           Database.Persist.TH
-
 import Data.Time.Clock (UTCTime)
+import Database.Persist
+import Database.Persist.Sqlite
+import Database.Persist.TH
+import qualified Data.Text as T
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
+Event
+  time UTCTime
+  user String
+  comment String Maybe
+  type String
+  version Int
+  data String
+  deriving Show
 Command
   format Int
   time UTCTime

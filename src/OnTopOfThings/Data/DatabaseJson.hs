@@ -39,6 +39,7 @@ import qualified Data.Vector as V
 
 import DatabaseTables
 import Utils
+import OnTopOfThings.Data.Patch
 
 data ExportJson = ExportJson
   { exportVersion :: Int
@@ -90,4 +91,33 @@ instance ToJSON ItemForJson where
     getMaybeDate :: T.Text -> (Item -> Maybe UTCTime) -> Maybe Pair
     getMaybeDate name fn = fmap (\x -> name .= (T.pack $ formatISO8601 x)) (fn item)
 
+instance ToJSON Patch where
+  toJSON (Patch format time user uuid uuidParent_ hunks) = object l where
+    l = catMaybes
+      [ Just $ "format" .= format
+      , Just $ "time" .= (T.pack $ formatISO8601 time)
+      , Just $ "user" .= (T.pack user)
+      , Just $ "uuid" .= (T.pack uuid)
+      , fmap (\s -> "parentUuid" .= (T.pack s)) uuidParent_
+      , Just $ "hunks" .= hunks
+      ]
+
+instance ToJSON PatchHunk where
+  toJSON (PatchHunk uuids diffs) = object [ "uuids" .= (map T.pack uuids), "diffs" .= diffs ]
+
+instance ToJSON Diff where
+  toJSON diff = String $ T.concat $ map T.pack l where
+    l = case diff of
+      DiffNull name -> ["=", name]
+      DiffEqual name value -> ["=", name, " ", value]
+      DiffAdd name value -> ["+", name, " ", value]
+      DiffUnset name -> ["x", name]
+      DiffRemove name value -> ["-", name, " ", value]
+--  toJSON diff = Array $ V.fromList $ map (String . T.pack) l where
+--    l = case diff of
+--      DiffNull name -> ["=", name]
+--      DiffEqual name value -> ["=", name, value]
+--      DiffAdd name value -> ["+", name, value]
+--      DiffUnset name -> ["x", name]
+--      DiffRemove name value -> ["-", name, value]
 

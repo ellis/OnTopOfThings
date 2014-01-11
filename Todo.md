@@ -30,6 +30,9 @@ Ideas:
 - [x] Main: manually parse arguments for now: import
 - [x] Main: manually parse arguments for now: repl
 - [x] Import: create folder items when required
+- [ ] Import: need to create Patches instead of a plain export of the data
+- [ ] Import: sort output by time
+- [ ] Import: export tags
 - [ ] Create a yaml import format
 - [ ] Consider having DiffEqual, DiffNull, and DiffRemove also contain the old values
 - [ ] Repl: decide on file format for patches

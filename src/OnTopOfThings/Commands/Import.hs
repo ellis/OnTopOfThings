@@ -33,7 +33,7 @@ import Data.Maybe (catMaybes, fromMaybe)
 import Data.Monoid (mempty)
 import Data.Time.Clock
 import Data.Time.Format (parseTime)
-import Data.Time.ISO8601 (formatISO8601Millis)
+import Data.Time.ISO8601 (formatISO8601, formatISO8601Millis)
 import Debug.Hood.Observe
 import Debug.Trace
 import System.Console.CmdArgs.Explicit
@@ -60,6 +60,7 @@ import Utils
 import OnTopOfThings.Commands.Add
 import OnTopOfThings.Commands.Mod
 import OnTopOfThings.Data.DatabaseJson
+import OnTopOfThings.Data.FileJson
 import OnTopOfThings.Data.Patch
 
 modeInfo_import :: ModeInfo
@@ -102,37 +103,65 @@ optsRun_import opts = do
         Left msgs -> return (Left msgs)
         Right items -> do
           time <- getCurrentTime
-          let export = ExportJson 1 time "Task Warrior import" (map ItemForJson items)
+--          let export = ExportJson 1 time "Task Warrior import" (map ItemForJson items)
+          let export = ExportFile (Just time) (Just "default") (Just "Task Warrior import") (map ItemForJson items)
           BS.hPutStr h $ Yaml.encode export
           hClose h
           return (Right ())
---      case convert input of
+--      case convert'' input of
 --        Left msgs -> return (Left msgs)
 --        Right records -> do
---          --BS.hPutStrLn h "["
---          --mapM_ (\record -> BS.hPutStrLn h $ (encode record ++ ",")) (init records)
---          --BS.hPutStrLn h $ encode (last records)
---          --hPutStrLn h "]"
 --          BS.hPutStr h $ Yaml.encode records
 --          hClose h
 --          return (Right ())
 
+convert'' :: BL.ByteString -> Validation [Patch]
+convert'' input = do
+  items <- convert' input
+  return $ map createPatch items
+  where
+    createPatch :: Item -> Patch
+    createPatch item = Patch "1" (itemCtime item) (itemCreator item) "" Nothing [hunk] where
+      hunk = PatchHunk [itemUuid item] diffs
+      diffs = catMaybes
+        [ get "type" itemType
+        , get "status" itemStatus
+        , getMaybe "parent" itemParent
+        , getMaybe "name" itemName
+        , getMaybe "title" itemTitle
+        , getMaybe "content" itemContent
+        , getMaybe "stage" itemStage
+        , getMaybeDate "closed" itemClosed
+        , getMaybeDate "start" itemStart
+        , getMaybeDate "end" itemEnd
+        , getMaybeDate "due" itemDue
+        , getMaybeDate "review" itemReview
+        ]
+      get :: String -> (Item -> String) -> Maybe Diff
+      get name fn = Just (DiffEqual name (fn item))
+
+      getMaybe :: String -> (Item -> Maybe String) -> Maybe Diff
+      getMaybe name fn = fmap (DiffEqual name) (fn item)
+
+      getMaybeDate :: String -> (Item -> Maybe UTCTime) -> Maybe Diff
+      getMaybeDate name fn = fmap (DiffEqual name . formatISO8601) (fn item)
+
 convert' :: BL.ByteString -> Validation [Item]
 convert' input = l_ where
-    l_ = case eitherDecode input of
-      Left msg -> Left [msg]
-      Right (Array l) -> items_ where
-        db' = createItems' (V.toList l) (M.empty, M.empty)
-        items_ = case db' of
-          Left msgs -> Left msgs
-          Right db -> Right l where
-            l = M.elems db
-            -- TODO: need to sort l
-    createItems' :: [Value] -> (M.Map String Item, M.Map FilePath Item) -> Validation (M.Map String Item)
-    createItems' [] (db, _) = Right db
-    createItems' ((Object m):rest) both = createItems both m >>= \both -> createItems' rest both
-    createItems' _ _ = Left ["Expected object"]
-    --x -> Left ["Expected an array, got" ++ show input]
+  l_ = case eitherDecode input of
+    Left msg -> Left [msg]
+    Right (Array l) -> items_ where
+      db' = createItems' (V.toList l) (M.empty, M.empty)
+      items_ = case db' of
+        Left msgs -> Left msgs
+        Right db -> Right l where
+          l = M.elems db
+          -- TODO: need to sort l
+  createItems' :: [Value] -> (M.Map String Item, M.Map FilePath Item) -> Validation (M.Map String Item)
+  createItems' [] (db, _) = Right db
+  createItems' ((Object m):rest) both = createItems both m >>= \both -> createItems' rest both
+  createItems' _ _ = Left ["Expected object"]
+  --x -> Left ["Expected an array, got" ++ show input]
 
 createItems :: (M.Map String Item, M.Map FilePath Item) -> Object -> Validation (M.Map String Item, M.Map FilePath Item)
 --createItems uuids projects m | trace ("createItems " ++ show uuids) False = undefined
