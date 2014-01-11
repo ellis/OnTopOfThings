@@ -1,0 +1,9 @@
+dist
+.*
+cabal.sandbox.config
+otot2.db
+otot.db
+temp
+testdata
+repl.db
+old-testdata
