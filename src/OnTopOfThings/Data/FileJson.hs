@@ -104,4 +104,4 @@ loadFile path = do
     exportToEvent :: ItemForJson -> Event
     exportToEvent wrapper@(ItemForJson item) = event where
       data_ = BL.toStrict $ encode wrapper
-      event = Event (itemCreated item) (itemCreator item) Nothing "export" 1 data_
+      event = Event (itemCreated item) (itemCreator item) Nothing "createItem" 1 data_

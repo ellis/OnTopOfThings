@@ -49,6 +49,7 @@ import OnTopOfThings.Commands.Close
 import OnTopOfThings.Commands.Delete
 import OnTopOfThings.Commands.Import (optsToCommandRecord)
 import OnTopOfThings.Commands.Mod
+import OnTopOfThings.Data.DatabaseJson
 import OnTopOfThings.Data.FileJson
 import qualified Database as DB
 
@@ -103,10 +104,20 @@ optsRun_rebuild opts = do
         deleteWhere ([] :: [Filter Property])
         -- Add the command records and process them
         mapM insert events
-        --result <- mapM processRecord events
-        --let result' = concatEithersN result
-        --return $ fmap (const ()) result'
+        result <- mapM processEvent events
+        let result' = concatEithersN result
+        return $ fmap (const ()) result'
+
+processEvent :: Event -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+--processEvent event | trace ("event: "++(show event)) False = undefined
+processEvent event = case eventType event of
+  "createItem" -> do
+    case eventToItems event of
+      Left msgs -> return (Left (("error in event: "++(show event)):msgs))
+      Right items -> do
+        mapM insert items
         return (Right ())
+  s -> return (Left ["unrecognized event type: "++s])
 
 optsRun_rebuild' opts = do
   x <- loadCommandRecords

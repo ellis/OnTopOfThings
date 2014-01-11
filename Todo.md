@@ -33,9 +33,16 @@ Ideas:
 - [x] Item: rename ``ctime`` to ``created``
 - [x] Create a yaml import format (ExportFile)
 - [x] Rebuild: get it to work with YAML ExportFile
-- [ ] Rebuild: process Event records
-- [ ] Import: sort output by time
+- [x] Rebuild: process Event records to create Items and Properties
+- [x] Import: assign ``name`` to folders
+- [?] Import: sort output by time
+- [ ] Create a PatchFile1 that sets new values without comparing old values, and make it work with Rebuild
+- [ ] Repl: save PathFile1 as json in the ``testdata`` directory for commands which create patches
+- [ ] Repl: show
+- [ ] Repl: mv to change parent
+- [ ] Repl: mv to change name
 - [ ] Import: export tags
+- [ ] Report bug with Yaml/Aeson, where a string of digits (e.g. "name: 20130509") causes an error when being read back in
 - [ ] Rename ``Import`` to ``Convert``
 - [ ] instead of using "otot.db" or "repl.db", get file from the options and have a default value
 - [ ] Consider having DiffEqual, DiffNull, and DiffRemove also contain the old values
@@ -50,7 +57,6 @@ Ideas:
 - [ ] Repl: ls -l
 - [ ] Repl: ls -a
 - [ ] Repl: ``ls -R`` should prefix everything with '/'
-- [ ] Repl: mv
 - [ ] Repl: cat, to show low-level details, perhaps YAML or MD
 - [ ] Repl: ln
 - [ ] Item: remove label field once I've transitioned everything to use 'name' instead

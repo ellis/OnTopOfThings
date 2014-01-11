@@ -38,7 +38,7 @@ import Debug.Hood.Observe
 import Debug.Trace
 import System.Console.CmdArgs.Explicit
 import System.Directory (getDirectoryContents)
-import System.FilePath (takeExtension, joinPath, splitDirectories)
+import System.FilePath (joinPath, splitDirectories, takeExtension, takeFileName)
 import System.IO
 import System.Locale (defaultTimeLocale)
 --import qualified System.FilePath.Find as FF
@@ -101,8 +101,9 @@ optsRun_import opts = do
         _ -> return stdout
       case convert' input of
         Left msgs -> return (Left msgs)
-        Right items -> do
+        Right items' -> do
           time <- getCurrentTime
+          let items = sortBy (\a b -> compare (itemCreated a) (itemCreated b)) items'
 --          let export = ExportJson 1 time "Task Warrior import" (map ItemForJson items)
           let export = ExportFile (Just time) (Just "default") (Just "Task Warrior import") (map ItemForJson items)
           BS.hPutStr h $ Yaml.encode export
@@ -251,7 +252,7 @@ createFolders (db, folders) (path:rest) time parentUuid = createFolders (db', fo
     , itemType = "folder"
     , itemStatus = "open"
     , itemParent = Just parentUuid
-    , itemName = Nothing
+    , itemName = Just (takeFileName path)
     , itemTitle = Nothing
     , itemContent = Nothing
     , itemStage = Nothing

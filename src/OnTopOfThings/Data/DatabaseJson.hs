@@ -87,7 +87,7 @@ instance ToJSON ItemForJson where
     getDate name fn = Just (name .= (T.pack $ formatISO8601 (fn item)))
 
     getMaybe :: T.Text -> (Item -> Maybe String) -> Maybe Pair
-    getMaybe name fn = fmap (\x -> name .= (T.pack x)) (fn item)
+    getMaybe name fn = fmap (\x -> name .= String (T.pack x)) (fn item)
 
     getMaybeDate :: T.Text -> (Item -> Maybe UTCTime) -> Maybe Pair
     getMaybeDate name fn = fmap (\x -> name .= (T.pack $ formatISO8601 x)) (fn item)
@@ -143,3 +143,8 @@ instance ToJSON Diff where
 --      DiffUnset name -> ["x", name]
 --      DiffRemove name value -> ["-", name, value]
 
+eventToItems :: Event -> Validation [Item]
+eventToItems event =
+  case eitherDecode (BL.fromStrict $ eventData event) of
+    Left msg -> Left [msg]
+    Right (ItemForJson item) -> Right [item]
