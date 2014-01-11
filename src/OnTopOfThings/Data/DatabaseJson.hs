@@ -64,7 +64,7 @@ instance ToJSON ItemForJson where
   toJSON (ItemForJson item) = object l where
     l = catMaybes
       [ get "uuid" itemUuid
-      , getDate "ctime" itemCtime
+      , getDate "created" itemCreated
       , get "creator" itemCreator
       , get "type" itemType
       , get "status" itemStatus

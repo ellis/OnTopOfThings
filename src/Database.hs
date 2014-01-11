@@ -79,7 +79,7 @@ databaseUpdateIndexes = do
   -- Get a list of open tasks (type=task, status=open)
   entities <- select $ from $ \t -> do
     where_ (t ^. ItemType ==. val "task" &&. t ^. ItemStatus ==. val "open")
-    orderBy [asc (t ^. ItemCtime)]
+    orderBy [asc (t ^. ItemCreated)]
     return t
   let xs = (zip [1..] entities) :: [(Int, Entity Item)]
   mapM_ assignIndex xs

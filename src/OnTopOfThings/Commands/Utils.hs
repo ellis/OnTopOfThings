@@ -136,7 +136,7 @@ updateItem :: UTCTime -> M.Map String (Maybe String) -> Item -> Validation Item
 updateItem time map item0 =
   Item <$>
     get "id" itemUuid <*>
-    Right (itemCtime item0) <*>
+    Right (itemCreated item0) <*>
     Right (itemCreator item0) <*>
     get "type" itemType <*>
     get "status" itemStatus <*>

@@ -121,7 +121,7 @@ convert'' input = do
   return $ map createPatch items
   where
     createPatch :: Item -> Patch
-    createPatch item = Patch "1" (itemCtime item) (itemCreator item) "" Nothing [hunk] where
+    createPatch item = Patch "1" (itemCreated item) (itemCreator item) "" Nothing [hunk] where
       hunk = PatchHunk [itemUuid item] diffs
       diffs = catMaybes
         [ get "type" itemType
@@ -183,7 +183,7 @@ createItems (db, folders) m = do
   let parentUuid_ = fmap (T.unpack . getProjectUuid . T.pack) parentPath_
   let parentUuid = fromMaybe uuidRoot parentUuid_
   let item = Item { itemUuid = uuid
-                  , itemCtime = time
+                  , itemCreated = time
                   , itemCreator = "default"
                   , itemType = "task"
                   , itemStatus = getStatus status'
@@ -246,7 +246,7 @@ createFolders (db, folders) (path:rest) time parentUuid = createFolders (db', fo
   uuid = T.unpack $ getProjectUuid (T.pack path)
   folder = Item
     { itemUuid = uuid
-    , itemCtime = time
+    , itemCreated = time
     , itemCreator = "default"
     , itemType = "folder"
     , itemStatus = "open"

@@ -30,7 +30,7 @@ Ideas:
 - [x] Main: manually parse arguments for now: import
 - [x] Main: manually parse arguments for now: repl
 - [x] Import: create folder items when required
-- [ ] Import: need to create Patches instead of a plain export of the data
+- [ ] Item: rename ``ctime`` to ``created``
 - [ ] Import: sort output by time
 - [ ] Import: export tags
 - [ ] Create a yaml import format

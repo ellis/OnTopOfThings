@@ -742,12 +742,12 @@ createItem header uuid diffs = do
   end <- getMaybeDate "end"
   due <- getMaybeDate "due"
   review <- getMaybeDate "review"
-  return $ Item uuid ctime creator type_ status parent name title content stage closed start end due review Nothing
+  return $ Item uuid created creator type_ status parent name title content stage closed start end due review Nothing
   where
     maps = diffsToMaps diffs
     map = diffMapsEqual maps
     creator = patchUser header
-    ctime = patchTime header
+    created = patchTime header
     get name = case M.lookup name map of
       Just x -> Right x
       _ -> Left ["missing value for `" ++ name ++ "`"]
@@ -774,13 +774,13 @@ updateItem header diffs item0 = do
   end <- getMaybeDate "end" itemEnd
   due <- getMaybeDate "due" itemDue
   review <- getMaybeDate "review" itemReview
-  return $ Item uuid ctime creator type_ status parent name title content stage closed start end due review Nothing
+  return $ Item uuid created creator type_ status parent name title content stage closed start end due review Nothing
   where
     maps = diffsToMaps diffs
     map = diffMapsEqual maps
     uuid = (itemUuid item0)
     creator = patchUser header
-    ctime = patchTime header
+    created = patchTime header
     get :: String -> (Item -> String) -> Validation String
     get name fn = case M.lookup name map of
       Just s -> Right s

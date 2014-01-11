@@ -60,7 +60,7 @@ Property
 Item
   uuid String
   ItemUniqUuid uuid
-  ctime UTCTime
+  created UTCTime
   creator String
   type String
   status String
@@ -80,5 +80,5 @@ Item
 |]
 
 itemEmpty :: String -> UTCTime -> String -> String -> String -> Item
-itemEmpty uuid ctime creator type_ status =
-  Item uuid ctime creator type_ status Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+itemEmpty uuid created creator type_ status =
+  Item uuid created creator type_ status Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
