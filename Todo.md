@@ -29,7 +29,7 @@ Ideas:
 - [x] Import: create a yaml file instead
 - [x] Main: manually parse arguments for now: import
 - [x] Main: manually parse arguments for now: repl
-- [ ] Import: create list items when required
+- [x] Import: create folder items when required
 - [ ] Create a yaml import format
 - [ ] Consider having DiffEqual, DiffNull, and DiffRemove also contain the old values
 - [ ] Repl: decide on file format for patches

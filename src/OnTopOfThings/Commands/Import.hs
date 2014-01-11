@@ -38,7 +38,7 @@ import Debug.Hood.Observe
 import Debug.Trace
 import System.Console.CmdArgs.Explicit
 import System.Directory (getDirectoryContents)
-import System.FilePath (takeExtension, joinPath)
+import System.FilePath (takeExtension, joinPath, splitDirectories)
 import System.IO
 import System.Locale (defaultTimeLocale)
 --import qualified System.FilePath.Find as FF
@@ -122,21 +122,21 @@ convert' input = l_ where
     l_ = case eitherDecode input of
       Left msg -> Left [msg]
       Right (Array l) -> items_ where
-        db' = createItems' (V.toList l) M.empty
+        db' = createItems' (V.toList l) (M.empty, M.empty)
         items_ = case db' of
           Left msgs -> Left msgs
           Right db -> Right l where
             l = M.elems db
             -- TODO: need to sort l
-    createItems' :: [Value] -> M.Map String Item -> Validation (M.Map String Item)
-    createItems' [] db = Right db
-    createItems' ((Object m):rest) db = createItems db m >>= \db' -> createItems' rest db'
+    createItems' :: [Value] -> (M.Map String Item, M.Map FilePath Item) -> Validation (M.Map String Item)
+    createItems' [] (db, _) = Right db
+    createItems' ((Object m):rest) both = createItems both m >>= \both -> createItems' rest both
     createItems' _ _ = Left ["Expected object"]
     --x -> Left ["Expected an array, got" ++ show input]
 
-createItems :: M.Map String Item -> Object -> Validation (M.Map String Item)
+createItems :: (M.Map String Item, M.Map FilePath Item) -> Object -> Validation (M.Map String Item, M.Map FilePath Item)
 --createItems uuids projects m | trace ("createItems " ++ show uuids) False = undefined
-createItems db m = do
+createItems (db, folders) m = do
   uuid <- get "uuid" m
   entry' <- get "entry" m
   description <- get "description" m
@@ -147,12 +147,18 @@ createItems db m = do
   time <- (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" entry') `maybeToValidation` ["Could not parse entry time"]
   --closed <- (end' >>= \end -> (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" (T.unpack end))) `maybeToValidation` ["Could not parse end time"]
   closed <- getClosed end'
+  let parentPath_ = project >>= Just . (substituteInList '.' '/')
+  let (db', folders') = case parentPath_ of
+                          Nothing -> (db, folders)
+                          Just parentPath -> createFolder (db, folders) parentPath time
+  let parentUuid_ = fmap (T.unpack . getProjectUuid . T.pack) parentPath_
+  let parentUuid = fromMaybe uuidRoot parentUuid_
   let item = Item { itemUuid = uuid
                   , itemCtime = time
                   , itemCreator = "default"
                   , itemType = "task"
                   , itemStatus = getStatus status'
-                  , itemParent = Nothing
+                  , itemParent = Just parentUuid
                   , itemName = Nothing
                   , itemTitle = Just description
                   , itemContent = Nothing
@@ -164,8 +170,8 @@ createItems db m = do
                   , itemReview = Nothing
                   , itemIndex = Nothing
                   }
-  let db' = M.insert uuid item db
-  return db'
+  let db'' = M.insert uuid item db'
+  return (db'', folders')
   --let mode = if Set.member (T.pack uuid) uuids then mode_mod else mode_add
   --let status = getStatus status'
   --let parent = project >>= Just . (substituteInList '.' '/')
@@ -193,15 +199,42 @@ createItems db m = do
 --      Nothing -> projects
 --      Just p -> M.insert p t projects where
 --        t = fromMaybe time (M.lookup p projects >>= \t -> Just $ min time t)
-    wrap :: String -> String -> Maybe String
-    wrap name value = Just (concat ["--", name, "=", value])
-    wrapMaybe :: String -> Maybe String -> Maybe String
-    wrapMaybe name value = value >>= (\x -> Just (concat ["--", name, "=", x]))
-    wrapMaybeTime :: String -> Maybe UTCTime -> Maybe String
-    wrapMaybeTime name value = value >>= (\x -> Just (concat ["--", name, "=", formatISO8601Millis x]))
-    wrapList :: String -> [String] -> Maybe String
-    wrapList _ [] = Nothing
-    wrapList name l = Just $ (concat ["--", name, "=", intercalate "," l])
+
+uuidRoot = "00000000-0000-0000-0000-000000000000"
+
+createFolder :: (M.Map String Item, M.Map FilePath Item) -> FilePath -> UTCTime -> (M.Map String Item, M.Map FilePath Item)
+createFolder both@(db, lists) path time =
+  case M.lookup path lists of
+    Just _ -> both
+    Nothing -> (db', folders') where
+      dirs = splitDirectories path
+      path_l = map joinPath $ tail $ inits dirs
+      (db', folders') = createFolders both path_l time uuidRoot
+
+createFolders :: (M.Map String Item, M.Map FilePath Item) -> [FilePath] -> UTCTime -> String -> (M.Map String Item, M.Map FilePath Item)
+createFolders both [] _ _ = both
+createFolders (db, folders) (path:rest) time parentUuid = createFolders (db', folders') rest time uuid where
+  uuid = T.unpack $ getProjectUuid (T.pack path)
+  folder = Item
+    { itemUuid = uuid
+    , itemCtime = time
+    , itemCreator = "default"
+    , itemType = "folder"
+    , itemStatus = "open"
+    , itemParent = Just parentUuid
+    , itemName = Nothing
+    , itemTitle = Nothing
+    , itemContent = Nothing
+    , itemStage = Nothing
+    , itemClosed = Nothing
+    , itemStart = Nothing
+    , itemEnd = Nothing
+    , itemDue = Nothing
+    , itemReview = Nothing
+    , itemIndex = Nothing
+    }
+  db' = M.insert uuid folder db
+  folders' = M.insert path folder folders
 
 convert :: BL.ByteString -> Validation [CommandRecord]
 convert input =
