@@ -55,9 +55,12 @@ import qualified Data.Yaml as Yaml
 
 import Args
 import Command (CommandRecord(..))
+import DatabaseTables
 import Utils
 import OnTopOfThings.Commands.Add
 import OnTopOfThings.Commands.Mod
+import OnTopOfThings.Data.DatabaseJson
+import OnTopOfThings.Data.Patch
 
 modeInfo_import :: ModeInfo
 modeInfo_import = (mode_import, ModeRunIO optsRun_import)
@@ -91,29 +94,114 @@ optsRun_import opts = do
       let filename = head (optionsArgs opts)
       --mapM_ print $ catMaybes $ map checkLine $ zip [1..] $ lines s
       input <- B.readFile filename
-      let map = (optionsMap opts)
-      h <- case M.lookup "output" map of
+      let m = (optionsMap opts)
+      h <- case M.lookup "output" m of
         Just (Just f) -> openFile f WriteMode
         _ -> return stdout
-      case convert input of
+      case convert' input of
         Left msgs -> return (Left msgs)
-        Right records -> do
-          --BS.hPutStrLn h "["
-          --mapM_ (\record -> BS.hPutStrLn h $ (encode record ++ ",")) (init records)
-          --BS.hPutStrLn h $ encode (last records)
-          --hPutStrLn h "]"
-          BS.hPutStr h $ Yaml.encode records
+        Right items -> do
+          time <- getCurrentTime
+          let export = ExportJson 1 time "Task Warrior import" (map ItemForJson items)
+          BS.hPutStr h $ Yaml.encode export
           hClose h
           return (Right ())
+--      case convert input of
+--        Left msgs -> return (Left msgs)
+--        Right records -> do
+--          --BS.hPutStrLn h "["
+--          --mapM_ (\record -> BS.hPutStrLn h $ (encode record ++ ",")) (init records)
+--          --BS.hPutStrLn h $ encode (last records)
+--          --hPutStrLn h "]"
+--          BS.hPutStr h $ Yaml.encode records
+--          hClose h
+--          return (Right ())
 
---checkLine :: (Int, String) -> Maybe Int
---checkLine (i, s) = result where
---  s' = case reverse (strip s) of
---    ',':rest -> reverse rest
---    _ -> s
---  result = case ((decode (BL.pack s')) :: Maybe Value) of
---    Nothing -> Just i
---    _ -> Nothing
+convert' :: BL.ByteString -> Validation [Item]
+convert' input = l_ where
+    l_ = case eitherDecode input of
+      Left msg -> Left [msg]
+      Right (Array l) -> items_ where
+        db' = createItems' (V.toList l) M.empty
+        items_ = case db' of
+          Left msgs -> Left msgs
+          Right db -> Right l where
+            l = M.elems db
+            -- TODO: need to sort l
+    createItems' :: [Value] -> M.Map String Item -> Validation (M.Map String Item)
+    createItems' [] db = Right db
+    createItems' ((Object m):rest) db = createItems db m >>= \db' -> createItems' rest db'
+    createItems' _ _ = Left ["Expected object"]
+    --x -> Left ["Expected an array, got" ++ show input]
+
+createItems :: M.Map String Item -> Object -> Validation (M.Map String Item)
+--createItems uuids projects m | trace ("createItems " ++ show uuids) False = undefined
+createItems db m = do
+  uuid <- get "uuid" m
+  entry' <- get "entry" m
+  description <- get "description" m
+  project <- getMaybe "project" m
+  status' <- getMaybe "status" m
+  end' <- getMaybe "end" m
+  tags' <- getList "tags" m
+  time <- (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" entry') `maybeToValidation` ["Could not parse entry time"]
+  --closed <- (end' >>= \end -> (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" (T.unpack end))) `maybeToValidation` ["Could not parse end time"]
+  closed <- getClosed end'
+  let item = Item { itemUuid = uuid
+                  , itemCtime = time
+                  , itemCreator = "default"
+                  , itemType = "task"
+                  , itemStatus = getStatus status'
+                  , itemParent = Nothing
+                  , itemName = Nothing
+                  , itemTitle = Just description
+                  , itemContent = Nothing
+                  , itemStage = Just "new"
+                  , itemClosed = closed
+                  , itemStart = Nothing
+                  , itemEnd = Nothing
+                  , itemDue = Nothing
+                  , itemReview = Nothing
+                  , itemIndex = Nothing
+                  }
+  let db' = M.insert uuid item db
+  return db'
+  --let mode = if Set.member (T.pack uuid) uuids then mode_mod else mode_add
+  --let status = getStatus status'
+  --let parent = project >>= Just . (substituteInList '.' '/')
+  --let parentUuid = fmap (T.unpack . getProjectUuid . T.pack) parent
+  --let args = catMaybes [wrap "id" uuid, wrap "title" description, wrapMaybe "parent" parentUuid, wrapMaybe "status" status, wrapMaybeTime "closed" closed, wrapList "tag" tags']
+  --let projects' = updateProjects (fmap T.pack parent) time
+  --opts0 <- eitherStringToValidation $ process mode args
+  --let record = optsToCommandRecord time "default" opts0
+  --let uuids' = Set.insert (T.pack uuid) uuids
+  --return (uuids', projects', record)
+  where
+    getStatus status' = case status' of
+      Just "completed" -> "closed"
+      Just "deleted" -> "deleted"
+      _ -> "open"
+    getClosed :: Maybe String -> Validation (Maybe UTCTime)
+    getClosed closed' = case closed' of
+      Just closed'' ->
+        case parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" closed'' of
+          Nothing -> Left ["Could not parse end time: " ++ closed'']
+          Just x -> Right (Just x)
+      Nothing -> Right Nothing
+--    updateProjects :: Maybe T.Text -> UTCTime -> M.Map T.Text UTCTime
+--    updateProjects parent time = case parent of
+--      Nothing -> projects
+--      Just p -> M.insert p t projects where
+--        t = fromMaybe time (M.lookup p projects >>= \t -> Just $ min time t)
+    wrap :: String -> String -> Maybe String
+    wrap name value = Just (concat ["--", name, "=", value])
+    wrapMaybe :: String -> Maybe String -> Maybe String
+    wrapMaybe name value = value >>= (\x -> Just (concat ["--", name, "=", x]))
+    wrapMaybeTime :: String -> Maybe UTCTime -> Maybe String
+    wrapMaybeTime name value = value >>= (\x -> Just (concat ["--", name, "=", formatISO8601Millis x]))
+    wrapList :: String -> [String] -> Maybe String
+    wrapList _ [] = Nothing
+    wrapList name l = Just $ (concat ["--", name, "=", intercalate "," l])
 
 convert :: BL.ByteString -> Validation [CommandRecord]
 convert input =
@@ -140,7 +228,7 @@ convert input =
     --x -> Left ["Expected an array, got" ++ show input]
 
 compareRecordTime :: CommandRecord -> CommandRecord -> Ordering
-compareRecordTime a b = compare (commandTime a) (commandTime b)
+compareRecordTime a b = compare (Command.commandTime a) (Command.commandTime b)
 
 createItem :: Set.Set T.Text -> M.Map T.Text UTCTime -> Object -> Validation (Set.Set T.Text, M.Map T.Text UTCTime, CommandRecord)
 --createItem uuids projects m | trace ("createItem " ++ show uuids) False = undefined

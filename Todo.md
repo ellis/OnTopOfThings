@@ -26,9 +26,10 @@ Ideas:
 - [x] Rename Card to Patch
 - [x] Repl: newitem should return a diff, like mkdir
 - [x] Repl: ``cat`` action should print item as yaml
-- [?] Import: create a yaml file instead
-- [ ] Main: manually parse arguments for now: import
-- [ ] Main: manually parse arguments for now: repl
+- [x] Import: create a yaml file instead
+- [x] Main: manually parse arguments for now: import
+- [x] Main: manually parse arguments for now: repl
+- [ ] Import: create list items when required
 - [ ] Create a yaml import format
 - [ ] Consider having DiffEqual, DiffNull, and DiffRemove also contain the old values
 - [ ] Repl: decide on file format for patches
@@ -220,6 +221,7 @@ Config file:
 - [ ] interactive mode possibly for adding new item
 - [ ] web UI
 - [ ] instead of have commands alter the database, they should create a diff, and the diff should then be applied -- could be difficult for complex commands (such a importing a bunch of items) which involve multiple inter-related items
+- [ ] import annotations from Task Warrior
 
 ## Design 1
 - [x] Change: switch to new JSON format

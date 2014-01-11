@@ -87,7 +87,7 @@ mode_root = modes "otot" (options_empty "") "OnTopOfThings for managing lists an
 main :: IO ()
 main = do
   args0 <- getArgs
-  args' = dropWhile (\s -> head s == '-') args0
+  let args' = dropWhile (\s -> head s == '-') args0
   case args' of
     [] -> putStrLn "use a command: repl, import"
     (cmd:args) -> do
@@ -97,7 +97,11 @@ main = do
             runMigration migrateAll
           repl ["/"]
         "import" -> do
-          opts <-
+          let mode = fst modeInfo_import
+          let opts_ = process mode args
+          case opts_ of
+            Left msg -> putStrLn msg
+            Right opts -> processOptions opts
 
 repl cwd = do
   putStr "otot> "
@@ -206,6 +210,10 @@ processMode args = do
   -- Options read by CmdArgs
   let opts = processValue mode_root args
   --toStdErr opts
+  processOptions opts
+
+processOptions :: Options -> IO ()
+processOptions opts = do
   -- find info for the chosen command mode
   let cmd = optionsCmd opts
   case M.lookup cmd modeInfo of

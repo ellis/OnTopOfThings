@@ -26,6 +26,7 @@ import Data.Aeson.Types (Pair, Parser)
 import Data.Maybe (catMaybes)
 import Data.Text (Text, pack, unpack, concat)
 import Data.Time.Clock (UTCTime)
+import Data.Time.ISO8601 (formatISO8601)
 import System.Directory (getDirectoryContents)
 import System.FilePath (takeExtension, joinPath)
 import Text.Regex (mkRegex, matchRegexAll)
@@ -39,33 +40,54 @@ import qualified Data.Vector as V
 import DatabaseTables
 import Utils
 
+data ExportJson = ExportJson
+  { exportVersion :: Int
+  , exportTime :: UTCTime
+  , exportComment :: String
+  , exportItems :: [ItemForJson]
+  } deriving (Show)
+
 data ItemForJson = ItemForJson Item
+  deriving (Show)
+
+instance ToJSON ExportJson where
+  toJSON (ExportJson version time comment items) = object l where
+    l =
+      [ "version" .= version
+      , "time" .= (T.pack $ formatISO8601 time)
+      , "comment" .= (T.pack comment)
+      , "items" .= items
+      ]
 
 instance ToJSON ItemForJson where
   toJSON (ItemForJson item) = object l where
     l = catMaybes
       [ get "uuid" itemUuid
-      , get "type" itemType
+      , getDate "ctime" itemCtime
       , get "creator" itemCreator
+      , get "type" itemType
       , get "status" itemStatus
       , getMaybe "parent" itemParent
       , getMaybe "name" itemName
       , getMaybe "title" itemTitle
       , getMaybe "content" itemContent
       , getMaybe "stage" itemStage
-      --, getMaybeDate "closed" itemClosed
-      --, getMaybeDate "start" itemStart
-      --, getMaybeDate "end" itemEnd
-      --, getMaybeDate "due" itemDue
-      --, getMaybeDate "review" itemReview
+      , getMaybeDate "closed" itemClosed
+      , getMaybeDate "start" itemStart
+      , getMaybeDate "end" itemEnd
+      , getMaybeDate "due" itemDue
+      , getMaybeDate "review" itemReview
       ]
     get :: T.Text -> (Item -> String) -> Maybe Pair
     get name fn = Just (name .= (T.pack $ fn item))
 
+    getDate :: T.Text -> (Item -> UTCTime) -> Maybe Pair
+    getDate name fn = Just (name .= (T.pack $ formatISO8601 (fn item)))
+
     getMaybe :: T.Text -> (Item -> Maybe String) -> Maybe Pair
     getMaybe name fn = fmap (\x -> name .= (T.pack x)) (fn item)
 
-    --getMaybeDate :: String -> (Item -> Maybe UTCTime) -> Validation (Maybe UTCTime)
-    --getMaybeDate name fn = case M.lookup name map of
-      --Just s -> (parseISO8601 s) `maybeToValidation` ["Could not parse time: " ++ s] >>= \time -> Right (Just time)
-      --_ -> Right (fn item0)
+    getMaybeDate :: T.Text -> (Item -> Maybe UTCTime) -> Maybe Pair
+    getMaybeDate name fn = fmap (\x -> name .= (T.pack $ formatISO8601 x)) (fn item)
+
+
