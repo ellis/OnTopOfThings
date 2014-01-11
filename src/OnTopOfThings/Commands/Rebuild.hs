@@ -49,6 +49,7 @@ import OnTopOfThings.Commands.Close
 import OnTopOfThings.Commands.Delete
 import OnTopOfThings.Commands.Import (optsToCommandRecord)
 import OnTopOfThings.Commands.Mod
+import OnTopOfThings.Data.FileJson
 import qualified Database as DB
 
 modeInfo_rebuild :: ModeInfo
@@ -85,24 +86,48 @@ mode_root = modes "otot" (options_empty "") "OnTopOfThings for managing lists an
 
 optsRun_rebuild :: Options -> IO (Validation ())
 optsRun_rebuild opts = do
-      x <- loadCommandRecords
-      case x of
-        Left msgs -> return (Left msgs)
-        Right records' -> do
-          --mapM_ (putStrLn . show) records
-          -- TODO: Instead of sorting in memory, it'd be better to write the commands to the DB, then process them in sorted order
-          let records = sortBy (\a b -> compare (Command.commandTime a) (Command.commandTime b)) records'
-          runSqlite "otot.db" $ do
-            -- Create tables if necessary
-            DB.databaseInit
-            -- Delete existing rows
-            deleteWhere ([] :: [Filter Command])
-            deleteWhere ([] :: [Filter Item])
-            deleteWhere ([] :: [Filter Property])
-            -- Add the command records and process them
-            result <- mapM processRecord records
-            let result' = concatEithersN result
-            return $ fmap (const ()) result'
+  events_ <- loadFiles
+  case events_ of
+    Left msgs -> return (Left msgs)
+    Right events' -> do
+      --mapM_ (putStrLn . show) records
+      -- TODO: Instead of sorting in memory, it'd be better to write the commands to the DB, then process them in sorted order
+      let events = sortBy (\a b -> compare (eventTime a) (eventTime b)) events'
+      runSqlite "repl.db" $ do
+        -- Create tables if necessary
+        DB.databaseInit
+        -- Delete existing rows
+        deleteWhere ([] :: [Filter Command])
+        deleteWhere ([] :: [Filter Event])
+        deleteWhere ([] :: [Filter Item])
+        deleteWhere ([] :: [Filter Property])
+        -- Add the command records and process them
+        mapM insert events
+        --result <- mapM processRecord events
+        --let result' = concatEithersN result
+        --return $ fmap (const ()) result'
+        return (Right ())
+
+optsRun_rebuild' opts = do
+  x <- loadCommandRecords
+  case x of
+    Left msgs -> return (Left msgs)
+    Right records' -> do
+      --mapM_ (putStrLn . show) records
+      -- TODO: Instead of sorting in memory, it'd be better to write the commands to the DB, then process them in sorted order
+      let records = sortBy (\a b -> compare (Command.commandTime a) (Command.commandTime b)) records'
+      runSqlite "otot.db" $ do
+        -- Create tables if necessary
+        DB.databaseInit
+        -- Delete existing rows
+        deleteWhere ([] :: [Filter Command])
+        deleteWhere ([] :: [Filter Event])
+        deleteWhere ([] :: [Filter Item])
+        deleteWhere ([] :: [Filter Property])
+        -- Add the command records and process them
+        result <- mapM processRecord records
+        let result' = concatEithersN result
+        return $ fmap (const ()) result'
 
 processRecord :: CommandRecord -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
 --processRecord record | if (Command.commandCmd record) /= "add" then trace ("cmd: "++(T.unpack $ Command.commandCmd record)) False else False = undefined

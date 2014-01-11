@@ -29,6 +29,7 @@ module DatabaseTables
 --) where
 where
 
+import Data.ByteString (ByteString)
 import Data.Time.Clock (UTCTime)
 import Database.Persist
 import Database.Persist.Sqlite
@@ -42,7 +43,7 @@ Event
   comment String Maybe
   type String
   version Int
-  data String
+  data ByteString
   deriving Show
 Command
   format Int

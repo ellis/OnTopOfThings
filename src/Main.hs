@@ -102,6 +102,12 @@ main = do
           case opts_ of
             Left msg -> putStrLn msg
             Right opts -> processOptions opts
+        "rebuild" -> do
+          let mode = fst modeInfo_rebuild
+          let opts_ = process mode args
+          case opts_ of
+            Left msg -> putStrLn msg
+            Right opts -> processOptions opts
 
 repl cwd = do
   putStr "otot> "

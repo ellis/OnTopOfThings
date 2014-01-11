@@ -23,12 +23,13 @@ where
 import Control.Applicative ((<$>), (<*>), empty)
 import Data.Aeson
 import Data.Aeson.Types (Pair, Parser)
+import Data.List (concat)
 import Data.Maybe (catMaybes)
-import Data.Text (Text, pack, unpack, concat)
+import Data.Text (Text, pack, unpack)
 import Data.Time.Clock (UTCTime)
 import Data.Time.ISO8601 (formatISO8601)
 import System.Directory (getDirectoryContents)
-import System.FilePath (takeExtension, joinPath)
+import System.FilePath (joinPath, splitDirectories, takeExtension)
 import Text.Regex (mkRegex, matchRegexAll)
 import qualified Data.ByteString.Lazy as B
 import qualified Data.ByteString.Lazy.Char8 as BL
@@ -36,6 +37,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as M
 import qualified Data.Text as T
 import qualified Data.Vector as V
+import qualified Data.Yaml as Yaml
 
 import DatabaseTables
 import Utils
@@ -50,10 +52,10 @@ data File
     , patchFileHunks :: [PatchHunk]
     }
   | ExportFile
-    { patchFileTime :: Maybe UTCTime
-    , patchFileUser :: Maybe String
-    , patchFileComment :: Maybe String
-    , patchFileItems :: [ItemForJson]
+    { exportFileTime :: Maybe UTCTime
+    , exportFileUser :: Maybe String
+    , exportFileComment :: Maybe String
+    , exportFileItems :: [ItemForJson]
     }
   | CommandFile
   deriving (Show)
@@ -67,3 +69,39 @@ instance ToJSON File where
       , fmap (\x -> "comment" .= String (T.pack x)) comment_
       , Just $ "items" .= items
       ]
+
+instance FromJSON File where
+  parseJSON (Object m) = case HM.lookup "type" m of
+    Just "export" ->
+      ExportFile <$>
+        m .:? "time" <*>
+        m .:? "user" <*>
+        m .:? "comment" <*>
+        m .: "items"
+
+loadFiles :: IO (Validation [Event])
+loadFiles = do
+  files' <- getDirectoryContents "testdata"
+  let files = filter (\f -> takeExtension f == ".yaml") files'
+  --files <- FF.find (return False) (FF.extension `FF.==?` ".json") "testdata"
+  events__ <- mapM (\f -> loadFile (joinPath ["testdata", f])) files
+  let events_ = concatEithersN events__
+  let events = events_ >>= \l -> Right (Data.List.concat l)
+  return events
+
+loadFile :: FilePath -> IO (Validation [Event])
+loadFile path = do
+  case takeExtension path of
+    ".yaml" -> do
+      file_ <- Yaml.decodeFileEither path
+      case file_ of
+        Left msg -> return $ Left [show msg]
+        Right file ->
+          case file of
+            ExportFile time_ user_ comment_ items ->
+              return $ Right (map exportToEvent items)
+  where
+    exportToEvent :: ItemForJson -> Event
+    exportToEvent wrapper@(ItemForJson item) = event where
+      data_ = BL.toStrict $ encode wrapper
+      event = Event (itemCreated item) (itemCreator item) Nothing "export" 1 data_

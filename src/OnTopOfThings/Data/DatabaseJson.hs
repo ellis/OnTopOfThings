@@ -41,6 +41,7 @@ import DatabaseTables
 import Utils
 import OnTopOfThings.Data.Patch
 
+-- TODO: remove ExportJson, using ExportFile instead
 data ExportJson = ExportJson
   { exportVersion :: Int
   , exportTime :: UTCTime
@@ -90,6 +91,27 @@ instance ToJSON ItemForJson where
 
     getMaybeDate :: T.Text -> (Item -> Maybe UTCTime) -> Maybe Pair
     getMaybeDate name fn = fmap (\x -> name .= (T.pack $ formatISO8601 x)) (fn item)
+
+instance FromJSON ItemForJson where
+  parseJSON (Object m) = ItemForJson <$> item where
+    item =
+      Item <$>
+        m .: "uuid" <*>
+        m .: "created" <*>
+        m .: "creator" <*>
+        m .: "type" <*>
+        m .: "status" <*>
+        m .:? "parent" <*>
+        m .:? "name" <*>
+        m .:? "title" <*>
+        m .:? "content" <*>
+        m .:? "stage" <*>
+        m .:? "closed" <*>
+        m .:? "start" <*>
+        m .:? "end" <*>
+        m .:? "due" <*>
+        m .:? "review" <*>
+        return Nothing
 
 instance ToJSON Patch where
   toJSON (Patch format time user uuid uuidParent_ hunks) = object l where

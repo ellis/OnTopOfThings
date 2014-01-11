@@ -30,10 +30,14 @@ Ideas:
 - [x] Main: manually parse arguments for now: import
 - [x] Main: manually parse arguments for now: repl
 - [x] Import: create folder items when required
-- [ ] Item: rename ``ctime`` to ``created``
+- [x] Item: rename ``ctime`` to ``created``
+- [x] Create a yaml import format (ExportFile)
+- [x] Rebuild: get it to work with YAML ExportFile
+- [ ] Rebuild: process Event records
 - [ ] Import: sort output by time
 - [ ] Import: export tags
-- [ ] Create a yaml import format
+- [ ] Rename ``Import`` to ``Convert``
+- [ ] instead of using "otot.db" or "repl.db", get file from the options and have a default value
 - [ ] Consider having DiffEqual, DiffNull, and DiffRemove also contain the old values
 - [ ] Repl: decide on file format for patches
 - [ ] create a common function for creating an item, whether via mkdir or newtask.
@@ -41,6 +45,7 @@ Ideas:
 - [ ] Rebuild: use new commands
 - [ ] Rebuild: add an option to build from internal change table or reload the change table from files
 - [ ] Edit my data in 'testdata' to create folders instead of lists; also no use of 'label'
+- [ ] Rebuild: create root folder, perhaps use code from ``getroot`` in Run.hs
 - [ ] Repl: cd
 - [ ] Repl: ls -l
 - [ ] Repl: ls -a
