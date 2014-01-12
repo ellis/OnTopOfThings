@@ -221,7 +221,7 @@ repl cwd = do
                     Right action -> do
                       runAction env0 action
         cmd:_ -> do
-          liftIO $ processMode args0
+          --liftIO $ processMode args0
           return (env0, ActionResult [] False [] ["command not found: "++cmd])
     case result_ of
       (ActionResult cards _ warn err) -> do

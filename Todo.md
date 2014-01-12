@@ -44,6 +44,7 @@ Ideas:
 - [x] Repl: add ``close`` command
 - [x] BUG: See why ``close`` sets the created date
 - [x] Repl: mv to change name
+- [ ] Repl: don't abort on unknown command
 - [ ] Repl: mv to change parent
 - [ ] Repl: ``ls`` should sort output, directories first, and everything alphabetically
 - [ ] Repl: ``show`` should share code with ls
