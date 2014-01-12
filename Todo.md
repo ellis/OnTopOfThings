@@ -47,8 +47,29 @@ Ideas:
 - [x] Repl: don't abort on unknown command
 - [x] Repl: mv to change parent
 - [x] Import: export tags
-- [ ] Rebuild: handle tags
+- [x] Rebuild: handle tags
+- [ ] Run.hs: move sharable code to a new Utils.hs file
 - [ ] patch: create property rows
+- [ ] Repl: add ``mod`` command
+- [ ] Figure out REVIEW concept:
+      - daily review, weekly review, monthly review, quarterly review, yearly review
+            - using lists?
+            - the problem with lists is that I'd like to make sure that every task is on some review schedule
+            - so add a ``reviewList`` field to Item
+      - on a certain date
+            - add a ``reviewTime`` field to Item
+      - regular review, e.g. for study like Anki
+            - this requires some more work...
+            - might want to keep history for each question/response
+            - depending on response, calculate when to review again
+- [ ] Figure out SHOPPING LIST concept
+      - in addition to the item, we need to specify quantity or other specifics
+      - maybe this could be a "shop" item with an extra quantity property
+- [ ] Figure out REPEATING TASK concept
+- [ ] Figure out TIME TRACKING/ESTIMATION/POMODORO concept
+- [ ] Figure out SCHEDULE concept (i.e. Dora's schedule with kids and me)
+- [ ] Figure out GOAL concept, where an item can be marked as done for today, but will still come up later
+- [ ] Go through my personal list of tasks and update it, seeing what needs to be added to program
 - [ ] Repl: ``ls`` should sort output, directories first, and everything alphabetically
 - [ ] Repl: ``show`` should share code with ls
 - [ ] Ask online whether it's possible to search a (Maybe String) field with esqueleto
@@ -56,12 +77,11 @@ Ideas:
 - [ ] Report bug with Yaml/Aeson, where a string of digits (e.g. "name: 20130509") causes an error when being read back in
 - [ ] Rename ``Import`` to ``Convert``
 - [ ] instead of using "otot.db" or "repl.db", get file from the options and have a default value
-- [ ] Consider having DiffEqual, DiffNull, and DiffRemove also contain the old values
-- [ ] Repl: decide on file format for patches
+- [ ] PatchFile2: Consider having DiffEqual, DiffNull, and DiffRemove also contain the old values
 - [ ] create a common function for creating an item, whether via mkdir or newtask.
-- [ ] Item: add owner field
+- [ ] Item: add assignee field
 - [ ] Rebuild: use new commands
-- [ ] Rebuild: add an option to build from internal change table or reload the change table from files
+- [ ] Rebuild: add an option to build from internal event table or reload the event table from files
 - [ ] Edit my data in 'testdata' to create folders instead of lists; also no use of 'label'
 - [ ] Rebuild: create root folder, perhaps use code from ``getroot`` in Run.hs
 - [ ] Repl: cd
