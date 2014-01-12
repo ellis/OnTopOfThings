@@ -63,6 +63,17 @@ data ActionMkdir = ActionMkdir
   , mkdirParents :: Bool
   } deriving (Show)
 
+-- For ``mvDestNameOrUuid``, Left is for renaming, right is for uuid
+data ActionMv
+  = ActionMvToDirectory
+    { mvSourceUuids :: [String]
+    , mvDestUuid :: String
+    }
+  | ActionMvToRename
+    { mvSource :: String
+    , mvDestName :: String
+    } deriving (Show)
+
 data ActionNewTask = ActionNewTask
   { newTaskHelp :: Bool
   , newTaskUuid :: Maybe String
