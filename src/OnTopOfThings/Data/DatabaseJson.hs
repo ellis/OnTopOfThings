@@ -41,25 +41,8 @@ import DatabaseTables
 import Utils
 import OnTopOfThings.Data.Patch
 
--- TODO: remove ExportJson, using ExportFile instead
-data ExportJson = ExportJson
-  { exportVersion :: Int
-  , exportTime :: UTCTime
-  , exportComment :: String
-  , exportItems :: [ItemForJson]
-  } deriving (Show)
-
 data ItemForJson = ItemForJson Item
   deriving (Show)
-
-instance ToJSON ExportJson where
-  toJSON (ExportJson version time comment items) = object l where
-    l =
-      [ "version" .= version
-      , "time" .= (T.pack $ formatISO8601 time)
-      , "comment" .= (T.pack comment)
-      , "items" .= items
-      ]
 
 instance ToJSON ItemForJson where
   toJSON (ItemForJson item) = object l where

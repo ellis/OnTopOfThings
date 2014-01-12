@@ -63,7 +63,8 @@ data File
 instance ToJSON File where
   toJSON (ExportFile time_ user_ comment_ items) = object l where
     l = catMaybes
-      [ Just $ "type" .= String "export"
+      [ Just $ "type" .= String "copy"
+      , Just $ "version" .= Number 1
       , fmap (\x -> "time" .= String ((T.pack . formatISO8601) x)) time_
       , fmap (\x -> "user" .= String (T.pack x)) user_
       , fmap (\x -> "comment" .= String (T.pack x)) comment_
@@ -71,7 +72,8 @@ instance ToJSON File where
       ]
   toJSON (PatchFile1 time user comment_ hunks) = object l where
     l = catMaybes
-      [ Just $ "type" .= String "export"
+      [ Just $ "type" .= String "patch1"
+      , Just $ "version" .= Number 1
       , Just $ "time" .= String ((T.pack . formatISO8601) time)
       , Just $ "user" .= String (T.pack user)
       , fmap (\x -> "comment" .= String (T.pack x)) comment_
@@ -80,7 +82,7 @@ instance ToJSON File where
 
 instance FromJSON File where
   parseJSON (Object m) = case HM.lookup "type" m of
-    Just "export" ->
+    Just "copy" ->
       ExportFile <$>
         m .:? "time" <*>
         m .:? "user" <*>
