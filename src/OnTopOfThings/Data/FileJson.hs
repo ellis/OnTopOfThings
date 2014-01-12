@@ -51,17 +51,17 @@ data File
     , patchFileComment :: Maybe String
     , patchFileHunks :: [PatchHunk]
     }
-  | ExportFile
-    { exportFileTime :: Maybe UTCTime
-    , exportFileUser :: Maybe String
-    , exportFileComment :: Maybe String
-    , exportFileItems :: [ItemForJson]
+  | CopyFile
+    { copyFileTime :: Maybe UTCTime
+    , copyFileUser :: Maybe String
+    , copyFileComment :: Maybe String
+    , copyFileItems :: [ItemForJson]
     }
   | CommandFile
   deriving (Show)
 
 instance ToJSON File where
-  toJSON (ExportFile time_ user_ comment_ items) = object l where
+  toJSON (CopyFile time_ user_ comment_ items) = object l where
     l = catMaybes
       [ Just $ "type" .= String "copy"
       , Just $ "version" .= Number 1
@@ -83,7 +83,7 @@ instance ToJSON File where
 instance FromJSON File where
   parseJSON (Object m) = case HM.lookup "type" m of
     Just "copy" ->
-      ExportFile <$>
+      CopyFile <$>
         m .:? "time" <*>
         m .:? "user" <*>
         m .:? "comment" <*>
@@ -114,17 +114,17 @@ loadFile path = do
         Left msg -> return $ Left [show msg]
         Right file ->
           case file of
-            ExportFile time_ user_ comment_ items ->
-              return $ Right (map exportToEvent items)
+            CopyFile time_ user_ comment_ items ->
+              return $ Right (map copyToEvent items)
             PatchFile1 time user comment_ hunks ->
-              return $ Right [(exportPatch1ToEvent time user comment_ hunks)]
+              return $ Right [(patch1ToEvent time user comment_ hunks)]
   where
-    exportToEvent :: ItemForJson -> Event
-    exportToEvent wrapper@(ItemForJson item) = event where
+    copyToEvent :: ItemForJson -> Event
+    copyToEvent wrapper@(ItemForJson item) = event where
       data_ = BL.toStrict $ encode wrapper
       event = Event (itemCreated item) (itemCreator item) Nothing "createItem" 1 data_
-    exportPatch1ToEvent :: UTCTime -> String -> Maybe String -> [PatchHunk] -> Event
-    exportPatch1ToEvent time user comment hunks = event where
+    patch1ToEvent :: UTCTime -> String -> Maybe String -> [PatchHunk] -> Event
+    patch1ToEvent time user comment hunks = event where
       data_ = BL.toStrict $ encode hunks
       event = Event time user comment "patch1" 1 data_
 
