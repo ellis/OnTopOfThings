@@ -189,9 +189,12 @@ repl cwd = do
     fn time hunks =
           when (not $ null hunks) $ do
             liftIO $ print hunks
+            -- save patch
             chguuid <- liftIO $ U4.nextRandom >>= return . U.toString
-            let header = Patch time "default" hunks
             let file = PatchFile1 time "default" Nothing hunks
+            liftIO $ saveFileAsJson file chguuid
+            -- patch database
+            let header = Patch time "default" hunks
             result_ <- patch header
             case result_ of
               Left msgs -> liftIO $ mapM_ putStrLn msgs

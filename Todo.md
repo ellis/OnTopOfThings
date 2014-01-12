@@ -41,6 +41,7 @@ Ideas:
 - [ ] Repl: show
 - [ ] Repl: mv to change parent
 - [ ] Repl: mv to change name
+- [ ] Repl: ``ls`` should sort output, directories first, and everything alphabetically
 - [ ] Import: export tags
 - [ ] Report bug with Yaml/Aeson, where a string of digits (e.g. "name: 20130509") causes an error when being read back in
 - [ ] Rename ``Import`` to ``Convert``

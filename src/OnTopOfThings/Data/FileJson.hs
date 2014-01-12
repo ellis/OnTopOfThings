@@ -126,6 +126,11 @@ loadFile path = do
       data_ = BL.toStrict $ encode hunks
       event = Event time user comment "patch1" 1 data_
 
+saveFileAsJson :: File -> FilePath -> IO ()
+saveFileAsJson file chguuid = do
+  let filepath = joinPath ["testdata", chguuid ++ ".json"]
+  BL.writeFile filepath $ encode file
+
 eventToPatchFile1 :: Event -> Validation File
 eventToPatchFile1 event =
   case eitherDecode (BL.fromStrict $ eventData event) of
