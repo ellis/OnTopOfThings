@@ -141,8 +141,8 @@ updateItem header diffs item0 = do
     maps = diffsToMaps diffs
     map = diffMapsEqual maps
     uuid = (itemUuid item0)
-    creator = patchUser header
-    created = patchTime header
+    creator = itemCreator item0
+    created = itemCreated item0
     get :: String -> (Item -> String) -> Validation String
     get name fn = case M.lookup name map of
       Just s -> Right s

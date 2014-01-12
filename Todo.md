@@ -41,7 +41,8 @@ Ideas:
 - [x] ExportFile: why is version not in the JSON?
 - [x] rename "export" => "copy" in Event and ExportFile
 - [x] Repl: show
-- [ ] Repl: add ``close`` command
+- [x] Repl: add ``close`` command
+- [x] BUG: See why ``close`` sets the created date
 - [ ] Repl: mv to change parent
 - [ ] Repl: ``ls`` should sort output, directories first, and everything alphabetically
 - [ ] Repl: ``show`` should share code with ls
