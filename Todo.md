@@ -62,13 +62,18 @@ Ideas:
             - this requires some more work...
             - might want to keep history for each question/response
             - depending on response, calculate when to review again
+      - a task is either in "new", "now", a queue (today, week), or review (similar to "stages", but perhaps each item should have a field for each characteristic; but maybe queue and review are mutually exclusive)
+      - example report: shows new, now, queues
+      - example report: new, review items, then items which are not in queues; ordered by project
+- [ ] Figure out CALENDAR concept
+- [ ] Figure out REPEATING TASK concept
+- [ ] Figure out TIME TRACKING/ESTIMATION/POMODORO concept
+      - "tasklist" checkable item for grouping together tasks without making them children of the item?
+- [ ] Figure out GOAL concept, where an item can be marked as done for today, but will still come up later
 - [ ] Figure out SHOPPING LIST concept
       - in addition to the item, we need to specify quantity or other specifics
       - maybe this could be a "shop" item with an extra quantity property
-- [ ] Figure out REPEATING TASK concept
-- [ ] Figure out TIME TRACKING/ESTIMATION/POMODORO concept
 - [ ] Figure out SCHEDULE concept (i.e. Dora's schedule with kids and me)
-- [ ] Figure out GOAL concept, where an item can be marked as done for today, but will still come up later
 - [ ] Go through my personal list of tasks and update it, seeing what needs to be added to program
 - [ ] Repl: ``ls`` should sort output, directories first, and everything alphabetically
 - [ ] Repl: ``show`` should share code with ls
