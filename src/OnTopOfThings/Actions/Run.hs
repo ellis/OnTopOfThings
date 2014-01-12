@@ -53,7 +53,9 @@ import OnTopOfThings.Parsers.NumberList
 import OnTopOfThings.Actions.Action
 import OnTopOfThings.Actions.Env
 import OnTopOfThings.Data.DatabaseJson
+import OnTopOfThings.Data.FileJson
 import OnTopOfThings.Data.Patch
+import OnTopOfThings.Data.PatchDatabase
 
 
 instance Action ActionCat where
@@ -701,97 +703,3 @@ newtask (Env time user cwd) action0 = do
             , Just $ DiffEqual "stage" $ fromMaybe "new" stage
             ]
       return (PatchHunk [uuid] diffs)
-
-patch :: Patch -> PatchHunk -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
-patch _ hunk | trace ("patch: "++(show hunk)) False = undefined
-patch header (PatchHunk uuids diffs) = do
-  result_ <- mapM patchone uuids
-  return $ concatEithersN result_ >>= const (Right ())
-  where
-    patchone :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
-    patchone uuid = do
-      entity_ <- getBy $ ItemUniqUuid uuid
-      case entity_ of
-        -- Create a new item
-        Nothing -> do
-          let item_ = createItem header uuid diffs
-          case item_ of
-            Left msgs -> return (Left msgs)
-            Right item -> do
-              insert item
-              return (Right ())
-        Just entity -> do
-          let item_ = updateItem header diffs (entityVal entity)
-          case item_ of
-            Left msgs -> return (Left msgs)
-            Right item -> do
-              replace (entityKey entity) item
-              return (Right ())
-
-createItem :: Patch -> String -> [Diff] -> Validation Item
-createItem header uuid diffs = do
-  type_ <- get "type"
-  status <- get "status"
-  parent <- getMaybe "parent"
-  name <- getMaybe "name"
-  title <- getMaybe "title"
-  content <- getMaybe "content"
-  stage <- getMaybe "stage"
-  closed <- getMaybeDate "closed"
-  start <- getMaybeDate "start"
-  end <- getMaybeDate "end"
-  due <- getMaybeDate "due"
-  review <- getMaybeDate "review"
-  return $ Item uuid created creator type_ status parent name title content stage closed start end due review Nothing
-  where
-    maps = diffsToMaps diffs
-    map = diffMapsEqual maps
-    creator = patchUser header
-    created = patchTime header
-    get name = case M.lookup name map of
-      Just x -> Right x
-      _ -> Left ["missing value for `" ++ name ++ "`"]
-    getMaybe name = case M.lookup name map of
-      Just s -> Right (Just s)
-      _ -> Right Nothing
-    getMaybeDate :: String -> Validation (Maybe UTCTime)
-    getMaybeDate name = case M.lookup name map of
-      Just s ->
-        (parseISO8601 s) `maybeToValidation` ["Could not parse time: " ++ s] >>= \time -> Right (Just time)
-      _ -> Right Nothing
-
-updateItem :: Patch -> [Diff] -> Item -> Validation Item
-updateItem header diffs item0 = do
-  type_ <- get "type" itemType
-  status <- get "status" itemStatus
-  parent <- getMaybe "parent" itemParent
-  name <- getMaybe "name" itemName
-  title <- getMaybe "title" itemTitle
-  content <- getMaybe "content" itemContent
-  stage <- getMaybe "stage" itemStage
-  closed <- getMaybeDate "closed" itemClosed
-  start <- getMaybeDate "start" itemStart
-  end <- getMaybeDate "end" itemEnd
-  due <- getMaybeDate "due" itemDue
-  review <- getMaybeDate "review" itemReview
-  return $ Item uuid created creator type_ status parent name title content stage closed start end due review Nothing
-  where
-    maps = diffsToMaps diffs
-    map = diffMapsEqual maps
-    uuid = (itemUuid item0)
-    creator = patchUser header
-    created = patchTime header
-    get :: String -> (Item -> String) -> Validation String
-    get name fn = case M.lookup name map of
-      Just s -> Right s
-      _ -> Right (fn item0)
-
-    getMaybe :: String -> (Item -> Maybe String) -> Validation (Maybe String)
-    getMaybe name fn = case M.lookup name map of
-      Just s -> Right (Just s)
-      _ -> Right (fn item0)
-
-    getMaybeDate :: String -> (Item -> Maybe UTCTime) -> Validation (Maybe UTCTime)
-    getMaybeDate name fn = case M.lookup name map of
-      Just s -> (parseISO8601 s) `maybeToValidation` ["Could not parse time: " ++ s] >>= \time -> Right (Just time)
-      _ -> Right (fn item0)

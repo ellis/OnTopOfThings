@@ -1,5 +1,5 @@
 {-
-Copyright (C) 2013  Ellis Whitehead
+Copyright (C) 2013,2014  Ellis Whitehead
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -122,7 +122,7 @@ convert'' input = do
   return $ map createPatch items
   where
     createPatch :: Item -> Patch
-    createPatch item = Patch "1" (itemCreated item) (itemCreator item) "" Nothing [hunk] where
+    createPatch item = Patch (itemCreated item) (itemCreator item) [hunk] where
       hunk = PatchHunk [itemUuid item] diffs
       diffs = catMaybes
         [ get "type" itemType

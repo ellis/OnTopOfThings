@@ -35,8 +35,8 @@ Ideas:
 - [x] Rebuild: get it to work with YAML ExportFile
 - [x] Rebuild: process Event records to create Items and Properties
 - [x] Import: assign ``name`` to folders
-- [?] Import: sort output by time
-- [ ] Create a PatchFile1 that sets new values without comparing old values, and make it work with Rebuild
+- [x] Import: sort output by time
+- [x] Create a PatchFile1 that sets new values without comparing old values, and make it work with Rebuild
 - [ ] Repl: save PathFile1 as json in the ``testdata`` directory for commands which create patches
 - [ ] Repl: show
 - [ ] Repl: mv to change parent

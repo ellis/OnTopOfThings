@@ -32,11 +32,10 @@ import Utils
 
 
 data Patch = Patch
-  { patchFormat :: String
-  , patchTime :: UTCTime
+  { patchTime :: UTCTime
   , patchUser :: String
-  , patchUuid :: String
-  , patchUuidParent :: Maybe String
+--  , patchUuid :: String
+--  , patchUuidParent :: Maybe String
   , patchHunks :: [PatchHunk]
   } deriving (Show)
 

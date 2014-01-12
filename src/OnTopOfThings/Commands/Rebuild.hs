@@ -51,6 +51,7 @@ import OnTopOfThings.Commands.Import (optsToCommandRecord)
 import OnTopOfThings.Commands.Mod
 import OnTopOfThings.Data.DatabaseJson
 import OnTopOfThings.Data.FileJson
+import OnTopOfThings.Data.PatchDatabase
 import qualified Database as DB
 
 modeInfo_rebuild :: ModeInfo
@@ -117,6 +118,11 @@ processEvent event = case eventType event of
       Right items -> do
         mapM insert items
         return (Right ())
+  "patch1" -> do
+    let file_ = eventToPatchFile1 event
+    case file_ of
+      Left msgs -> return (Left (("error in event: "++(show event)):msgs))
+      Right file -> patchFile1 file
   s -> return (Left ["unrecognized event type: "++s])
 
 optsRun_rebuild' opts = do

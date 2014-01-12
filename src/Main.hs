@@ -54,7 +54,9 @@ import OnTopOfThings.Commands.Import
 import OnTopOfThings.Commands.Show
 import OnTopOfThings.Commands.Mod
 import OnTopOfThings.Commands.Rebuild
+import OnTopOfThings.Data.FileJson
 import OnTopOfThings.Data.Patch
+import OnTopOfThings.Data.PatchDatabase
 import OnTopOfThings.Parsers.NumberList
 import qualified Database as DB
 
@@ -184,13 +186,14 @@ repl cwd = do
   repl (envCwdChain env1)
   where
     fn :: UTCTime -> [PatchHunk] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
-    fn time cards =
-          when (not $ null cards) $ do
-            liftIO $ print cards
+    fn time hunks =
+          when (not $ null hunks) $ do
+            liftIO $ print hunks
             chguuid <- liftIO $ U4.nextRandom >>= return . U.toString
-            let header = Patch "1" time "default" chguuid Nothing cards
-            result_ <- mapM (patch header) cards
-            case concatEithersN result_ of
+            let header = Patch time "default" hunks
+            let file = PatchFile1 time "default" Nothing hunks
+            result_ <- patch header
+            case result_ of
               Left msgs -> liftIO $ mapM_ putStrLn msgs
               Right _ -> return ()
 --            let record = CommandRecord 1 time (T.pack $ envUser env0) (T.pack $ head args0) (map T.pack recordArgs)

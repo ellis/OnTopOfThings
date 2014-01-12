@@ -45,9 +45,9 @@ import OnTopOfThings.Data.DatabaseJson
 import OnTopOfThings.Data.Patch
 
 data File
-  = PatchFile
-    { patchFileTime :: Maybe UTCTime
-    , patchFileUser :: Maybe String
+  = PatchFile1
+    { patchFileTime :: UTCTime
+    , patchFileUser :: String
     , patchFileComment :: Maybe String
     , patchFileHunks :: [PatchHunk]
     }
@@ -69,6 +69,14 @@ instance ToJSON File where
       , fmap (\x -> "comment" .= String (T.pack x)) comment_
       , Just $ "items" .= items
       ]
+  toJSON (PatchFile1 time user comment_ hunks) = object l where
+    l = catMaybes
+      [ Just $ "type" .= String "export"
+      , Just $ "time" .= String ((T.pack . formatISO8601) time)
+      , Just $ "user" .= String (T.pack user)
+      , fmap (\x -> "comment" .= String (T.pack x)) comment_
+      , Just $ "hunks" .= hunks
+      ]
 
 instance FromJSON File where
   parseJSON (Object m) = case HM.lookup "type" m of
@@ -78,6 +86,12 @@ instance FromJSON File where
         m .:? "user" <*>
         m .:? "comment" <*>
         m .: "items"
+    Just "patch1" ->
+      PatchFile1 <$>
+        m .: "time" <*>
+        m .: "user" <*>
+        m .:? "comment" <*>
+        m .: "hunks"
 
 loadFiles :: IO (Validation [Event])
 loadFiles = do
@@ -100,8 +114,20 @@ loadFile path = do
           case file of
             ExportFile time_ user_ comment_ items ->
               return $ Right (map exportToEvent items)
+            PatchFile1 time user comment_ hunks ->
+              return $ Right [(exportPatch1ToEvent time user comment_ hunks)]
   where
     exportToEvent :: ItemForJson -> Event
     exportToEvent wrapper@(ItemForJson item) = event where
       data_ = BL.toStrict $ encode wrapper
       event = Event (itemCreated item) (itemCreator item) Nothing "createItem" 1 data_
+    exportPatch1ToEvent :: UTCTime -> String -> Maybe String -> [PatchHunk] -> Event
+    exportPatch1ToEvent time user comment hunks = event where
+      data_ = BL.toStrict $ encode hunks
+      event = Event time user comment "patch1" 1 data_
+
+eventToPatchFile1 :: Event -> Validation File
+eventToPatchFile1 event =
+  case eitherDecode (BL.fromStrict $ eventData event) of
+    Left msg -> Left [msg]
+    Right x -> Right x

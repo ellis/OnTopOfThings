@@ -113,19 +113,22 @@ instance FromJSON ItemForJson where
         m .:? "review" <*>
         return Nothing
 
-instance ToJSON Patch where
-  toJSON (Patch format time user uuid uuidParent_ hunks) = object l where
-    l = catMaybes
-      [ Just $ "format" .= format
-      , Just $ "time" .= (T.pack $ formatISO8601 time)
-      , Just $ "user" .= (T.pack user)
-      , Just $ "uuid" .= (T.pack uuid)
-      , fmap (\s -> "parentUuid" .= (T.pack s)) uuidParent_
-      , Just $ "hunks" .= hunks
-      ]
+--instance ToJSON Patch where
+--  toJSON (Patch format time user hunks) = object l where
+--    l = catMaybes
+--      [ Just $ "format" .= format
+--      , Just $ "time" .= (T.pack $ formatISO8601 time)
+--      , Just $ "user" .= (T.pack user)
+--      --, Just $ "uuid" .= (T.pack uuid)
+--      --, fmap (\s -> "parentUuid" .= (T.pack s)) uuidParent_
+--      , Just $ "hunks" .= hunks
+--      ]
 
 instance ToJSON PatchHunk where
   toJSON (PatchHunk uuids diffs) = object [ "uuids" .= (map T.pack uuids), "diffs" .= diffs ]
+
+instance FromJSON PatchHunk where
+  parseJSON (Object m) = PatchHunk <$> m .: "uuids" <*> m .: "diffs"
 
 instance ToJSON Diff where
   toJSON diff = String $ T.concat $ map T.pack l where
@@ -142,6 +145,12 @@ instance ToJSON Diff where
 --      DiffAdd name value -> ["+", name, value]
 --      DiffUnset name -> ["x", name]
 --      DiffRemove name value -> ["-", name, value]
+
+instance FromJSON Diff where
+  parseJSON (String t) = case T.take 1 t of
+    "=" -> return $ DiffEqual (T.unpack name) (T.unpack value) where
+      (name, value') = T.breakOn " " (T.tail t)
+      value = T.drop 1 value'
 
 eventToItems :: Event -> Validation [Item]
 eventToItems event =
