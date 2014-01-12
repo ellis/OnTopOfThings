@@ -103,51 +103,13 @@ optsRun_import opts = do
         Left msgs -> return (Left msgs)
         Right items' -> do
           time <- getCurrentTime
-          let items = sortBy (\a b -> compare (itemCreated a) (itemCreated b)) items'
---          let export = ExportJson 1 time "Task Warrior import" (map ItemForJson items)
-          let export = CopyFile (Just time) (Just "default") (Just "Task Warrior import") (map ItemForJson items)
+          let items = sortBy (\(ItemForJson a _) (ItemForJson b _) -> compare (itemCreated a) (itemCreated b)) items'
+          let export = CopyFile (Just time) (Just "default") (Just "Task Warrior import") items
           BS.hPutStr h $ Yaml.encode export
           hClose h
           return (Right ())
---      case convert'' input of
---        Left msgs -> return (Left msgs)
---        Right records -> do
---          BS.hPutStr h $ Yaml.encode records
---          hClose h
---          return (Right ())
 
-convert'' :: BL.ByteString -> Validation [Patch]
-convert'' input = do
-  items <- convert' input
-  return $ map createPatch items
-  where
-    createPatch :: Item -> Patch
-    createPatch item = Patch (itemCreated item) (itemCreator item) [hunk] where
-      hunk = PatchHunk [itemUuid item] diffs
-      diffs = catMaybes
-        [ get "type" itemType
-        , get "status" itemStatus
-        , getMaybe "parent" itemParent
-        , getMaybe "name" itemName
-        , getMaybe "title" itemTitle
-        , getMaybe "content" itemContent
-        , getMaybe "stage" itemStage
-        , getMaybeDate "closed" itemClosed
-        , getMaybeDate "start" itemStart
-        , getMaybeDate "end" itemEnd
-        , getMaybeDate "due" itemDue
-        , getMaybeDate "review" itemReview
-        ]
-      get :: String -> (Item -> String) -> Maybe Diff
-      get name fn = Just (DiffEqual name (fn item))
-
-      getMaybe :: String -> (Item -> Maybe String) -> Maybe Diff
-      getMaybe name fn = fmap (DiffEqual name) (fn item)
-
-      getMaybeDate :: String -> (Item -> Maybe UTCTime) -> Maybe Diff
-      getMaybeDate name fn = fmap (DiffEqual name . formatISO8601) (fn item)
-
-convert' :: BL.ByteString -> Validation [Item]
+convert' :: BL.ByteString -> Validation [ItemForJson]
 convert' input = l_ where
   l_ = case eitherDecode input of
     Left msg -> Left [msg]
@@ -158,13 +120,13 @@ convert' input = l_ where
         Right db -> Right l where
           l = M.elems db
           -- TODO: need to sort l
-  createItems' :: [Value] -> (M.Map String Item, M.Map FilePath Item) -> Validation (M.Map String Item)
+  createItems' :: [Value] -> (M.Map String ItemForJson, M.Map FilePath Item) -> Validation (M.Map String ItemForJson)
   createItems' [] (db, _) = Right db
   createItems' ((Object m):rest) both = createItems both m >>= \both -> createItems' rest both
   createItems' _ _ = Left ["Expected object"]
   --x -> Left ["Expected an array, got" ++ show input]
 
-createItems :: (M.Map String Item, M.Map FilePath Item) -> Object -> Validation (M.Map String Item, M.Map FilePath Item)
+createItems :: (M.Map String ItemForJson, M.Map FilePath Item) -> Object -> Validation (M.Map String ItemForJson, M.Map FilePath Item)
 --createItems uuids projects m | trace ("createItems " ++ show uuids) False = undefined
 createItems (db, folders) m = do
   uuid <- get "uuid" m
@@ -173,7 +135,7 @@ createItems (db, folders) m = do
   project <- getMaybe "project" m
   status' <- getMaybe "status" m
   end' <- getMaybe "end" m
-  tags' <- getList "tags" m
+  tags <- getList "tags" m
   time <- (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" entry') `maybeToValidation` ["Could not parse entry time"]
   --closed <- (end' >>= \end -> (parseTime defaultTimeLocale "%Y%m%dT%H%M%SZ" (T.unpack end))) `maybeToValidation` ["Could not parse end time"]
   closed <- getClosed end'
@@ -200,7 +162,9 @@ createItems (db, folders) m = do
                   , itemReview = Nothing
                   , itemIndex = Nothing
                   }
-  let db'' = M.insert uuid item db'
+  let properties = if null tags then M.empty else M.fromList [("tag", tags)]
+  let json = ItemForJson item properties
+  let db'' = M.insert uuid json db'
   return (db'', folders')
   --let mode = if Set.member (T.pack uuid) uuids then mode_mod else mode_add
   --let status = getStatus status'
@@ -232,7 +196,7 @@ createItems (db, folders) m = do
 
 uuidRoot = "00000000-0000-0000-0000-000000000000"
 
-createFolder :: (M.Map String Item, M.Map FilePath Item) -> FilePath -> UTCTime -> (M.Map String Item, M.Map FilePath Item)
+createFolder :: (M.Map String ItemForJson, M.Map FilePath Item) -> FilePath -> UTCTime -> (M.Map String ItemForJson, M.Map FilePath Item)
 createFolder both@(db, lists) path time =
   case M.lookup path lists of
     Just _ -> both
@@ -241,7 +205,7 @@ createFolder both@(db, lists) path time =
       path_l = map joinPath $ tail $ inits dirs
       (db', folders') = createFolders both path_l time uuidRoot
 
-createFolders :: (M.Map String Item, M.Map FilePath Item) -> [FilePath] -> UTCTime -> String -> (M.Map String Item, M.Map FilePath Item)
+createFolders :: (M.Map String ItemForJson, M.Map FilePath Item) -> [FilePath] -> UTCTime -> String -> (M.Map String ItemForJson, M.Map FilePath Item)
 createFolders both [] _ _ = both
 createFolders (db, folders) (path:rest) time parentUuid = createFolders (db', folders') rest time uuid where
   uuid = T.unpack $ getProjectUuid (T.pack path)
@@ -263,7 +227,7 @@ createFolders (db, folders) (path:rest) time parentUuid = createFolders (db', fo
     , itemReview = Nothing
     , itemIndex = Nothing
     }
-  db' = M.insert uuid folder db
+  db' = M.insert uuid (ItemForJson folder M.empty) db
   folders' = M.insert path folder folders
 
 convert :: BL.ByteString -> Validation [CommandRecord]

@@ -116,7 +116,17 @@ processEvent event = case eventType event of
     case eventToItems event of
       Left msgs -> return (Left (("error in event: "++(show event)):msgs))
       Right items -> do
-        mapM insert items
+        mapM_
+          (\(ItemForJson item properties) -> do
+            insert item
+            mapM_
+              (\(name, values) -> do
+                mapM_ (\value -> do
+                  let property = Property "item" (itemUuid item) name value
+                  insert property
+                  ) values
+              ) (M.toList properties)
+          ) items
         return (Right ())
   "patch1" -> do
     let file_ = eventToPatchFile1 event

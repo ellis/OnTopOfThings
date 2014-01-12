@@ -274,7 +274,7 @@ cat (Env time user cwd) action@(ActionCat args0) = do
 itemToYamlLines :: Item -> BS.ByteString
 itemToYamlLines item =
   -- Problem with using Yaml.encode is that the properties are not ordered
-  Yaml.encode (ItemForJson item)
+  Yaml.encode (ItemForJson item M.empty) -- TODO: load item properties
 --  l' = concat
 --    [ get "uuid" itemUuid
 --    , get "type" itemType

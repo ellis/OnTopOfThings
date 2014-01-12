@@ -136,7 +136,7 @@ loadFile path = do
       return (Right [])
   where
     copyToEvent :: ItemForJson -> Event
-    copyToEvent wrapper@(ItemForJson item) = event where
+    copyToEvent wrapper@(ItemForJson item properties) = event where
       data_ = BL.toStrict $ encode wrapper
       event = Event (itemCreated item) (itemCreator item) Nothing "createItem" 1 data_
     patch1ToEvent :: UTCTime -> String -> Maybe String -> [PatchHunk] -> Event

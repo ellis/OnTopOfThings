@@ -41,11 +41,13 @@ import DatabaseTables
 import Utils
 import OnTopOfThings.Data.Patch
 
-data ItemForJson = ItemForJson Item
+type PropertyMap = M.Map String [String]
+
+data ItemForJson = ItemForJson Item PropertyMap
   deriving (Show)
 
 instance ToJSON ItemForJson where
-  toJSON (ItemForJson item) = object l where
+  toJSON (ItemForJson item properties) = object l where
     l = catMaybes
       [ get "uuid" itemUuid
       , getDate "created" itemCreated
@@ -62,6 +64,7 @@ instance ToJSON ItemForJson where
       , getMaybeDate "end" itemEnd
       , getMaybeDate "due" itemDue
       , getMaybeDate "review" itemReview
+      , M.lookup "tag" properties >>= \tags -> Just ("tag" .= Array (V.fromList (map (String . T.pack) tags)))
       ]
     get :: T.Text -> (Item -> String) -> Maybe Pair
     get name fn = Just (name .= (T.pack $ fn item))
@@ -76,8 +79,8 @@ instance ToJSON ItemForJson where
     getMaybeDate name fn = fmap (\x -> name .= (T.pack $ formatISO8601 x)) (fn item)
 
 instance FromJSON ItemForJson where
-  parseJSON (Object m) = ItemForJson <$> item where
-    item =
+  parseJSON (Object m) = do
+    item <-
       Item <$>
         m .: "uuid" <*>
         m .: "created" <*>
@@ -95,6 +98,12 @@ instance FromJSON ItemForJson where
         m .:? "due" <*>
         m .:? "review" <*>
         return Nothing
+    properties <- makeProperties <$> m .:? "tag"
+    return (ItemForJson item properties)
+    where
+      makeProperties :: Maybe [String] -> PropertyMap
+      makeProperties tags_ = M.fromList $ catMaybes
+        [ tags_ >>= \tags -> Just ("tag", tags) ]
 
 --instance ToJSON Patch where
 --  toJSON (Patch format time user hunks) = object l where
@@ -135,8 +144,8 @@ instance FromJSON Diff where
       (name, value') = T.breakOn " " (T.tail t)
       value = T.drop 1 value'
 
-eventToItems :: Event -> Validation [Item]
+eventToItems :: Event -> Validation [ItemForJson]
 eventToItems event =
   case eitherDecode (BL.fromStrict $ eventData event) of
     Left msg -> Left [msg]
-    Right (ItemForJson item) -> Right [item]
+    Right item -> Right [item]

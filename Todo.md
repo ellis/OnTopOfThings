@@ -44,13 +44,14 @@ Ideas:
 - [x] Repl: add ``close`` command
 - [x] BUG: See why ``close`` sets the created date
 - [x] Repl: mv to change name
-- [ ] Repl: don't abort on unknown command
-- [ ] Repl: mv to change parent
+- [x] Repl: don't abort on unknown command
+- [x] Repl: mv to change parent
+- [x] Import: export tags
+- [ ] Rebuild: handle tags
+- [ ] patch: create property rows
 - [ ] Repl: ``ls`` should sort output, directories first, and everything alphabetically
 - [ ] Repl: ``show`` should share code with ls
-- [ ] Import: export tags
 - [ ] Ask online whether it's possible to search a (Maybe String) field with esqueleto
-- [ ] Rebuild: handle tags
 - [ ] Repl: add ``mod`` command
 - [ ] Report bug with Yaml/Aeson, where a string of digits (e.g. "name: 20130509") causes an error when being read back in
 - [ ] Rename ``Import`` to ``Convert``
