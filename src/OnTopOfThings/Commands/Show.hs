@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 module OnTopOfThings.Commands.Show
 ( modeInfo_show
+, optsRun_show
 ) where
 
 import Control.Monad.IO.Class (liftIO, MonadIO)
@@ -37,6 +38,7 @@ import Database.Persist.Sqlite (SqlPersistT, runSqlite)
 import Database.Esqueleto
 import Debug.Trace
 import System.Console.CmdArgs.Explicit
+import System.FilePath (joinPath)
 import System.Locale (defaultTimeLocale)
 import Text.Regex (mkRegex, matchRegexAll)
 
@@ -86,7 +88,7 @@ optsRun_show opts = do
   case fromTime of
     Nothing -> return (Left ["bad time"])
     Just t -> do
-      runSqlite "otot.db" $ do
+      runSqlite "repl.db" $ do
         let parents0 = fromMaybe [] $ M.lookup "parent" (optionsParamsN opts)
         parents_l_ <- mapM fn parents0
         let parents_ = concatEithersN parents_l_
@@ -160,9 +162,9 @@ showTasks opts fromTime = do
   --liftIO $ print tasks
   -- Recursively load all parent items
   items <- loadRecursive tasks
-  --liftIO $ mapM_ (putStrLn . itemToString) items
+  --liftIO $ mapM_ print items
   -- Get the lists
-  let lists = (filter (\item -> itemType item == "list") items) :: [Item]
+  let lists = (filter isContainerItem items) :: [Item]
   --liftIO $ print lists
   let children = concat $ map (filterChildren items) lists :: [Item]
   let orphans = filter (\task -> (itemParent task) == Nothing) tasks
@@ -193,21 +195,23 @@ showTasks opts fromTime = do
         set t [ItemIndex =. val (Just index)]
         where_ (t ^. ItemUuid ==. val (itemUuid item))
     fn :: M.Map String Int -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
-    fn uuidToIndex_m item =
-      case itemType item of
-        "list" -> do
-          liftIO $ putStrLn ""
-          s <- itemToString opts item
-          liftIO $ putStrLn $ s
-        _ -> do
-          s <- itemToString opts item
-          liftIO $ putStrLn $ prefix ++ s
-          where
-            index :: Maybe Int
-            index = M.lookup (itemUuid item) uuidToIndex_m
-            index_s :: Maybe String
-            index_s = fmap (\i -> "(" ++ (show i) ++ ")  ") index
-            prefix = fromMaybe "" index_s
+    fn uuidToIndex_m item
+      | isContainerItem item = do
+        liftIO $ putStrLn ""
+        s <- itemToString opts item
+        liftIO $ putStrLn $ s
+      | otherwise = do
+        s <- itemToString opts item
+        liftIO $ putStrLn $ prefix ++ s
+        where
+          index :: Maybe Int
+          index = M.lookup (itemUuid item) uuidToIndex_m
+          index_s :: Maybe String
+          index_s = fmap (\i -> "(" ++ (show i) ++ ")  ") index
+          prefix = fromMaybe "" index_s
+
+isContainerItem :: Item -> Bool
+isContainerItem item = elem (itemType item) ["folder", "list"]
 
 loadRecursive :: [Item] -> SqlPersistT (NoLoggingT (ResourceT IO)) [Item]
 loadRecursive items = loadParents items uuids items where
@@ -266,10 +270,10 @@ itemToString opts item = do
         where_ (t ^. PropertyUuid ==. val (itemUuid item) &&. t ^. PropertyName ==. val "tag")
         return (t ^. PropertyValue)
       return $ map (\(Value s) -> '+':s) tags'
-  let l = getParts tags
+  l <- getParts tags
   return $ unwords l
   where
-    path = [] -- findParentLabel (itemParent item >>= \x -> Just [x]) entities
+    --path = findParentLabel (itemParent item >>= \x -> Just [x]) entities
     check :: Maybe String
     check = case (itemType item, itemStatus item) of
       ("list", "open") -> Nothing
@@ -280,12 +284,29 @@ itemToString opts item = do
       (_, "closed") -> Just "[x]"
       (_, "deleted") -> Just "XXX"
       _ -> Nothing
-    getParts :: [String] -> [String]
-    getParts tags = catMaybes
-      [ check
-      , fmap (\label -> "(" ++ label ++ ")") (itemName item)
-      , if null path then Nothing else Just $ intercalate "/" path ++ ":"
-      , itemTitle item
-      , if null tags then Nothing else Just $ "(" ++ (intercalate "," tags) ++ ")"
-      ]
+    --getParts :: [String] -> [String]
+    getParts tags
+      | (itemType item) == "folder" = do
+        path <- getAbsPath item
+        return $ catMaybes [Just path, itemTitle item]
+      | otherwise =
+        return $ catMaybes
+          [ check
+          , fmap (\label -> "(" ++ label ++ ")") (itemName item)
+          --, if null path then Nothing else Just $ intercalate "/" path ++ ":"
+          , itemTitle item
+          , if null tags then Nothing else Just $ "(" ++ (intercalate "," tags) ++ ")"
+          ]
 
+getAbsPath :: Item -> SqlPersistT (NoLoggingT (ResourceT IO)) FilePath
+getAbsPath item = do
+  parentPath <- case (itemParent item) of
+    Nothing -> return []
+    Just uuid -> do
+      parent_ <- getBy $ ItemUniqUuid uuid
+      case parent_ of
+        Nothing -> return []
+        Just parent -> do
+          parentPath <- getAbsPath (entityVal parent)
+          return [parentPath]
+  return $ joinPath (parentPath ++ [fromMaybe (itemUuid item) (itemName item)])

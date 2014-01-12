@@ -70,6 +70,10 @@ data ActionNewTask = ActionNewTask
     , newTaskTags :: [String]
     } deriving (Show)
 
+data ActionShow = ActionShow
+    { showOptions :: Options
+    } deriving (Show)
+
 data ActionResult = ActionResult
   { actionResultPatchHunks :: [PatchHunk]
   , actionResultRollback :: Bool

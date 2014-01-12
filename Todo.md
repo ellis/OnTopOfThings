@@ -40,7 +40,7 @@ Ideas:
 - [x] Repl: save PathFile1 as json in the ``testdata`` directory for commands which create patches
 - [x] ExportFile: why is version not in the JSON?
 - [x] rename "export" => "copy" in Event and ExportFile
-- [ ] Repl: show
+- [x] Repl: show
 - [ ] Repl: mv to change parent
 - [ ] Repl: mv to change name
 - [ ] Repl: ``ls`` should sort output, directories first, and everything alphabetically

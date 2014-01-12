@@ -174,6 +174,21 @@ repl cwd = do
                   return (env0, mempty)
                 else do
                   runAction env0 action
+        "show":args -> do
+          let mode = fst modeInfo_show
+          case process mode args of
+            Left msg -> return (env0, ActionResult [] False [] [msg])
+            Right opts -> do
+              if optionsHelp opts
+                then do
+                  liftIO $ print $ helpText [] HelpFormatDefault mode
+                  return (env0, mempty)
+                else do
+                  action_ <- actionFromOptions opts
+                  case (action_ :: Validation ActionShow) of
+                    Left msgs -> return (env0, ActionResult [] False [] msgs)
+                    Right action -> do
+                      runAction env0 action
         cmd:_ -> do
           liftIO $ processMode args0
           return (env0, ActionResult [] False [] ["command not found: "++cmd])

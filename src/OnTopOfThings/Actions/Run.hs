@@ -52,6 +52,7 @@ import Utils
 import OnTopOfThings.Parsers.NumberList
 import OnTopOfThings.Actions.Action
 import OnTopOfThings.Actions.Env
+import OnTopOfThings.Commands.Show
 import OnTopOfThings.Data.DatabaseJson
 import OnTopOfThings.Data.FileJson
 import OnTopOfThings.Data.Patch
@@ -142,6 +143,12 @@ instance Action ActionNewTask where
       , newTaskParentRef action >>= \x -> Just ("--parent="++x)
       , newTaskName action >>= \x -> Just ("--name="++x)
       ]
+
+instance Action ActionShow where
+  runAction env action = show' env (showOptions action) >>= \result -> return (env, result)
+  actionFromOptions opts = return (Right (ActionShow opts))
+  actionToRecordArgs action = Nothing
+
 
 mode_cat = Mode
   { modeGroupModes = mempty
@@ -703,3 +710,8 @@ newtask (Env time user cwd) action0 = do
             , Just $ DiffEqual "stage" $ fromMaybe "new" stage
             ]
       return (PatchHunk [uuid] diffs)
+
+show' :: Env -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
+show' (Env time user cwd) opts = do
+  liftIO $ optsRun_show opts
+  return mempty
