@@ -29,14 +29,15 @@ import Data.Maybe
 import Data.Monoid
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.ISO8601
+import Database.Persist (insert)
+import Database.Persist.Sqlite
+import Debug.Trace
 import System.Console.ANSI
 import System.Console.CmdArgs.Explicit
 import System.Environment
 import System.FilePath.Posix (joinPath, splitDirectories)
 import System.IO
-import Database.Persist (insert)
-import Database.Persist.Sqlite
-import Debug.Trace
+import Text.Read (readMaybe)
 import qualified Data.ByteString as BS
 import qualified Data.Map as M
 import qualified Data.Set as Set
@@ -61,17 +62,26 @@ import OnTopOfThings.Data.PatchDatabase
 
 instance Action ActionCat where
   runAction env action = cat env action >>= \result -> return (env, result)
-  --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionLs)
-  actionFromOptions opts = let
+  actionFromOptions env opts = let
       args = optionsArgs opts
     in do
       return (Right (ActionCat args))
   actionToRecordArgs action = Nothing
 
+instance Action ActionClose where
+  runAction env action = close env action >>= \result -> return (env, result)
+  actionFromOptions env opts = do
+    items_ <- mapM (lookupItem env) (optionsArgs opts)
+    case concatEithersN items_ of
+      Left msgs -> return (Left msgs)
+      Right items -> return (Right (ActionClose uuids)) where
+        uuids = map itemUuid items
+  actionToRecordArgs action = Nothing
+
 instance Action ActionLs where
   runAction env action = ls env action >>= \result -> return (env, result)
   --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionLs)
-  actionFromOptions opts = let
+  actionFromOptions env opts = let
       args = optionsArgs opts
       isRecursive = Set.member "recursive" (optionsParams0 opts)
     in do
@@ -82,7 +92,7 @@ instance Action ActionLs where
 instance Action ActionMkdir where
   runAction env action = mkdir env action >>= \result -> return (env, result)
   --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionMkdir)
-  actionFromOptions opts = do
+  actionFromOptions env opts = do
     return (Right (ActionMkdir (optionsArgs opts) (M.lookup "id" (optionsParams1 opts)) (Set.member "parents" (optionsParams0 opts))))
   actionToRecordArgs action = Just $ flags ++ args where
     args = mkdirArgs action
@@ -94,7 +104,7 @@ instance Action ActionMkdir where
 instance Action ActionNewTask where
   runAction env action = newtask env action >>= \result -> return (env, result)
   --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionMkdir)
-  actionFromOptions opts = do
+  actionFromOptions env opts = do
     let action_ = createAction
     return action_
     where
@@ -146,7 +156,7 @@ instance Action ActionNewTask where
 
 instance Action ActionShow where
   runAction env action = show' env (showOptions action) >>= \result -> return (env, result)
-  actionFromOptions opts = return (Right (ActionShow opts))
+  actionFromOptions env opts = return (Right (ActionShow opts))
   actionToRecordArgs action = Nothing
 
 
@@ -165,6 +175,20 @@ mode_cat = Mode
     ]
   }
 
+mode_close = Mode
+  { modeGroupModes = mempty
+  , modeNames = ["close"]
+  , modeValue = options_empty "close"
+  , modeCheck = Right
+  , modeReform = Just . reform
+  , modeExpandAt = True
+  , modeHelp = "Mark an item as closed"
+  , modeHelpSuffix = []
+  , modeArgs = ([], Just (flagArg updArgs "FILE"))
+  , modeGroupFlags = toGroup
+    [ flagNone ["help"] updHelp "display this help and exit"
+    ]
+  }
 
 mode_ls = Mode
   { modeGroupModes = mempty
@@ -265,6 +289,16 @@ itemToYamlLines item =
 --  get name fn = [name ++ ": " ++ (fn item)]
 --  getMaybe :: String -> (Item -> Maybe String) -> [String]
 --  getMaybe name fn = maybeToList $ fmap (\x -> name ++ ": " ++ x) (fn item)
+
+close :: Env -> ActionClose -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
+close env (ActionClose uuids) = do
+  let diffs =
+        [ DiffEqual "status" "closed"
+        , DiffEqual "closed" (formatISO8601 (envTime env))
+        ]
+  let hunk = PatchHunk uuids diffs
+  return (ActionResult [hunk] False [] [])
+  where
 
 ls :: Env -> ActionLs -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 ls env action | trace ("ls: "++(show action)) False = undefined
@@ -715,3 +749,26 @@ show' :: Env -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult
 show' (Env time user cwd) opts = do
   liftIO $ optsRun_show opts
   return mempty
+
+lookupItem :: Env -> String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
+lookupItem env ref = do
+  item1_ <- getBy $ ItemUniqUuid ref
+  case item1_ of
+    Just item -> return (Right (entityVal item))
+    Nothing -> do
+      let path = joinPath ((envCwdChain env) ++ [ref])
+      let chain = splitDirectories path
+      item2_ <- absPathChainToItem chain
+      case item2_ of
+        Right item -> return (Right item)
+        Left msgs -> do
+          let n' = readMaybe ref :: Maybe Int
+          case n' of
+            Nothing -> return (Left (("couldn't find item: "++ref) : msgs))
+            Just n -> do
+              l <- selectList [ItemIndex ==. (Just n)] [LimitTo 2]
+              case l of
+                [] -> return (Left (("couldn't find item: "++ref) : msgs))
+                entity:[] -> return (Right (entityVal entity))
+                _:_:[] -> return (Left ["Internal error.  Multiple items with given index: "++(show n)])
+

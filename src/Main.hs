@@ -131,7 +131,7 @@ repl cwd = do
                   liftIO $ print $ helpText [] HelpFormatDefault mode_cat
                   return (env0, mempty)
                 else do
-                  action_ <- actionFromOptions opts
+                  action_ <- actionFromOptions env0 opts
                   case (action_ :: Validation ActionCat) of
                     Left msgs -> return (env0, ActionResult [] False [] msgs)
                     Right action -> do
@@ -145,8 +145,23 @@ repl cwd = do
                   liftIO $ print $ helpText [] HelpFormatDefault mode_ls
                   return (env0, mempty)
                 else do
-                  action_ <- actionFromOptions opts
+                  action_ <- actionFromOptions env0 opts
                   case (action_ :: Validation ActionLs) of
+                    Left msgs -> return (env0, ActionResult [] False [] msgs)
+                    Right action -> do
+                      runAction env0 action
+        "close":args -> do
+          let mode = OnTopOfThings.Actions.Run.mode_close
+          case process mode args of
+            Left msg -> return (env0, ActionResult [] False [] [msg])
+            Right opts -> do
+              if optionsHelp opts
+                then do
+                  liftIO $ print $ helpText [] HelpFormatDefault mode
+                  return (env0, mempty)
+                else do
+                  action_ <- actionFromOptions env0 opts
+                  case (action_ :: Validation ActionClose) of
                     Left msgs -> return (env0, ActionResult [] False [] msgs)
                     Right action -> do
                       runAction env0 action
@@ -159,7 +174,7 @@ repl cwd = do
                   liftIO $ print $ helpText [] HelpFormatDefault mode_mkdir
                   return (env0, mempty)
                 else do
-                  action_ <- actionFromOptions opts
+                  action_ <- actionFromOptions env0 opts
                   case (action_ :: Validation ActionMkdir) of
                     Left msgs -> return (env0, ActionResult [] False [] msgs)
                     Right action -> do
@@ -184,7 +199,7 @@ repl cwd = do
                   liftIO $ print $ helpText [] HelpFormatDefault mode
                   return (env0, mempty)
                 else do
-                  action_ <- actionFromOptions opts
+                  action_ <- actionFromOptions env0 opts
                   case (action_ :: Validation ActionShow) of
                     Left msgs -> return (env0, ActionResult [] False [] msgs)
                     Right action -> do

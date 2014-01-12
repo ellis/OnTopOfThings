@@ -41,10 +41,15 @@ Ideas:
 - [x] ExportFile: why is version not in the JSON?
 - [x] rename "export" => "copy" in Event and ExportFile
 - [x] Repl: show
+- [ ] Repl: add ``close`` command
 - [ ] Repl: mv to change parent
-- [ ] Repl: mv to change name
 - [ ] Repl: ``ls`` should sort output, directories first, and everything alphabetically
+- [ ] Repl: ``show`` should share code with ls
 - [ ] Import: export tags
+- [ ] Ask online whether it's possible to search a (Maybe String) field with esqueleto
+- [ ] Rebuild: handle tags
+- [ ] Repl: add ``mod`` command
+- [ ] Repl: mv to change name
 - [ ] Report bug with Yaml/Aeson, where a string of digits (e.g. "name: 20130509") causes an error when being read back in
 - [ ] Rename ``Import`` to ``Convert``
 - [ ] instead of using "otot.db" or "repl.db", get file from the options and have a default value

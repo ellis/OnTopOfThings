@@ -44,35 +44,40 @@ import OnTopOfThings.Data.Patch (PatchHunk)
 import OnTopOfThings.Actions.Env
 
 data ActionCat = ActionCat
-    { catArgs :: [String]
-    } deriving (Show)
+  { catArgs :: [String]
+  } deriving (Show)
+
+data ActionClose = ActionClose
+  { closeUuids :: [String]
+  --, closeComment :: Maybe String
+  } deriving (Show)
 
 data ActionLs = ActionLs
-    { lsArgs :: [String]
-    , lsRecursive :: Bool
-    } deriving (Show)
+  { lsArgs :: [String]
+  , lsRecursive :: Bool
+  } deriving (Show)
 
 data ActionMkdir = ActionMkdir
-    { mkdirArgs :: [String]
-    , mkdirUuid :: Maybe String
-    , mkdirParents :: Bool
-    } deriving (Show)
+  { mkdirArgs :: [String]
+  , mkdirUuid :: Maybe String
+  , mkdirParents :: Bool
+  } deriving (Show)
 
 data ActionNewTask = ActionNewTask
-    { newTaskHelp :: Bool
-    , newTaskUuid :: Maybe String
-    , newTaskParentRef :: Maybe String
-    , newTaskName :: Maybe String
-    , newTaskTitle :: Maybe String
-    , newTaskContent :: Maybe String
-    , newTaskStatus :: Maybe String
-    , newTaskStage :: Maybe String
-    , newTaskTags :: [String]
-    } deriving (Show)
+  { newTaskHelp :: Bool
+  , newTaskUuid :: Maybe String
+  , newTaskParentRef :: Maybe String
+  , newTaskName :: Maybe String
+  , newTaskTitle :: Maybe String
+  , newTaskContent :: Maybe String
+  , newTaskStatus :: Maybe String
+  , newTaskStage :: Maybe String
+  , newTaskTags :: [String]
+  } deriving (Show)
 
 data ActionShow = ActionShow
-    { showOptions :: Options
-    } deriving (Show)
+  { showOptions :: Options
+  } deriving (Show)
 
 data ActionResult = ActionResult
   { actionResultPatchHunks :: [PatchHunk]
@@ -89,6 +94,6 @@ type SqlActionResult = SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 
 class Action a where
   runAction :: Env -> a -> SqlPersistT (NoLoggingT (ResourceT IO)) (Env, ActionResult)
-  actionFromOptions :: (Action a) => Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation a)
+  actionFromOptions :: (Action a) => Env -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation a)
   actionToRecordArgs :: (Action a) => a -> Maybe [String]
 
