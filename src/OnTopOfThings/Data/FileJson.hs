@@ -94,11 +94,13 @@ instance FromJSON File where
         m .: "user" <*>
         m .:? "comment" <*>
         m .: "hunks"
+    Just x -> fail ("unknown file type: "++(show x))
+  parseJSON x = fail ("Unknown file object: "++(show x))
 
 loadFiles :: IO (Validation [Event])
 loadFiles = do
-  files' <- getDirectoryContents "testdata"
-  let files = filter (\f -> takeExtension f == ".yaml") files'
+  files <- getDirectoryContents "testdata"
+  --let files = filter (\f -> takeExtension f == ".yaml") files'
   --files <- FF.find (return False) (FF.extension `FF.==?` ".json") "testdata"
   events__ <- mapM (\f -> loadFile (joinPath ["testdata", f])) files
   let events_ = concatEithersN events__
@@ -118,6 +120,20 @@ loadFile path = do
               return $ Right (map copyToEvent items)
             PatchFile1 time user comment_ hunks ->
               return $ Right [(patch1ToEvent time user comment_ hunks)]
+    ".json" -> do
+      content <- BL.readFile path
+      let file_ = eitherDecode content
+      case file_ of
+        Left msg -> return $ Left [show msg]
+        Right file ->
+          case file of
+            CopyFile time_ user_ comment_ items ->
+              return $ Right (map copyToEvent items)
+            PatchFile1 time user comment_ hunks ->
+              return $ Right [(patch1ToEvent time user comment_ hunks)]
+    _ -> do
+      putStrLn ("unrecognized file: "++path)
+      return (Right [])
   where
     copyToEvent :: ItemForJson -> Event
     copyToEvent wrapper@(ItemForJson item) = event where
@@ -134,7 +150,7 @@ saveFileAsJson file chguuid = do
   BL.writeFile filepath $ encode file
 
 eventToPatchFile1 :: Event -> Validation File
-eventToPatchFile1 event =
-  case eitherDecode (BL.fromStrict $ eventData event) of
+eventToPatchFile1 (Event time user comment _ version json) =
+  case eitherDecode (BL.fromStrict json) of
     Left msg -> Left [msg]
-    Right x -> Right x
+    Right hunks -> Right (PatchFile1 time user comment hunks)

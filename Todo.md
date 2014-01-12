@@ -39,7 +39,7 @@ Ideas:
 - [x] Create a PatchFile1 that sets new values without comparing old values, and make it work with Rebuild
 - [x] Repl: save PathFile1 as json in the ``testdata`` directory for commands which create patches
 - [x] ExportFile: why is version not in the JSON?
-- [ ] rename "export" => "copy" in Event and ExportFile
+- [x] rename "export" => "copy" in Event and ExportFile
 - [ ] Repl: show
 - [ ] Repl: mv to change parent
 - [ ] Repl: mv to change name
