@@ -78,6 +78,8 @@
     * order in parent, so that the user can manually arrange the items
     * severity (for bugs)
     * flagged: the item has been flagged by some event, such as an external item coming back or a timer
+    * reminder: date when the item should be automatically placed in "today"
+    * acceptance: new/accepted/rejected; when an item is automatically placed in "inbox" or "today", it is new.  The item should then be accepted or rejected, optionally with a comment
 * item property interactions
     * there are lots of interactions between some of the variables (stage, status, close reason, close time); figure this out better
     * some properties are only relevant for some item types.  E.g., stage generally isn't needed for lists
@@ -119,6 +121,7 @@
     * use as an RSS reader and for tagging other websites to read or that are noteworthy
     * scheduled reminders
     * show marginal costs and benefits for comparison of activities
+    * team functionality: should maybe use UUIDs for tags/roles/etc so that users can also tag shared items privately; or perhaps we should add a user/group field to the property table.
     * like Anki for scheduled review?
     * Shopping lists
         * recurring and one-time items
@@ -153,6 +156,42 @@
     * Vivia Tasker
     * Vivia OnTop (vot)
     * Vivia OnTopOfThings
+
+## GUI Ideas
+
+* Queues: inbox, today, next, scheduled, deferred
+* Reviews: adaptive, week, month, quarter, year
+* Folders
+    * Cabinets (different repositories that can be synced independently; e.g. Private, Family, Work, TeamA)
+    * Roles
+    * Projects: arbitrary hierarchy of lists and documents
+    * References: arbitrary hierarchy of lists and documents
+* Calendar, Agenda, Schedule
+* Time Management
+* Active lists: convenient selection of currently active roles/projects/lists
+
+Also want team functionality, so have the items above for teams too.
+Allow for sharing of information between personal and team accounts.
+A repository can be bound anywhere in the folder hierarchy, allowing the user
+to keep personal information separate from team information.
+Item can be moved among repositories.
+
+Want to track age in queue, and age overdue for review.
+
+## Stages
+
+   - it should be possible for the user to define custom stages
+   - standard stages are as follows:
+   - queues: inbox, today, next
+   - calendars: due, schedule
+   - review: deferred, adaptive, week, month, quarter, year
+   - if something is on the calendar, it needs a date
+   - if something is deferred, it needs a date
+   - might want to track the duration that an item has spent in a queue
+   - an item which has a defer date automatically gets staged in "deferred", but should still show up in grey-out color on the due or schedule calendar, if it has the relevant dates
+   - an item which has a due date automatically becomes a project, and the user should say how long beforehand the project should show up as an active project
+   - an item which has a start date (but no due date) automatically goes on the schedule
+   - probably need to have 'date' and 'time' fields instead of just 'time' fields in Item, since we need to distinguish being an item being scheduled for a given day vs being scheduled at midnight on a given day
 
 ## Flow from command line to database
 

@@ -51,6 +51,19 @@ Ideas:
 - [ ] Run.hs: move sharable code to a new Utils.hs file
 - [ ] patch: create property rows
 - [ ] Repl: add ``mod`` command
+- [ ] Stages
+   - it should be possible for the user to define custom stages
+   - standard stages are as follows:
+   - queues: inbox, today, next
+   - calendars: due, schedule
+   - review: deferred, adaptive, week, month, quarter, year
+   - if something is on the calendar, it needs a date
+   - if something is deferred, it needs a date
+   - might want to track the duration that an item has spent in a queue
+   - an item which has a defer date automatically gets staged in "deferred", but should still show up in grey-out color on the due or schedule calendar, if it has the relevant dates
+   - an item which has a due date automatically becomes a project, and the user should say how long beforehand the project should show up as an active project
+   - an item which has a start date (but no due date) automatically goes on the schedule
+   - probably need to have 'date' and 'time' fields instead of just 'time' fields in Item, since we need to distinguish being an item being scheduled for a given day vs being scheduled at midnight on a given day
 - [ ] Figure out REVIEW concept:
       - daily review, weekly review, monthly review, quarterly review, yearly review
             - using lists?
@@ -65,6 +78,10 @@ Ideas:
       - a task is either in "new", "now", a queue (today, week), or review (similar to "stages", but perhaps each item should have a field for each characteristic; but maybe queue and review are mutually exclusive)
       - example report: shows new, now, queues
       - example report: new, review items, then items which are not in queues; ordered by project
+- [ ] Figure out TICKET concept
+      - perhaps tasks should all be tickets
+      - they need to have history of changes and updates
+      - need to support back-and-forth between multiple users
 - [ ] Figure out CALENDAR concept
 - [ ] Figure out REPEATING TASK concept
 - [ ] Figure out TIME TRACKING/ESTIMATION/POMODORO concept
