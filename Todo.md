@@ -49,6 +49,7 @@ Ideas:
 - [x] Import: export tags
 - [x] Rebuild: handle tags
 - [ ] Run.hs: move sharable code to a new Utils.hs file
+- [ ] Action.Utils: organize functions, better names, stop using path chains?  Env should have IDs of repositories?
 - [ ] patch: create property rows
 - [ ] Repl: add ``mod`` command
 - [ ] Stages
@@ -94,6 +95,7 @@ Ideas:
 - [ ] Go through my personal list of tasks and update it, seeing what needs to be added to program
 - [ ] Repl: ``ls`` should sort output, directories first, and everything alphabetically
 - [ ] Repl: ``show`` should share code with ls
+- [ ] Item: consider renaming ItemForJson to Item, and separating more between Sqlite model and the data
 - [ ] Ask online whether it's possible to search a (Maybe String) field with esqueleto
 - [ ] Repl: add ``mod`` command
 - [ ] Report bug with Yaml/Aeson, where a string of digits (e.g. "name: 20130509") causes an error when being read back in
@@ -101,6 +103,7 @@ Ideas:
 - [ ] instead of using "otot.db" or "repl.db", get file from the options and have a default value
 - [ ] PatchFile2: Consider having DiffEqual, DiffNull, and DiffRemove also contain the old values
 - [ ] create a common function for creating an item, whether via mkdir or newtask.
+- [ ] find type of UUID and use that instead of String
 - [ ] Item: add assignee field
 - [ ] Rebuild: use new commands
 - [ ] Rebuild: add an option to build from internal event table or reload the event table from files
@@ -116,6 +119,7 @@ Ideas:
 - [ ] Add: rename to new?
 - [ ] Add: option -F,--newfolder to create a folder with the given name if not already present
 - [ ] Add support for folders, taking the place of the old list concept
+- [ ] ``uuidRoot`` should not be all zeros: generate a root UUID somehow, probably need to have it in a config file in the data directory
 - [ ] Add support for lists as an ordered sequence of items
 
 ## Design 2
