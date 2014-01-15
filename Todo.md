@@ -58,7 +58,7 @@ Ideas:
    - calendars: due, schedule
    - review: deferred, adaptive, week, month, quarter, year
    - if something is on the calendar, it needs a date
-   - if something is deferred, it needs a date
+   - if something is deferred, it needs a defer date
    - might want to track the duration that an item has spent in a queue
    - an item which has a defer date automatically gets staged in "deferred", but should still show up in grey-out color on the due or schedule calendar, if it has the relevant dates
    - an item which has a due date automatically becomes a project, and the user should say how long beforehand the project should show up as an active project

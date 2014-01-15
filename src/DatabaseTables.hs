@@ -71,10 +71,10 @@ Item
   content String Maybe
   stage String Maybe
   closed UTCTime Maybe
-  start UTCTime Maybe
-  end UTCTime Maybe
-  due UTCTime Maybe
-  review UTCTime Maybe -- When to next review this item (like GTD tickler)
+  start String Maybe
+  end String Maybe
+  due String Maybe
+  defer String Maybe -- When to next review this item (like GTD tickler)
   --reviewed UTCTime Maybe -- Last time reviewed
   index Int Maybe
   deriving Show

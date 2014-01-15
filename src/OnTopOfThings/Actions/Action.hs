@@ -41,6 +41,7 @@ import Args
 import Command (CommandRecord)
 import Utils
 import OnTopOfThings.Data.Patch (PatchHunk)
+import OnTopOfThings.Data.Types
 import OnTopOfThings.Actions.Env
 
 data ActionCat = ActionCat
@@ -61,6 +62,19 @@ data ActionMkdir = ActionMkdir
   { mkdirArgs :: [String]
   , mkdirUuid :: Maybe String
   , mkdirParents :: Bool
+  } deriving (Show)
+
+data ActionMod = ActionMod
+  { modUuids :: [String]
+  , modStatus :: Maybe String
+  , modParentUuid :: Maybe String
+  , modName :: Maybe String
+  , modTitle :: Maybe String
+  , modContent :: Maybe String
+  , modStage :: Maybe String
+  , modStart :: Maybe Time
+  , modTag :: Maybe [String]
+  , modOptions :: Options
   } deriving (Show)
 
 -- For ``mvDestNameOrUuid``, Left is for renaming, right is for uuid
