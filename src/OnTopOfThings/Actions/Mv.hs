@@ -53,7 +53,7 @@ import Utils
 import OnTopOfThings.Parsers.NumberList
 import OnTopOfThings.Actions.Action
 import OnTopOfThings.Actions.Env
-import OnTopOfThings.Actions.Run (lookupItem)
+import OnTopOfThings.Actions.Utils (lookupItem)
 import OnTopOfThings.Commands.Show
 import OnTopOfThings.Data.DatabaseJson
 import OnTopOfThings.Data.FileJson

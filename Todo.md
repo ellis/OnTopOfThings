@@ -48,7 +48,7 @@ Ideas:
 - [x] Repl: mv to change parent
 - [x] Import: export tags
 - [x] Rebuild: handle tags
-- [ ] Run.hs: move sharable code to a new Utils.hs file
+- [x] Run.hs: move sharable code to a new Utils.hs file
 - [ ] Action.Utils: organize functions, better names, stop using path chains?  Env should have IDs of repositories?
 - [ ] patch: create property rows
 - [ ] Repl: add ``mod`` command
