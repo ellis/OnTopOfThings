@@ -58,6 +58,7 @@ import OnTopOfThings.Commands.Rebuild
 import OnTopOfThings.Data.FileJson
 import OnTopOfThings.Data.Patch
 import OnTopOfThings.Data.PatchDatabase
+import OnTopOfThings.Data.Types
 import OnTopOfThings.Parsers.NumberList
 import qualified Database as DB
 

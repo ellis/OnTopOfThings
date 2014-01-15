@@ -49,7 +49,6 @@ Ideas:
 - [x] Import: export tags
 - [x] Rebuild: handle tags
 - [x] Run.hs: move sharable code to a new Utils.hs file
-- [ ] Action.Utils: organize functions, better names, stop using path chains?  Env should have IDs of repositories?
 - [ ] patch: create property rows
 - [ ] Repl: add ``mod`` command
 - [ ] Stages
@@ -93,6 +92,7 @@ Ideas:
       - maybe this could be a "shop" item with an extra quantity property
 - [ ] Figure out SCHEDULE concept (i.e. Dora's schedule with kids and me)
 - [ ] Go through my personal list of tasks and update it, seeing what needs to be added to program
+- [ ] Action.Utils: organize functions, better names, stop using path chains?  Env should have IDs of repositories (e.g. map of mount path to repo information)?
 - [ ] Repl: ``ls`` should sort output, directories first, and everything alphabetically
 - [ ] Repl: ``show`` should share code with ls
 - [ ] Item: consider renaming ItemForJson to Item, and separating more between Sqlite model and the data

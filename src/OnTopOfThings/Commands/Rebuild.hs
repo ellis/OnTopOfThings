@@ -49,9 +49,11 @@ import OnTopOfThings.Commands.Close
 import OnTopOfThings.Commands.Delete
 import OnTopOfThings.Commands.Import (optsToCommandRecord)
 import OnTopOfThings.Commands.Mod
-import OnTopOfThings.Data.DatabaseJson
+--import OnTopOfThings.Data.DatabaseJson
 import OnTopOfThings.Data.FileJson
+import OnTopOfThings.Data.Json
 import OnTopOfThings.Data.PatchDatabase
+import OnTopOfThings.Data.Types
 import qualified Database as DB
 
 modeInfo_rebuild :: ModeInfo

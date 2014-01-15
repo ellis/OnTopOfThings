@@ -50,9 +50,8 @@ import DatabaseTables
 import DatabaseUtils
 import Utils
 import OnTopOfThings.Parsers.NumberList
-import OnTopOfThings.Data.DatabaseJson
-import OnTopOfThings.Data.FileJson
 import OnTopOfThings.Data.Patch
+import OnTopOfThings.Data.Types
 
 patch :: Patch -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
 patch patch = do
