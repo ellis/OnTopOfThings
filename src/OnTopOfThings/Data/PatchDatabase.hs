@@ -78,8 +78,15 @@ patchHunk header (PatchHunk uuids diffs) = do
           let item_ = createItem header uuid diffs
           case item_ of
             Left msgs -> return (Left msgs)
-            Right item -> do
+            Right (ItemForJson item properties) -> do
               insert item
+              mapM_
+                (\(name, values) -> do
+                  mapM_ (\value -> do
+                    let property = Property "item" (itemUuid item) name value
+                    insert property
+                    ) values
+                ) (M.toList properties)
               return (Right ())
         Just entity -> do
           let item_ = updateItem header diffs (entityVal entity)
@@ -87,9 +94,20 @@ patchHunk header (PatchHunk uuids diffs) = do
             Left msgs -> return (Left msgs)
             Right item -> do
               replace (entityKey entity) item
+              let maps = diffsToMaps diffs
+              -- Remove property values
+              mapM_
+                (\(name, values) -> do
+                  deleteWhere [PropertyTable ==. "item", PropertyUuid ==. uuid, PropertyName ==. name, PropertyValue <-. values]
+                ) (M.toList (diffMapsRemove maps))
+              -- Add property values
+              mapM_
+                (\(name, values) -> do
+                  mapM_ (\value -> insert (Property "item" uuid name value)) values
+                ) (M.toList (diffMapsAdd maps))
               return (Right ())
 
-createItem :: Patch -> String -> [Diff] -> Validation Item
+createItem :: Patch -> String -> [Diff] -> Validation ItemForJson
 createItem header uuid diffs = do
   type_ <- get "type"
   status <- get "status"
@@ -103,10 +121,12 @@ createItem header uuid diffs = do
   end <- getMaybeDate "end"
   due <- getMaybeDate "due"
   review <- getMaybeDate "review"
-  return $ Item uuid created creator type_ status parent name title content stage closed start end due review Nothing
+  let item = Item uuid created creator type_ status parent name title content stage closed start end due review Nothing
+  return (ItemForJson item properties)
   where
     maps = diffsToMaps diffs
     map = diffMapsEqual maps
+    properties = diffMapsAdd maps
     creator = patchUser header
     created = patchTime header
     get name = case M.lookup name map of

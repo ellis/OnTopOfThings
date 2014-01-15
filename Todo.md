@@ -49,7 +49,7 @@ Ideas:
 - [x] Import: export tags
 - [x] Rebuild: handle tags
 - [x] Run.hs: move sharable code to a new Utils.hs file
-- [ ] patch: create property rows
+- [?] patch: create property rows
 - [ ] Repl: add ``mod`` command
 - [ ] Stages
    - it should be possible for the user to define custom stages
@@ -83,6 +83,8 @@ Ideas:
       - they need to have history of changes and updates
       - need to support back-and-forth between multiple users
 - [ ] Figure out CALENDAR concept
+   - it should be possible to display projects and goals on the calendar too
+   - it should be possible to display deferred events on the calendar in grey-out color
 - [ ] Figure out REPEATING TASK concept
 - [ ] Figure out TIME TRACKING/ESTIMATION/POMODORO concept
       - "tasklist" checkable item for grouping together tasks without making them children of the item?
