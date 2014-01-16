@@ -59,9 +59,10 @@ import DatabaseTables
 import Utils
 import OnTopOfThings.Commands.Add
 import OnTopOfThings.Commands.Mod
-import OnTopOfThings.Data.DatabaseJson
 import OnTopOfThings.Data.FileJson
+import OnTopOfThings.Data.Json
 import OnTopOfThings.Data.Patch
+import OnTopOfThings.Data.Types
 
 modeInfo_import :: ModeInfo
 modeInfo_import = (mode_import, ModeRunIO optsRun_import)

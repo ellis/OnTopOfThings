@@ -54,10 +54,11 @@ import OnTopOfThings.Parsers.NumberList
 import OnTopOfThings.Actions.Action
 import OnTopOfThings.Actions.Env
 import OnTopOfThings.Commands.Show
-import OnTopOfThings.Data.DatabaseJson
 import OnTopOfThings.Data.FileJson
+import OnTopOfThings.Data.Json
 import OnTopOfThings.Data.Patch
 import OnTopOfThings.Data.PatchDatabase
+import OnTopOfThings.Data.Types
 
 
 itemToYamlLines :: Item -> BS.ByteString

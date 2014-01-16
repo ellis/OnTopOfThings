@@ -48,9 +48,8 @@ Ideas:
 - [x] Repl: mv to change parent
 - [x] Import: export tags
 - [x] Rebuild: handle tags
-- [ ] Run.hs: move sharable code to a new Utils.hs file
-- [ ] Action.Utils: organize functions, better names, stop using path chains?  Env should have IDs of repositories?
-- [ ] patch: create property rows
+- [x] Run.hs: move sharable code to a new Utils.hs file
+- [?] patch: create property rows
 - [ ] Repl: add ``mod`` command
 - [ ] Stages
    - it should be possible for the user to define custom stages
@@ -59,7 +58,7 @@ Ideas:
    - calendars: due, schedule
    - review: deferred, adaptive, week, month, quarter, year
    - if something is on the calendar, it needs a date
-   - if something is deferred, it needs a date
+   - if something is deferred, it needs a defer date
    - might want to track the duration that an item has spent in a queue
    - an item which has a defer date automatically gets staged in "deferred", but should still show up in grey-out color on the due or schedule calendar, if it has the relevant dates
    - an item which has a due date automatically becomes a project, and the user should say how long beforehand the project should show up as an active project
@@ -84,6 +83,8 @@ Ideas:
       - they need to have history of changes and updates
       - need to support back-and-forth between multiple users
 - [ ] Figure out CALENDAR concept
+   - it should be possible to display projects and goals on the calendar too
+   - it should be possible to display deferred events on the calendar in grey-out color
 - [ ] Figure out REPEATING TASK concept
 - [ ] Figure out TIME TRACKING/ESTIMATION/POMODORO concept
       - "tasklist" checkable item for grouping together tasks without making them children of the item?
@@ -93,6 +94,7 @@ Ideas:
       - maybe this could be a "shop" item with an extra quantity property
 - [ ] Figure out SCHEDULE concept (i.e. Dora's schedule with kids and me)
 - [ ] Go through my personal list of tasks and update it, seeing what needs to be added to program
+- [ ] Action.Utils: organize functions, better names, stop using path chains?  Env should have IDs of repositories (e.g. map of mount path to repo information)?
 - [ ] Repl: ``ls`` should sort output, directories first, and everything alphabetically
 - [ ] Repl: ``show`` should share code with ls
 - [ ] Item: consider renaming ItemForJson to Item, and separating more between Sqlite model and the data

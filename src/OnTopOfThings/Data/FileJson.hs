@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 {-# LANGUAGE OverloadedStrings #-}
 
+-- REFACTOR: rename module/file
 module OnTopOfThings.Data.FileJson
 where
 
@@ -41,61 +42,10 @@ import qualified Data.Yaml as Yaml
 
 import DatabaseTables
 import Utils
-import OnTopOfThings.Data.DatabaseJson
+import OnTopOfThings.Data.Json
 import OnTopOfThings.Data.Patch
+import OnTopOfThings.Data.Types
 
-data File
-  = PatchFile1
-    { patchFileTime :: UTCTime
-    , patchFileUser :: String
-    , patchFileComment :: Maybe String
-    , patchFileHunks :: [PatchHunk]
-    }
-  | CopyFile
-    { copyFileTime :: Maybe UTCTime
-    , copyFileUser :: Maybe String
-    , copyFileComment :: Maybe String
-    , copyFileItems :: [ItemForJson]
-    }
-  | CommandFile
-  deriving (Show)
-
-instance ToJSON File where
-  toJSON (CopyFile time_ user_ comment_ items) = object l where
-    l = catMaybes
-      [ Just $ "type" .= String "copy"
-      , Just $ "version" .= Number 1
-      , fmap (\x -> "time" .= String ((T.pack . formatISO8601) x)) time_
-      , fmap (\x -> "user" .= String (T.pack x)) user_
-      , fmap (\x -> "comment" .= String (T.pack x)) comment_
-      , Just $ "items" .= items
-      ]
-  toJSON (PatchFile1 time user comment_ hunks) = object l where
-    l = catMaybes
-      [ Just $ "type" .= String "patch1"
-      , Just $ "version" .= Number 1
-      , Just $ "time" .= String ((T.pack . formatISO8601) time)
-      , Just $ "user" .= String (T.pack user)
-      , fmap (\x -> "comment" .= String (T.pack x)) comment_
-      , Just $ "hunks" .= hunks
-      ]
-
-instance FromJSON File where
-  parseJSON (Object m) = case HM.lookup "type" m of
-    Just "copy" ->
-      CopyFile <$>
-        m .:? "time" <*>
-        m .:? "user" <*>
-        m .:? "comment" <*>
-        m .: "items"
-    Just "patch1" ->
-      PatchFile1 <$>
-        m .: "time" <*>
-        m .: "user" <*>
-        m .:? "comment" <*>
-        m .: "hunks"
-    Just x -> fail ("unknown file type: "++(show x))
-  parseJSON x = fail ("Unknown file object: "++(show x))
 
 loadFiles :: IO (Validation [Event])
 loadFiles = do
@@ -154,3 +104,9 @@ eventToPatchFile1 (Event time user comment _ version json) =
   case eitherDecode (BL.fromStrict json) of
     Left msg -> Left [msg]
     Right hunks -> Right (PatchFile1 time user comment hunks)
+
+eventToItems :: Event -> Validation [ItemForJson]
+eventToItems event =
+  case eitherDecode (BL.fromStrict $ eventData event) of
+    Left msg -> Left [msg]
+    Right item -> Right [item]

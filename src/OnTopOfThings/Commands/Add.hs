@@ -53,6 +53,7 @@ import Utils
 import OnTopOfThings.Actions.Action
 import OnTopOfThings.Actions.Env
 import OnTopOfThings.Actions.Run
+import OnTopOfThings.Actions.Utils
 import OnTopOfThings.Commands.Utils
 
 modeInfo_add :: ModeInfo
