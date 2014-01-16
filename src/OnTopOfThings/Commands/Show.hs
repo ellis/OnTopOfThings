@@ -1,5 +1,5 @@
 {-
-Copyright (C) 2013  Ellis Whitehead
+Copyright (C) 2013,2014  Ellis Whitehead
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@ mode_show = Mode
   , modeExpandAt = True
   , modeHelp = "Display items"
   , modeHelpSuffix = []
-  , modeArgs = ([], Nothing)
+  , modeArgs = ([], Just (flagArg updArgs "REPORT"))
   , modeGroupFlags = toGroup
     [ flagReq ["from"] (upd1 "from") "TIME" "Starting time for the listing. (default=today)"
     , flagReq ["search"] (upd1 "search") "TEXT" "Limit items to those whose title matches TEXT."
@@ -99,8 +99,17 @@ optsRun_show opts = do
             case opts_ of
               Left msgs -> return (Left msgs)
               Right opts' -> do
-                showTasks opts' t
-                return (Right ())
+                case optionsArgs opts of
+                  [] -> do
+                    showTasks opts' t
+                    return (Right ())
+                  ["today"] -> do
+                    let opts__ = optionsReplaceParamN "stage" ["today"] opts'
+                    case opts__ of
+                      Left msgs -> return (Left msgs)
+                      Right opts'' -> do
+                        showTasks opts'' t
+                        return (Right ())
   where
     fn :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation [String])
     fn value =
