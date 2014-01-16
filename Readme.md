@@ -1,3 +1,4 @@
+sudo apt-get install cabal-install
 cabal update
 cabal install cabal-install
 ghc-pkg unregister Cabal
