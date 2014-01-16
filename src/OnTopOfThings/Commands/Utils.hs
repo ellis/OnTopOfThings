@@ -112,12 +112,12 @@ createItem time opts = do
   title <- getMaybe "title"
   content <- getMaybe "content"
   closed <- getMaybeDate "closed"
-  start <- getMaybeDate "start"
-  end <- getMaybeDate "end"
-  due <- getMaybeDate "due"
-  review <- getMaybeDate "review"
+  start <- getMaybe "start"
+  end <- getMaybe "end"
+  due <- getMaybe "due"
+  defer <- getMaybe "defer"
   -- index
-  return $ Item id time "default" type_ status parent name title content stage closed start end due review Nothing
+  return $ Item id time "default" type_ status parent name title content stage closed start end due defer Nothing
   where
     map = optionsMap opts
     get name = case M.lookup name map of
@@ -146,10 +146,10 @@ updateItem time map item0 =
     getMaybe "content" itemContent <*>
     getMaybe "stage" itemStage <*>
     getMaybeDate "closed" itemClosed <*>
-    getMaybeDate "start" itemStart <*>
-    getMaybeDate "end" itemEnd <*>
-    getMaybeDate "due" itemDue <*>
-    getMaybeDate "review" itemReview <*>
+    getMaybe "start" itemStart <*>
+    getMaybe "end" itemEnd <*>
+    getMaybe "due" itemDue <*>
+    getMaybe "defer" itemDefer <*>
     Right (itemIndex item0)
   where
     get :: String -> (Item -> String) -> Validation String

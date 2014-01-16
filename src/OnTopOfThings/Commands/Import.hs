@@ -160,7 +160,7 @@ createItems (db, folders) m = do
                   , itemStart = Nothing
                   , itemEnd = Nothing
                   , itemDue = Nothing
-                  , itemReview = Nothing
+                  , itemDefer = Nothing
                   , itemIndex = Nothing
                   }
   let properties = if null tags then M.empty else M.fromList [("tag", tags)]
@@ -225,7 +225,7 @@ createFolders (db, folders) (path:rest) time parentUuid = createFolders (db', fo
     , itemStart = Nothing
     , itemEnd = Nothing
     , itemDue = Nothing
-    , itemReview = Nothing
+    , itemDefer = Nothing
     , itemIndex = Nothing
     }
   db' = M.insert uuid (ItemForJson folder M.empty) db

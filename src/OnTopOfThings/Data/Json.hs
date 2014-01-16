@@ -56,10 +56,10 @@ instance ToJSON ItemForJson where
       , getMaybe "content" itemContent
       , getMaybe "stage" itemStage
       , getMaybeDate "closed" itemClosed
-      , getMaybeDate "start" itemStart
-      , getMaybeDate "end" itemEnd
-      , getMaybeDate "due" itemDue
-      , getMaybeDate "review" itemReview
+      , getMaybe "start" itemStart
+      , getMaybe "end" itemEnd
+      , getMaybe "due" itemDue
+      , getMaybe "defer" itemDefer
       , M.lookup "tag" properties >>= \tags -> Just ("tag" .= Array (V.fromList (map (String . T.pack) tags)))
       ]
     get :: T.Text -> (Item -> String) -> Maybe Pair

@@ -117,10 +117,10 @@ createItem header uuid diffs = do
   content <- getMaybe "content"
   stage <- getMaybe "stage"
   closed <- getMaybeDate "closed"
-  start <- getMaybeDate "start"
-  end <- getMaybeDate "end"
-  due <- getMaybeDate "due"
-  review <- getMaybeDate "review"
+  start <- getMaybe "start"
+  end <- getMaybe "end"
+  due <- getMaybe "due"
+  review <- getMaybe "review"
   let item = Item uuid created creator type_ status parent name title content stage closed start end due review Nothing
   return (ItemForJson item properties)
   where
@@ -151,11 +151,11 @@ updateItem header diffs item0 = do
   content <- getMaybe "content" itemContent
   stage <- getMaybe "stage" itemStage
   closed <- getMaybeDate "closed" itemClosed
-  start <- getMaybeDate "start" itemStart
-  end <- getMaybeDate "end" itemEnd
-  due <- getMaybeDate "due" itemDue
-  review <- getMaybeDate "review" itemReview
-  return $ Item uuid created creator type_ status parent name title content stage closed start end due review Nothing
+  start <- getMaybe "start" itemStart
+  end <- getMaybe "end" itemEnd
+  due <- getMaybe "due" itemDue
+  defer <- getMaybe "defer" itemDefer
+  return $ Item uuid created creator type_ status parent name title content stage closed start end due defer Nothing
   where
     maps = diffsToMaps diffs
     map = diffMapsEqual maps
