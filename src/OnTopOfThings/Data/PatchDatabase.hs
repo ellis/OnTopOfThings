@@ -155,13 +155,14 @@ updateItem header diffs item0 = do
   end <- getMaybe "end" itemEnd
   due <- getMaybe "due" itemDue
   defer <- getMaybe "defer" itemDefer
-  return $ Item uuid created creator type_ status parent name title content stage closed start end due defer Nothing
+  return $ Item uuid created creator type_ status parent name title content stage closed start end due defer index
   where
     maps = diffsToMaps diffs
     map = diffMapsEqual maps
     uuid = (itemUuid item0)
     creator = itemCreator item0
     created = itemCreated item0
+    index = itemIndex item0
     get :: String -> (Item -> String) -> Validation String
     get name fn = case M.lookup name map of
       Just s -> Right s

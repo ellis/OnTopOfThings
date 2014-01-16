@@ -18,11 +18,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 {-# LANGUAGE OverloadedStrings #-}
 
 module OnTopOfThings.Data.Utils
-( parseTime'
+( formatTime'
+, parseTime'
 ) where
 
 import Control.Applicative ((<$>), (<*>), empty)
 import Control.Monad (mplus)
+import Data.List (intercalate)
 import Data.Maybe (catMaybes)
 import Data.Time.Calendar
 import Data.Time.Clock
@@ -61,3 +63,10 @@ parseTimeTime s =
   (fn "%H:%M") `mplus` (fn "%H:%M:%S") `mplus` (fn "%Hh")
   where
     fn format = parseTime defaultTimeLocale format s
+
+formatTime' :: Time -> String
+formatTime' (Time day time zone) = intercalate " " l where
+  l = catMaybes
+    [ Just (formatTime defaultTimeLocale "%Y-%m-%d" day)
+    , time >>= \time -> Just (formatTime defaultTimeLocale "%H:%M" time)
+    ]

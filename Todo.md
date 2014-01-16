@@ -51,13 +51,13 @@ Ideas:
 - [x] Run.hs: move sharable code to a new Utils.hs file
 - [x] patch: create property rows
 - [x] Repl: add ``mod`` command
-- [ ] patch: I think it's turning ``itemIndex`` to nothing, but it should leave the index alone
+- [?] patch: I think it's turning ``itemIndex`` to nothing, but it should leave the index alone
 - [ ] Repl: implement remaining ``mod`` options
 - [ ] Stages
    - it should be possible for the user to define custom stages
    - standard stages are as follows:
    - queues: inbox, today, next
-   - calendars: due, schedule
+   - calendars: due, event
    - review: deferred, adaptive, week, month, quarter, year
    - if something is on the calendar, it needs a date
    - if something is deferred, it needs a defer date

@@ -66,12 +66,14 @@ data ActionMkdir = ActionMkdir
 
 data ActionMod = ActionMod
   { modUuids :: [String]
+  , modType :: Maybe String
   , modStatus :: Maybe String
   , modParentUuid :: Maybe String
   , modName :: Maybe String
   , modTitle :: Maybe String
   , modContent :: Maybe String
   , modStage :: Maybe String
+  , modClosed :: Maybe UTCTime
   , modStart :: Maybe Time
   , modTag :: Maybe [String]
   , modOptions :: Options

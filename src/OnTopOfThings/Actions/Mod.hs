@@ -60,6 +60,7 @@ import OnTopOfThings.Data.FileJson
 import OnTopOfThings.Data.Patch
 import OnTopOfThings.Data.PatchDatabase
 import OnTopOfThings.Data.Utils
+import OnTopOfThings.Data.Types
 
 
 instance Action ActionMod where
@@ -84,6 +85,11 @@ instance Action ActionMod where
         case item_ of
           Left msgs -> return (Left msgs)
           Right item -> return (Right (Just item))
+    closed_ <- case M.lookup "closed" (optionsParams1 opts) of
+      Nothing -> return (Right Nothing)
+      Just s -> case parseISO8601 s of
+        Nothing -> return (Left ["Expected ISO8601 format for `closed` time: "++s])
+        Just utc -> return (Right (Just utc))
     start_ <- case M.lookup "start" (optionsParams1 opts) of
       Nothing -> return (Right Nothing)
       Just s -> return (parseTime' s >>= \time -> Right (Just time))
@@ -92,15 +98,18 @@ instance Action ActionMod where
       let uuids = map itemUuid items
       parentItem <- parentItem_
       let parentUuid = parentItem  >>= \item -> Just (itemUuid item)
+      closed <- closed_
       start <- start_
       return (ActionMod
                 { modUuids = uuids
+                , modType = M.lookup "type" (optionsParams1 opts)
                 , modStatus = M.lookup "status" (optionsParams1 opts)
                 , modParentUuid = parentUuid
                 , modName = M.lookup "name" (optionsParams1 opts)
                 , modTitle = M.lookup "title" (optionsParams1 opts)
                 , modContent = M.lookup "content" (optionsParams1 opts)
                 , modStage = M.lookup "stage" (optionsParams1 opts)
+                , modClosed = closed
                 , modStart = start
                 , modTag = M.lookup "tag" (optionsParamsN opts)
                 , modOptions = opts
@@ -118,15 +127,16 @@ mode_mod = Mode
   , modeHelpSuffix = []
   , modeArgs = ([], Just (flagArg updArgs "ID"))
   , modeGroupFlags = toGroup
-    [ flagReq ["parent", "p"] (upd1 "parent") "ID" "reference to parent of this item"
-    , flagReq ["closed"] (upd1 "closed") "TIME" "Time that this item was closed."
-    , flagReq ["id"] (updN "id") "ID" "A unique ID for this item. (NOT FOR NORMAL USE!)"
+    [ flagReq ["type"] (upd1 "type") "TYPE" "list|task. (default=task)"
+    , flagReq ["status"] (upd1 "status") "STATUS" "open|closed|deleted"
+    , flagReq ["parent", "p"] (upd1 "parent") "ID" "reference to parent of this item"
     , flagReq ["name", "n"] (upd1 "name") "NAME" "A filename for this item."
-    , flagReq ["stage", "s"] (upd1 "stage") "STAGE" "new|incubator|today. (default=new)"
-    , flagReq ["status"] (upd1 "status") "STATUS" "open|closed|deleted. (default=open)"
-    , flagReq ["tag", "t"] (updN "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
     , flagReq ["title"] (upd1 "title") "TITLE" "Title of the item."
-    , flagReq ["type"] (upd1 "type") "TYPE" "list|task. (default=task)"
+    , flagReq ["content"] (upd1 "content") "CONTENT" "Content of the item."
+    , flagReq ["stage", "s"] (upd1 "stage") "STAGE" "new|incubator|today. (default=new)"
+    , flagReq ["closed"] (upd1 "closed") "TIME" "Time that this item was closed."
+    , flagReq ["start"] (upd1 "start") "TIME" "Start time for this event."
+    , flagReq ["tag", "t"] (updN "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
     , flagHelpSimple updHelp
     ]
   }
@@ -135,9 +145,23 @@ mod :: Env -> ActionMod -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult
 mod env action | trace ("mod "++(show action)) False = undefined
 mod env action = do
   let diffs = concat $ catMaybes
-        [ (modParentUuid action) >>= \x -> Just [DiffEqual "parent" x]
-        , (modStage action) >>= \x -> Just [DiffEqual "stage" x]
+        [ get "type" modType
+        , get "status" modStatus
+        , get "parent" modParentUuid
+        , get "name" modName
+        , get "title" modTitle
+        , get "content" modContent
+        , get "stage" modStage
+        , getUTC "closed" modClosed
+        , getTime "start" modStart
         , (modTag action) >>= \l -> Just (map (\x -> DiffAdd "tag" x) l)
         ]
   let hunk = PatchHunk (modUuids action) diffs
   return (ActionResult [hunk] False [] [])
+  where
+    get :: String -> (ActionMod -> Maybe String) -> Maybe [Diff]
+    get name fn = (fn action) >>= \x -> Just [DiffEqual name x]
+    getUTC :: String -> (ActionMod -> Maybe UTCTime) -> Maybe [Diff]
+    getUTC name fn = (fn action) >>= \x -> Just [DiffEqual name (formatISO8601 x)]
+    getTime :: String -> (ActionMod -> Maybe Time) -> Maybe [Diff]
+    getTime name fn = (fn action) >>= \x -> Just [DiffEqual name (formatTime' x)]
