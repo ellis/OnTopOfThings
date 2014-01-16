@@ -51,8 +51,8 @@ Ideas:
 - [x] Run.hs: move sharable code to a new Utils.hs file
 - [x] patch: create property rows
 - [x] Repl: add ``mod`` command
-- [?] patch: I think it's turning ``itemIndex`` to nothing, but it should leave the index alone
-- [ ] Repl: implement remaining ``mod`` options
+- [x] patch: I think it's turning ``itemIndex`` to nothing, but it should leave the index alone
+- [x] Repl: implement remaining ``mod`` options
 - [ ] Stages
    - it should be possible for the user to define custom stages
    - standard stages are as follows:
