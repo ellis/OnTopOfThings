@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 module OnTopOfThings.Actions.Mod where
 
+import Prelude hiding (mod)
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger (NoLoggingT)
@@ -54,19 +55,19 @@ import OnTopOfThings.Parsers.NumberList
 import OnTopOfThings.Actions.Action
 import OnTopOfThings.Actions.Env
 import OnTopOfThings.Actions.Utils (lookupItem)
-import OnTopOfThings.Commands.Show
 --import OnTopOfThings.Data.DatabaseJson
 import OnTopOfThings.Data.FileJson
 import OnTopOfThings.Data.Patch
 import OnTopOfThings.Data.PatchDatabase
+import OnTopOfThings.Data.Utils
 
 
 instance Action ActionMod where
   runAction env action | trace ("runAction") False = undefined
-  runAction env action = mv env action >>= \result -> return (env, result)
+  runAction env action = mod env action >>= \result -> return (env, result)
   actionFromOptions env opts | trace ("actionFromOptions "++(show opts)) False = undefined
   actionFromOptions env opts = do
-    uuids_ <- case optionsArgs opts of
+    items_ <- case optionsArgs opts of
       [] -> return (Left ["mod: missing file operand", "Try 'mod --help' for more information."])
       refs':[] -> do
         case parseNumberList refs' of
@@ -76,19 +77,21 @@ instance Action ActionMod where
             case concatEithersN uuids_ of
               Left msgs -> return (Left msgs)
               Right uuids -> return (Right uuids)
-    parentUuid_ <- case M.lookup "parent" (optionsParams1 opts) of
-      Nothing -> Right Nothing
+    parentItem_ <- case M.lookup "parent" (optionsParams1 opts) of
+      Nothing -> return (Right Nothing)
       Just ref -> do
-            uuid_ <- lookupItem env ref
-            case uuid_ of
-              Left msgs -> return (Left msgs)
-              Right uuid -> return (Right (Just uuid))
+        item_ <- lookupItem env ref
+        case item_ of
+          Left msgs -> return (Left msgs)
+          Right item -> return (Right (Just item))
     start_ <- case M.lookup "start" (optionsParams1 opts) of
       Nothing -> return (Right Nothing)
-      Just s -> return (parseTime' s >>= \time -> Just time)
+      Just s -> return (parseTime' s >>= \time -> Right (Just time))
     return $ do
-      uuids <- uuids_
-      parentUuid <- parentUuid_
+      items <- items_
+      let uuids = map itemUuid items
+      parentItem <- parentItem_
+      let parentUuid = parentItem  >>= \item -> Just (itemUuid item)
       start <- start_
       return (ActionMod
                 { modUuids = uuids
@@ -128,34 +131,13 @@ mode_mod = Mode
     ]
   }
 
-mod :: Env -> ActionMv -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
+mod :: Env -> ActionMod -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 mod env action | trace ("mod "++(show action)) False = undefined
 mod env action = do
-  let diffs = catMaybes
-        [ (modParentUuid action) >>= \x -> Just (DiffEqual "parent" x)
-        , (modStage action) >>= \x -> Just (DiffEqual "stage" x)
-        , (modTag action) >>= \x -> Just (DiffAdd "tag" x)
+  let diffs = concat $ catMaybes
+        [ (modParentUuid action) >>= \x -> Just [DiffEqual "parent" x]
+        , (modStage action) >>= \x -> Just [DiffEqual "stage" x]
+        , (modTag action) >>= \l -> Just (map (\x -> DiffAdd "tag" x) l)
         ]
-  let hunk = PatchHunk sourceUuids diffs
+  let hunk = PatchHunk (modUuids action) diffs
   return (ActionResult [hunk] False [] [])
-  where
-    --opts = modOptions action
-    getMaybe name = case M.lookup name (optionsParams1 opts) of
-      Nothing -> Nothing
-      Just s -> Just (DiffEqual name s)
-    maps = diffsToMaps diffs
-    map = diffMapsEqual maps
-    properties = diffMapsAdd maps
-    creator = patchUser header
-    created = patchTime header
-    get name = case M.lookup name map of
-      Just x -> Right x
-      _ -> Left ["missing value for `" ++ name ++ "`"]
-    getMaybe name = case M.lookup name map of
-      Just s -> Right (Just s)
-      _ -> Right Nothing
-    getMaybeDate :: String -> Validation (Maybe UTCTime)
-    getMaybeDate name = case M.lookup name map of
-      Just s ->
-        (parseISO8601 s) `maybeToValidation` ["Could not parse time: " ++ s] >>= \time -> Right (Just time)
-      _ -> Right Nothing

@@ -48,7 +48,7 @@ import OnTopOfThings.Data.Patch
 
 type PropertyMap = M.Map String [String]
 
-type Time = (Day, Maybe TimeOfDay, Maybe TimeZone)
+data Time = Time Day (Maybe TimeOfDay) (Maybe TimeZone)
 
 data ItemForJson = ItemForJson Item PropertyMap
   deriving (Show)
@@ -69,4 +69,5 @@ data File
   | CommandFile
   deriving (Show)
 
-
+instance Show Time where
+  show (Time day time tz) = show (day, time, tz)

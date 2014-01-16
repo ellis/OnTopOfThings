@@ -22,19 +22,19 @@ module OnTopOfThings.Data.Utils
 ) where
 
 import Control.Applicative ((<$>), (<*>), empty)
-import Control.Monoid (mappend)
+import Control.Monad (mplus)
 import Data.Maybe (catMaybes)
+import Data.Time.Calendar
 import Data.Time.Clock
 import Data.Time.Format
 import Data.Time.ISO8601
+import Data.Time.LocalTime
 import System.Locale
 import Text.Regex (mkRegex, matchRegexAll)
+import qualified Data.Map as M
 
+import Utils
 import OnTopOfThings.Data.Types
-
-type PropertyMap = M.Map String [String]
-
-type Time = (Day, Maybe TimeOfDay, Maybe TimeZone)
 
 -- For some time handling notes, see: <http://tab.snarc.org/posts/haskell/2011-12-16-date-in-haskell.html>
 
@@ -44,19 +44,20 @@ parseTime' s = x where
     s1:[] -> parseTimeDate s1 >>= \day -> Just (Time day Nothing Nothing)
     s1:s2:[] ->
       case (parseTimeDate s1, parseTimeTime s2) of
-        (Just day, Just time) -> Just (Time day time Nothing)
+        (Just day, Just time) -> Just (Time day (Just time) Nothing)
   x = case x' of
     Nothing -> Left ["Could not parse time: "++s]
     Just dt -> Right dt
 
 parseTimeDate :: String -> Maybe Day
 parseTimeDate s =
-  (fn "%Y-%m-%d") `mappend` (fn "%m/%d/%Y") `mappend` (fn "%d.%m.%Y")
+  (fn "%Y-%m-%d") `mplus` (fn "%m/%d/%Y") `mplus` (fn "%d.%m.%Y")
   where
+    fn :: String -> Maybe Day
     fn format = parseTime defaultTimeLocale format s
 
 parseTimeTime :: String -> Maybe TimeOfDay
 parseTimeTime s =
-  (fn "%H:%M") `mappend` (fn "%H:%M:%S") `mappend` (fn "%Hh")
+  (fn "%H:%M") `mplus` (fn "%H:%M:%S") `mplus` (fn "%Hh")
   where
     fn format = parseTime defaultTimeLocale format s

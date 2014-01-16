@@ -46,6 +46,7 @@ import DatabaseUtils
 import Utils
 import OnTopOfThings.Actions.Action
 import OnTopOfThings.Actions.Env
+import qualified OnTopOfThings.Actions.Mod as Mod
 import OnTopOfThings.Actions.Mv
 import OnTopOfThings.Actions.Run
 import OnTopOfThings.Commands.Add
@@ -178,6 +179,21 @@ repl cwd = do
                 else do
                   action_ <- actionFromOptions env0 opts
                   case (action_ :: Validation ActionMkdir) of
+                    Left msgs -> return (env0, ActionResult [] False [] msgs)
+                    Right action -> do
+                      runAction env0 action
+        "mod":args -> do
+          let mode = Mod.mode_mod
+          case process mode args of
+            Left msg -> return (env0, ActionResult [] False [] [msg])
+            Right opts -> do
+              if optionsHelp opts
+                then do
+                  liftIO $ print $ helpText [] HelpFormatDefault mode
+                  return (env0, mempty)
+                else do
+                  action_ <- actionFromOptions env0 opts
+                  case (action_ :: Validation ActionMod) of
                     Left msgs -> return (env0, ActionResult [] False [] msgs)
                     Right action -> do
                       runAction env0 action
