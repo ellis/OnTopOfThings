@@ -53,6 +53,7 @@ Ideas:
 - [x] Repl: add ``mod`` command
 - [x] patch: I think it's turning ``itemIndex`` to nothing, but it should leave the index alone
 - [x] Repl: implement remaining ``mod`` options
+- [ ] Go through my personal list of tasks and update it, seeing what needs to be added to program
 - [ ] Stages
    - it should be possible for the user to define custom stages
    - standard stages are as follows:
@@ -95,7 +96,6 @@ Ideas:
       - in addition to the item, we need to specify quantity or other specifics
       - maybe this could be a "shop" item with an extra quantity property
 - [ ] Figure out SCHEDULE concept (i.e. Dora's schedule with kids and me)
-- [ ] Go through my personal list of tasks and update it, seeing what needs to be added to program
 - [ ] Action.Utils: organize functions, better names, stop using path chains?  Env should have IDs of repositories (e.g. map of mount path to repo information)?
 - [ ] Repl: ``ls`` should sort output, directories first, and everything alphabetically
 - [ ] Repl: ``show`` should share code with ls
