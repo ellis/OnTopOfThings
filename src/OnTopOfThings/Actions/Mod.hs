@@ -70,10 +70,11 @@ instance Action ActionMod where
   actionFromOptions env opts = do
     items_ <- case optionsArgs opts of
       [] -> return (Left ["mod: missing file operand", "Try 'mod --help' for more information."])
-      refs':[] -> do
-        case parseNumberList refs' of
+      args -> do
+        case concatEithersN (map parseNumberList args) of
           Left msgs -> return (Left msgs)
-          Right refs -> do
+          Right refs' -> do
+            let refs = concat refs'
             uuids_ <- mapM (lookupItem env) refs
             case concatEithersN uuids_ of
               Left msgs -> return (Left msgs)

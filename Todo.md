@@ -56,8 +56,10 @@ Ideas:
 - [x] Main: write files using UTC date for filename prefix
 - [x] Repl: add ``--delete`` option to ``close`` command
 - [x] Main: refactor repl actions to remove some code duplication
+- [x] Mod: bug: crashes on ``mod 272 -s month 273``
 - [ ] Repl: add some coloring to prompt and errors
 - [ ] Show: bug: folder names are sometimes listed multiple times
+- [ ] Show: bug: empty folders shouldn't be listed normally
 - [ ] Go through my personal list of tasks and update it, seeing what needs to be added to program
 - [ ] Stages
    - it should be possible for the user to define custom stages
