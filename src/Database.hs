@@ -35,10 +35,9 @@ import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
-import Database.Persist (PersistQuery)
-import Database.Persist.Sql (insert, deleteWhere)
+import Database.Persist
+import Database.Persist.Sql
 --import Database.Persist.Sqlite
-import Database.Esqueleto
 import Database.Persist.TH
 
 import Data.Aeson (encode, decode)
@@ -65,9 +64,7 @@ databaseAddRecords records = do
       --return command
     load :: SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
     load = do
-      l <- select $ from $ \t -> do
-        orderBy [asc (t ^. CommandTime)]
-        return t
+      l <- selectList [] [Asc CommandTime]
       results' <- mapM (processCommand . entityVal) l
       let results'' = concatEithersN results'
       let results''' = fmap (\_ -> ()) results''
@@ -77,19 +74,13 @@ databaseAddRecords records = do
 databaseUpdateIndexes :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
 databaseUpdateIndexes = do
   -- Get a list of open tasks (type=task, status=open)
-  entities <- select $ from $ \t -> do
-    where_ (t ^. ItemType ==. val "task" &&. t ^. ItemStatus ==. val "open")
-    orderBy [asc (t ^. ItemCreated)]
-    return t
+  entities <- selectList [ItemType ==. "task", ItemStatus ==. "open"] [Asc ItemCreated]
   let xs = (zip [1..] entities) :: [(Int, Entity Item)]
   mapM_ assignIndex xs
   where
     --assignIndex :: (Int, Entity Item) 
     assignIndex (index, entity) = do
-      update $ \t -> do
-        set t [ItemIndex =. val (Just index)]
-        --where_ (t ^. ItemId ==. val (entityKey entity)) -- TODO: How to set by key?
-        where_ (t ^. ItemUuid ==. val (itemUuid $ entityVal entity))
+      updateWhere [ItemUuid ==. (itemUuid $ entityVal entity)] [ItemIndex =. Just index]
 
 --databaseProcessCommandTable :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
 --databaseProcessCommandTable = do
