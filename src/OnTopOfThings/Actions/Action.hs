@@ -50,6 +50,7 @@ data ActionCat = ActionCat
 
 data ActionClose = ActionClose
   { closeUuids :: [String]
+  , closeDelete :: Bool
   --, closeComment :: Maybe String
   } deriving (Show)
 

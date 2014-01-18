@@ -72,11 +72,17 @@ instance Action ActionCat where
 instance Action ActionClose where
   runAction env action = close env action >>= \result -> return (env, result)
   actionFromOptions env opts = do
-    items_ <- mapM (lookupItem env) (optionsArgs opts)
-    case concatEithersN items_ of
+    let refs_ = concatEithersN $ map parseNumberList (optionsArgs opts)
+    case refs_ of
       Left msgs -> return (Left msgs)
-      Right items -> return (Right (ActionClose uuids)) where
-        uuids = map itemUuid items
+      Right refs' -> do
+        let refs = concat refs'
+        items_ <- mapM (lookupItem env) refs
+        case concatEithersN items_ of
+          Left msgs -> return (Left msgs)
+          Right items -> return (Right (ActionClose uuids delete)) where
+            uuids = map itemUuid items
+            delete = Set.member "delete" (optionsParams0 opts)
   actionToRecordArgs action = Nothing
 
 instance Action ActionLs where
@@ -187,7 +193,8 @@ mode_close = Mode
   , modeHelpSuffix = []
   , modeArgs = ([], Just (flagArg updArgs "FILE"))
   , modeGroupFlags = toGroup
-    [ flagNone ["help"] updHelp "display this help and exit"
+    [ flagNone ["delete", "d"] (upd0 "delete") "Mark the FILE(s) as deleted rather than closed"
+    , flagNone ["help"] updHelp "display this help and exit"
     ]
   }
 
@@ -273,9 +280,9 @@ cat (Env time user cwd) action@(ActionCat args0) = do
       return mempty
 
 close :: Env -> ActionClose -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
-close env (ActionClose uuids) = do
+close env (ActionClose uuids delete) = do
   let diffs =
-        [ DiffEqual "status" "closed"
+        [ DiffEqual "status" (if delete then "deleted" else "closed")
         , DiffEqual "closed" (formatISO8601 (envTime env))
         ]
   let hunk = PatchHunk uuids diffs

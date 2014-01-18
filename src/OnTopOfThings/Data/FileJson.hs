@@ -95,8 +95,8 @@ loadFile path = do
       event = Event time user comment "patch1" 1 data_
 
 saveFileAsJson :: File -> FilePath -> IO ()
-saveFileAsJson file chguuid = do
-  let filepath = joinPath ["testdata", chguuid ++ ".json"]
+saveFileAsJson file filename = do
+  let filepath = joinPath ["testdata", filename ++ ".json"]
   BL.writeFile filepath $ encode file
 
 eventToPatchFile1 :: Event -> Validation File

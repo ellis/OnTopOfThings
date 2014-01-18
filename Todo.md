@@ -53,6 +53,9 @@ Ideas:
 - [x] Repl: add ``mod`` command
 - [x] patch: I think it's turning ``itemIndex`` to nothing, but it should leave the index alone
 - [x] Repl: implement remaining ``mod`` options
+- [x] Main: write files using UTC date for filename prefix
+- [ ] Main: refactor repl actions to remove the code duplication
+- [ ] Repl: add ``--delete`` option to ``close`` command
 - [ ] Go through my personal list of tasks and update it, seeing what needs to be added to program
 - [ ] Stages
    - it should be possible for the user to define custom stages
@@ -104,7 +107,7 @@ Ideas:
 - [ ] Repl: ``show`` should share code with ls
 - [ ] Item: consider renaming ItemForJson to Item, and separating more between Sqlite model and the data
 - [ ] Ask online whether it's possible to search a (Maybe String) field with esqueleto
-- [ ] Repl: add ``mod`` command
+- [ ] Repl: add ``rm`` command as alias for ``close --delete``?
 - [ ] Report bug with Yaml/Aeson, where a string of digits (e.g. "name: 20130509") causes an error when being read back in
 - [ ] Rename ``Import`` to ``Convert``
 - [ ] instead of using "otot.db" or "repl.db", get file from the options and have a default value

@@ -25,11 +25,13 @@ import Control.Monad.Trans.Resource (ResourceT)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Monoid
 import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time.Format (formatTime)
 import System.Console.CmdArgs.Explicit
 import System.Environment
 import System.Exit
 import System.FilePath.Posix (splitDirectories)
 import System.IO
+import System.Locale (defaultTimeLocale)
 import Database.Persist (insert)
 --import Database.Persist.Sqlite (SqlPersistT, runSqlite)
 import Database.Persist.Sqlite
@@ -154,20 +156,8 @@ repl cwd = do
                     Right action -> do
                       runAction env0 action
         "close":args -> do
-          let mode = OnTopOfThings.Actions.Run.mode_close
-          case process mode args of
-            Left msg -> return (env0, ActionResult [] False [] [msg])
-            Right opts -> do
-              if optionsHelp opts
-                then do
-                  liftIO $ print $ helpText [] HelpFormatDefault mode
-                  return (env0, mempty)
-                else do
-                  action_ <- actionFromOptions env0 opts
-                  case (action_ :: Validation ActionClose) of
-                    Left msgs -> return (env0, ActionResult [] False [] msgs)
-                    Right action -> do
-                      runAction env0 action
+          x_ <- runAction' env0 OnTopOfThings.Actions.Run.mode_close args
+          runAction'' env0 (x_ :: Validation (Maybe ActionClose))
         "mkdir":args -> do
           case process mode_mkdir args of
             Left msg -> return (env0, ActionResult [] False [] [msg])
@@ -255,7 +245,8 @@ repl cwd = do
             -- save patch
             chguuid <- liftIO $ U4.nextRandom >>= return . U.toString
             let file = PatchFile1 time "default" Nothing hunks
-            liftIO $ saveFileAsJson file chguuid
+            let filename = (formatTime defaultTimeLocale "%Y%m%d_%H%M%S-" time) ++ (take 8 chguuid)
+            liftIO $ saveFileAsJson file filename
             -- patch database
             let header = Patch time "default" hunks
             result_ <- patch header
@@ -272,6 +263,29 @@ repl cwd = do
 --              let command = DB.recordToCommand record
 --              -- Command saved to DB
 --              insert command
+
+runAction' :: (Action a) => Env -> Mode Options -> [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (Maybe a))
+runAction' env0 mode args = do
+  let mode = OnTopOfThings.Actions.Run.mode_close
+  case process mode args of
+    Left msg -> return (Left [msg])
+    Right opts -> do
+      if optionsHelp opts
+        then do
+          liftIO $ print $ helpText [] HelpFormatDefault mode
+          return (Right Nothing)
+        else do
+          action_ <- actionFromOptions env0 opts
+          case action_ of
+            Left msgs -> return (Left msgs)
+            Right action -> return (Right (Just action))
+
+runAction'' :: (Action a) => Env -> Validation (Maybe a) -> SqlPersistT (NoLoggingT (ResourceT IO)) (Env, ActionResult)
+runAction'' env0 action_ = do
+  case action_ of
+    Left msgs -> return (env0, ActionResult [] False [] msgs)
+    Right (Just action) -> runAction env0 action
+    Right Nothing -> return (env0, mempty)
 
 -------------------------------------------------------------
 
