@@ -58,7 +58,7 @@ Ideas:
 - [x] Main: refactor repl actions to remove some code duplication
 - [x] Mod: bug: crashes on ``mod 272 -s month 273``
 - [x] Go through my personal list of tasks and update it, seeing what needs to be added to program
-- [ ] get rid of esqueleto dependency so that I can hopefully get workable dependencies on my laptop
+- [x] get rid of esqueleto dependency so that I can hopefully get workable dependencies on my laptop
 - [ ] Repl: add some coloring to prompt and errors
 - [ ] Show: bug: folder names are sometimes listed multiple times
 - [ ] Show: bug: empty folders shouldn't be listed normally

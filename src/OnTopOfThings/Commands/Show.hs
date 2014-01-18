@@ -32,10 +32,10 @@ import Data.Maybe (catMaybes, fromMaybe)
 import Data.Monoid
 import Data.Time.Clock
 import Data.Time.Format (parseTime, formatTime)
-import Database.Persist (PersistQuery)
+import Database.Persist
 import Database.Persist.Sql (insert, deleteWhere)
 import Database.Persist.Sqlite (SqlPersistT, runSqlite)
-import Database.Esqueleto
+import Database.Persist.Types
 import Debug.Trace
 import System.Console.CmdArgs.Explicit
 import System.FilePath (joinPath)
@@ -120,27 +120,26 @@ optsRun_show opts = do
           --liftIO $ print uuids_
           return $ concatEithersN uuids_
 
-expr' opts fromTime t = expr3 where
+expr' opts fromTime = expr4 where
   m = optionsMap opts
   -- select tasks which are open or were just closed today
-  expr0 = (t ^. ItemType ==. val "task" &&. (t ^. ItemStatus ==. val "open" ||. t ^. ItemClosed >. val (Just fromTime)))
+  expr0 = [ItemType ==. "task", FilterOr [ItemStatus ==. "open", ItemClosed >. Just fromTime]]
   -- restrict status
   expr1 = case splitN "status" of
     [] -> expr0
-    l -> expr0 &&. (in_ (t ^. ItemStatus) (valList l))
+    l -> expr0 ++ [ItemStatus <-. l]
   -- restrict stage
   expr2 = case splitNMaybe "stage" of
     [] -> expr1
-    l -> expr1 &&. (in_ (t ^. ItemStage) (valList l))
+    l -> expr1 ++ [ItemStage <-. l]
   -- restrict parent
   expr3 = case M.lookup "parent" (optionsParamsN opts) of
     Nothing -> expr2
-    Just l -> expr2 &&. (in_ (t ^. ItemParent) (valList (map Just l)))
+    Just l -> expr2 ++ [ItemParent <-. (map Just l)]
   -- restrict by searching for text in title
-  -- FIXME: doesn't work with a Maybe field!
---  expr4 = case M.lookup "search" (optionsParams1 opts) of
---    Nothing -> expr3
---    Just s -> expr3 &&. (t ^. ItemTitle `like` (just $ val ("%"++s++"%")))
+  expr4 = case M.lookup "search" (optionsParams1 opts) of
+    Nothing -> expr3
+    Just s -> expr3 ++ [Filter ItemTitle (Left $ Just ("%"++s++"%")) (BackendSpecificFilter "like")]
   split :: Maybe (Maybe String) -> [String]
   split (Just (Just s)) = splitOn "," s
   split _ = []
@@ -159,14 +158,12 @@ showTasks opts fromTime | trace ("showTasks: "++(show opts)) False = undefined
 showTasks opts fromTime = do
   -- Load all tasks that meet the user's criteria
   tasks' <- case M.lookup "tag" (optionsParamsN opts) of
-    Nothing -> do
-      select $ from $ \t -> do
-        where_ (expr' opts fromTime t)
-        return t
-    Just l ->
-      select $ from $ \(i, p) -> do
-        where_ ((expr' opts fromTime i) &&. p ^. PropertyUuid ==. i ^. ItemUuid &&. p ^. PropertyName ==. val "tag" &&. (in_ (p ^. PropertyValue) (valList l)))
-        return i
+    Nothing -> selectList (expr' opts fromTime) []
+    Just l -> selectList (expr' opts fromTime) []
+      -- FIXME: implement this:
+      --select $ from $ \(i, p) -> do
+        --where_ ((expr' opts fromTime i) &&. p ^. PropertyUuid ==. i ^. ItemUuid &&. p ^. PropertyName ==. val "tag" &&. (in_ (p ^. PropertyValue) (valList l)))
+        --return i
   let tasks = map entityVal tasks'
   --liftIO $ print tasks
   -- Recursively load all parent items
@@ -178,9 +175,7 @@ showTasks opts fromTime = do
   let children = concat $ map (filterChildren items) lists :: [Item]
   let orphans = filter (\task -> (itemParent task) == Nothing) tasks
   -- Remove all previous indexes
-  update $ \t -> do
-    set t [ItemIndex =. nothing]
-    where_ (not_ $ isNothing (t ^. ItemIndex))
+  updateWhere [ItemIndex !=. Nothing] [ItemIndex =. Nothing]
   let itemToIndex_l = zip (children ++ orphans) [1..]
   let uuidToIndex_m = M.fromList $ map (\(item, index) -> (itemUuid item, index)) itemToIndex_l
   -- Set new indexes
@@ -200,9 +195,7 @@ showTasks opts fromTime = do
   where
     updateIndex :: (Item, Int) -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
     updateIndex (item, index) = do
-      update $ \t -> do
-        set t [ItemIndex =. val (Just index)]
-        where_ (t ^. ItemUuid ==. val (itemUuid item))
+      updateWhere [ItemUuid ==. (itemUuid item)] [ItemIndex =. Just index]
     fn :: M.Map String Int -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
     fn uuidToIndex_m item
       | isContainerItem item = do
@@ -240,9 +233,7 @@ loadByUuid uuids = do
   return $ concat item_ll
   where
     fn uuid = do
-      entities <- select $ from $ \t -> do
-        where_ (t ^. ItemUuid ==. val uuid)
-        return t
+      entities <- selectList [ItemUuid ==. uuid] []
       return $ map entityVal entities
 
 -- Get the children of the given 'parent' from the 'items'
@@ -275,10 +266,8 @@ itemToString opts item = do
   tags <- if Set.member "hide-tags" (optionsParams0 opts)
     then return ([] :: [String])
     else do
-      tags' <- select $ from $ \t -> do
-        where_ (t ^. PropertyUuid ==. val (itemUuid item) &&. t ^. PropertyName ==. val "tag")
-        return (t ^. PropertyValue)
-      return $ map (\(Value s) -> '+':s) tags'
+      tags' <- selectList [PropertyUuid ==. itemUuid item, PropertyName ==. "tag"] []
+      return $ map (\x -> '+':(propertyValue $ entityVal x)) tags'
   l <- getParts tags
   return $ unwords l
   where
