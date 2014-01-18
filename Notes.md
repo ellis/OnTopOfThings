@@ -216,6 +216,17 @@ So a trip can be thought of as a project with subprojects and due dates.
 
 When something is checked off on the pack or shop list, it should not be hidden.
 
+I've currently decided to work on the packing/shopping lists separately.
+They may require a different data structure.  Features I'd like
+for shopping include:
+
+* have a database of supplies/ingredients (preferably using some ontology)
+* have recipes
+* be able to select the recipes and specify number of servings
+* that should product a list of what's needed
+* the what's-needed list can be used to create a shopping list, depending on what you already have
+* the shopping list can also be added to for other non-ingredient items, such as toilet paper.
+
 ## Flow from command line to database
 
 * Options: command line options and arguments, current parsed by CmdArgs
