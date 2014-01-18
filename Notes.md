@@ -58,6 +58,8 @@
     * description
     * after/dependsOn (UUID)
     * status (open, closed, deleted)
+    * stage/heading/class/classification/category/basket/group/grouping/actionstatus/horizon/frame/scope/zone/dominion/sphere/aspect/realm/span/range/timespan/stretch/timeframe
+    * grouping: queue, calendar, review, reference, null
     * stage (new, external, maybe, incubator/standby/hold/limbo/gestation/backlog, queue, today, now, done)
     * stage (new, external, review, queue, today, now, done)
     * close reason (for tickets/bugs: fixed, won't fix, not a bug, ...)
@@ -85,7 +87,7 @@
     * some properties are only relevant for some item types.  E.g., stage generally isn't needed for lists
     * what about typical bug status, such as 'accepted'?  I suppose that's a stage?
 * item relations:
-    * parent (realm, role, context, outcome, etc)
+    * parent/container/folder (realm, role, context, outcome, etc)
     * tag
     * user
     * list
@@ -192,6 +194,27 @@ Want to track age in queue, and age overdue for review.
    - an item which has a due date automatically becomes a project, and the user should say how long beforehand the project should show up as an active project
    - an item which has a start date (but no due date) automatically goes on the schedule
    - probably need to have 'date' and 'time' fields instead of just 'time' fields in Item, since we need to distinguish being an item being scheduled for a given day vs being scheduled at midnight on a given day
+
+## Packing/shopping list
+
+Packing and shopping lists differ from task lists significantly.
+They may be based on a database of items which you select among for your next trip.
+Each item can be given a trip-specific quantity and other specifications.
+For shopping items, you might want to specify which store(s) they can be bought at.
+For packing items, you might want to specify which piece of luggage they go in.
+You might want to record the prices of shopping items for each store in the database,
+and since prices change over time, that would need to be handled appropriately somehow.
+
+When a user looks at a shopping folder, they should see a list of all non-deleted
+shopping items, as well as non-closed template lists and special-occasion lists from the past.
+
+Travel lists will include:
+* Things to pack
+* Things to take care of at various stages before leaving
+* Things to do while traveling
+So a trip can be thought of as a project with subprojects and due dates.
+
+When something is checked off on the pack or shop list, it should not be hidden.
 
 ## Flow from command line to database
 

@@ -58,8 +58,11 @@ Ideas:
    - it should be possible for the user to define custom stages
    - standard stages are as follows:
    - queues: inbox, today, next
-   - calendars: due, event
-   - review: deferred, adaptive, week, month, quarter, year
+   - review: adaptive, week, month, quarter, year
+   - calendars: due, event, deferred
+   - project
+   - reference
+   - other: closed, deleted
    - if something is on the calendar, it needs a date
    - if something is deferred, it needs a defer date
    - might want to track the duration that an item has spent in a queue
