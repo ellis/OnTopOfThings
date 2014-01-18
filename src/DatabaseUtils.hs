@@ -33,9 +33,8 @@ import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
 import Data.Generics.Aliases (orElse)
 import Data.Time.ISO8601 (formatISO8601Millis)
-import Database.Persist (PersistQuery)
-import Database.Persist.Sql (insert, deleteWhere)
-import Database.Esqueleto
+import Database.Persist
+import Database.Persist.Sql
 import Database.Persist.TH
 import Debug.Trace
 import Text.Read (readMaybe)
@@ -50,26 +49,24 @@ import DatabaseTables
 databaseLookupUuid :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Maybe String)
 --databaseLookupUuid ref | trace ("databaseLookupUuid: " ++ ref) False = undefined
 databaseLookupUuid ref = do
-  a <- fn (\t -> t ^. ItemUuid ==. val ref)
+  a <- fn [ItemUuid ==. ref]
   case a of
     Just uuid -> return a
     _ -> do
       let n' = readMaybe ref :: Maybe Int
       b <- case n' of
         Nothing -> return Nothing
-        Just n -> fn (\t -> t ^. ItemIndex ==. val (Just n))
+        Just n -> fn [ItemIndex ==. (Just n)]
       case b of
         Just uuid -> return b
         _ -> do
-          c <- fn (\t -> t ^. ItemName ==. val (Just ref))
+          c <- fn [ItemName ==. Just ref]
           return c
   where
-    fn expr = do
+    fn :: [Filter Item] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Maybe String)
+    fn filters = do
       --if ref == "fde44ebb-8c4d-44f2-b2dd-a228d9530030" then (liftIO . print) "databaseLookupUuid" else return ()
-      l <- select $ from $ \t -> do
-        where_ (expr t)
-        limit 2
-        return (t ^. ItemUuid)
+      l <- selectList filters [LimitTo 2]
       case l of
-        [Value uuid] -> return $ Just uuid
+        entity:[] -> return $ Just (itemUuid $ entityVal entity)
         _ -> return $ Nothing
