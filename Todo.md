@@ -54,8 +54,10 @@ Ideas:
 - [x] patch: I think it's turning ``itemIndex`` to nothing, but it should leave the index alone
 - [x] Repl: implement remaining ``mod`` options
 - [x] Main: write files using UTC date for filename prefix
-- [ ] Main: refactor repl actions to remove the code duplication
-- [ ] Repl: add ``--delete`` option to ``close`` command
+- [x] Repl: add ``--delete`` option to ``close`` command
+- [x] Main: refactor repl actions to remove some code duplication
+- [ ] Repl: add some coloring to prompt and errors
+- [ ] Show: bug: folder names are sometimes listed multiple times
 - [ ] Go through my personal list of tasks and update it, seeing what needs to be added to program
 - [ ] Stages
    - it should be possible for the user to define custom stages

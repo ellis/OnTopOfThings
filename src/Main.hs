@@ -159,49 +159,14 @@ repl cwd = do
           x_ <- runAction' env0 OnTopOfThings.Actions.Run.mode_close args
           runAction'' env0 (x_ :: Validation (Maybe ActionClose))
         "mkdir":args -> do
-          case process mode_mkdir args of
-            Left msg -> return (env0, ActionResult [] False [] [msg])
-            Right opts -> do
-              if optionsHelp opts
-                then do
-                  liftIO $ print $ helpText [] HelpFormatDefault mode_mkdir
-                  return (env0, mempty)
-                else do
-                  action_ <- actionFromOptions env0 opts
-                  case (action_ :: Validation ActionMkdir) of
-                    Left msgs -> return (env0, ActionResult [] False [] msgs)
-                    Right action -> do
-                      runAction env0 action
+          x_ <- runAction' env0 mode_mkdir args
+          runAction'' env0 (x_ :: Validation (Maybe ActionMkdir))
         "mod":args -> do
-          let mode = Mod.mode_mod
-          case process mode args of
-            Left msg -> return (env0, ActionResult [] False [] [msg])
-            Right opts -> do
-              if optionsHelp opts
-                then do
-                  liftIO $ print $ helpText [] HelpFormatDefault mode
-                  return (env0, mempty)
-                else do
-                  action_ <- actionFromOptions env0 opts
-                  case (action_ :: Validation ActionMod) of
-                    Left msgs -> return (env0, ActionResult [] False [] msgs)
-                    Right action -> do
-                      runAction env0 action
+          x_ <- runAction' env0 Mod.mode_mod args
+          runAction'' env0 (x_ :: Validation (Maybe ActionMod))
         "mv":args -> do
-          let mode = mode_mv
-          case process mode args of
-            Left msg -> return (env0, ActionResult [] False [] [msg])
-            Right opts -> do
-              if optionsHelp opts
-                then do
-                  liftIO $ print $ helpText [] HelpFormatDefault mode
-                  return (env0, mempty)
-                else do
-                  action_ <- actionFromOptions env0 opts
-                  case (action_ :: Validation ActionMv) of
-                    Left msgs -> return (env0, ActionResult [] False [] msgs)
-                    Right action -> do
-                      runAction env0 action
+          x_ <- runAction' env0 mode_mv args
+          runAction'' env0 (x_ :: Validation (Maybe ActionMv))
         "newtask":args -> do
           case process mode_newtask args of
             Left msg -> return (env0, ActionResult [] False [] [msg])
@@ -266,7 +231,6 @@ repl cwd = do
 
 runAction' :: (Action a) => Env -> Mode Options -> [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation (Maybe a))
 runAction' env0 mode args = do
-  let mode = OnTopOfThings.Actions.Run.mode_close
   case process mode args of
     Left msg -> return (Left [msg])
     Right opts -> do
