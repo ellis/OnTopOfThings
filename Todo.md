@@ -60,13 +60,15 @@ Ideas:
 - [x] Go through my personal list of tasks and update it, seeing what needs to be added to program
 - [x] get rid of esqueleto dependency so that I can hopefully get workable dependencies on my laptop
 - [x] test: create a git repository for syncing my lists
-- [ ] Repl: ``newtask`` should output a CopyFile instead of a PatchFile
 - [ ] start working on calendar
 - [ ] Config: load config file on program startup
 - [ ] Config: load data directory, load sqlite filename
 - [ ] Repl: add some coloring to prompt and errors
 - [ ] Show: bug: folder names are sometimes listed multiple times
 - [ ] Show: bug: empty folders shouldn't be listed normally
+- [ ] Show: ``oldest`` report, which orders from oldest to newest
+- [ ] Show: ``-n`` options to limit number of tasks to display, in particular for listing items in some order (such as oldest first)
+- [ ] Repl: ``newtask`` should output a CopyFile instead of a PatchFile
 - [ ] Stages
    - it should be possible for the user to define custom stages
    - standard stages are as follows:
@@ -144,6 +146,7 @@ Ideas:
 - [ ] ``uuidRoot`` should not be all zeros: generate a root UUID somehow, probably need to have it in a config file in the data directory
 - [ ] Add support for lists as an ordered sequence of items
 - [ ] Show: decide how to handle AND vs OR queries for tags and contexts
+- [ ] consider using pretty JSON output for file output, especially for ``import``
 
 ## Design 2
 - [x] Command: instead of storing data changes, store commands

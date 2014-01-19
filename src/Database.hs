@@ -1,5 +1,5 @@
 {-
-Copyright (C) 2013  Ellis Whitehead
+Copyright (C) 2013,2014  Ellis Whitehead
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -24,11 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 {-# LANGUAGE TypeFamilies      #-}
 
 module Database
-( Command(..)
-, databaseInit
-, databaseAddRecords
-, databaseUpdateIndexes
-, recordToCommand
+( databaseInit
 ) where
 
 import Control.Monad.IO.Class (liftIO, MonadIO)
@@ -53,53 +49,53 @@ databaseInit :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
 databaseInit =
   runMigration migrateAll
 
-databaseAddRecords :: [C.CommandRecord] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
-databaseAddRecords records = do
-  mapM_ insert' records
-  load --records'
-  where
-    insert' record = do
-      let command = recordToCommand record
-      insert command
-      --return command
-    load :: SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
-    load = do
-      l <- selectList [] [Asc CommandTime]
-      results' <- mapM (processCommand . entityVal) l
-      let results'' = concatEithersN results'
-      let results''' = fmap (\_ -> ()) results''
-      return results'''
-
--- Set index value on open tasks
-databaseUpdateIndexes :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
-databaseUpdateIndexes = do
-  -- Get a list of open tasks (type=task, status=open)
-  entities <- selectList [ItemType ==. "task", ItemStatus ==. "open"] [Asc ItemCreated]
-  let xs = (zip [1..] entities) :: [(Int, Entity Item)]
-  mapM_ assignIndex xs
-  where
-    --assignIndex :: (Int, Entity Item) 
-    assignIndex (index, entity) = do
-      updateWhere [ItemUuid ==. (itemUuid $ entityVal entity)] [ItemIndex =. Just index]
+--databaseAddRecords :: [C.CommandRecord] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+--databaseAddRecords records = do
+--  mapM_ insert' records
+--  load --records'
+--  where
+--    insert' record = do
+--      let command = recordToCommand record
+--      insert command
+--      --return command
+--    load :: SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+--    load = do
+--      l <- selectList [] [Asc CommandTime]
+--      results' <- mapM (processCommand . entityVal) l
+--      let results'' = concatEithersN results'
+--      let results''' = fmap (\_ -> ()) results''
+--      return results'''
+--
+---- Set index value on open tasks
+--databaseUpdateIndexes :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
+--databaseUpdateIndexes = do
+--  -- Get a list of open tasks (type=task, status=open)
+--  entities <- selectList [ItemType ==. "task", ItemStatus ==. "open"] [Asc ItemCreated]
+--  let xs = (zip [1..] entities) :: [(Int, Entity Item)]
+--  mapM_ assignIndex xs
+--  where
+--    --assignIndex :: (Int, Entity Item) 
+--    assignIndex (index, entity) = do
+--      updateWhere [ItemUuid ==. (itemUuid $ entityVal entity)] [ItemIndex =. Just index]
 
 --databaseProcessCommandTable :: SqlPersistT (NoLoggingT (ResourceT IO)) ()
 --databaseProcessCommandTable = do
 --  l <- selectList ([] :: [Filter Command]) []
 --  mapM_ (\entity -> processCommand (entityVal entity)) l
 
-recordToCommand :: C.CommandRecord -> Command
-recordToCommand (C.CommandRecord format time user cmd args) =
-  Command format time (T.unpack user) (T.unpack cmd) args'
-  where
-    args' = BL.unpack $ encode args
-
-processCommand :: Command -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
-processCommand command = do
-  case commandCmd command of
-    --"add" -> processCommand_add time args
-    --"mod" -> processCommand_mod time args
-    cmd -> return $ Left ["processCommand: Unknown command `"++cmd++"`"]
-  where
-    time = commandTime command
-    --Just args = decode (BL.pack $ commandArgs command)
-
+--recordToCommand :: C.CommandRecord -> Command
+--recordToCommand (C.CommandRecord format time user cmd args) =
+--  Command format time (T.unpack user) (T.unpack cmd) args'
+--  where
+--    args' = BL.unpack $ encode args
+--
+--processCommand :: Command -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+--processCommand command = do
+--  case commandCmd command of
+--    --"add" -> processCommand_add time args
+--    --"mod" -> processCommand_mod time args
+--    cmd -> return $ Left ["processCommand: Unknown command `"++cmd++"`"]
+--  where
+--    time = commandTime command
+--    --Just args = decode (BL.pack $ commandArgs command)
+--

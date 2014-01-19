@@ -28,7 +28,7 @@ import Control.Monad.Trans.Resource (ResourceT)
 import Data.List (inits, intercalate, partition, sort, sortBy)
 import Data.Maybe
 import Data.Monoid
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time (UTCTime, getCurrentTime, getCurrentTimeZone)
 import Data.Time.ISO8601
 import Database.Persist (insert)
 import Database.Persist.Sqlite
@@ -59,7 +59,7 @@ import OnTopOfThings.Actions.Utils (lookupItem)
 import OnTopOfThings.Data.FileJson
 import OnTopOfThings.Data.Patch
 import OnTopOfThings.Data.PatchDatabase
-import OnTopOfThings.Data.Utils
+import OnTopOfThings.Data.Time
 import OnTopOfThings.Data.Types
 
 
@@ -68,6 +68,7 @@ instance Action ActionMod where
   runAction env action = mod env action >>= \result -> return (env, result)
   actionFromOptions env opts | trace ("actionFromOptions "++(show opts)) False = undefined
   actionFromOptions env opts = do
+    tz <- liftIO $ getCurrentTimeZone
     items_ <- case optionsArgs opts of
       [] -> return (Left ["mod: missing file operand", "Try 'mod --help' for more information."])
       args -> do
@@ -93,7 +94,7 @@ instance Action ActionMod where
         Just utc -> return (Right (Just utc))
     start_ <- case M.lookup "start" (optionsParams1 opts) of
       Nothing -> return (Right Nothing)
-      Just s -> return (parseTime' s >>= \time -> Right (Just time))
+      Just s -> return (parseTime' tz s >>= \time -> Right (Just time))
     return $ do
       items <- items_
       let uuids = map itemUuid items

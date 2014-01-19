@@ -45,13 +45,6 @@ Event
   version Int
   data ByteString
   deriving Show
-Command
-  format Int
-  time UTCTime
-  user String
-  cmd String
-  args String
-  deriving Show
 Property
   table String
   uuid String
@@ -70,7 +63,7 @@ Item
   title String Maybe
   content String Maybe
   stage String Maybe
-  closed UTCTime Maybe
+  closed String Maybe
   start String Maybe
   end String Maybe
   due String Maybe

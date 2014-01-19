@@ -19,10 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 module OnTopOfThings.Commands.Utils
 ( refToUuid
-, createItem
 , processRefArgsAndFlags
 , processRefFlags
-, updateItem
 , saveProperty
 ) where
 
@@ -98,75 +96,75 @@ processRefFlags opts0 name = do
 --  (Right x) >>= f = f x
 --  return = Right
 
---createFolderItems :: UTCTime -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation [Item])
-createItem :: UTCTime -> Options -> Validation Item
---createItem _ opts | trace ("Utils.createItem: "++(show opts)) False = undefined
-createItem time opts = do
-  id <- get "id"
-  type_ <- get "type"
-  title <- get "title"
-  status <- get "status"
-  parent <- getMaybe "parent"
-  stage <- getMaybe "stage"
-  name <- getMaybe "name"
-  title <- getMaybe "title"
-  content <- getMaybe "content"
-  closed <- getMaybeDate "closed"
-  start <- getMaybe "start"
-  end <- getMaybe "end"
-  due <- getMaybe "due"
-  defer <- getMaybe "defer"
-  -- index
-  return $ Item id time "default" type_ status parent name title content stage closed start end due defer Nothing
-  where
-    map = optionsMap opts
-    get name = case M.lookup name map of
-      Just (Just x) -> Right x
-      _ -> Left ["missing value for `" ++ name ++ "`"]
-    getMaybe name = case M.lookup name map of
-      Just (Just s) -> Right (Just s)
-      _ -> Right Nothing
-    getMaybeDate :: String -> Validation (Maybe UTCTime)
-    getMaybeDate name = case M.lookup name map of
-      Just (Just s) ->
-        (parseISO8601 s) `maybeToValidation` ["Could not parse time: " ++ s] >>= \time -> Right (Just time)
-      _ -> Right Nothing
-
-updateItem :: UTCTime -> M.Map String (Maybe String) -> Item -> Validation Item
-updateItem time map item0 =
-  Item <$>
-    get "id" itemUuid <*>
-    Right (itemCreated item0) <*>
-    Right (itemCreator item0) <*>
-    get "type" itemType <*>
-    get "status" itemStatus <*>
-    getMaybe "parent" itemParent <*>
-    getMaybe "name" itemName <*>
-    getMaybe "title" itemTitle <*>
-    getMaybe "content" itemContent <*>
-    getMaybe "stage" itemStage <*>
-    getMaybeDate "closed" itemClosed <*>
-    getMaybe "start" itemStart <*>
-    getMaybe "end" itemEnd <*>
-    getMaybe "due" itemDue <*>
-    getMaybe "defer" itemDefer <*>
-    Right (itemIndex item0)
-  where
-    get :: String -> (Item -> String) -> Validation String
-    get name fn = case M.lookup name map of
-      Just (Just s) -> Right s
-      _ -> Right (fn item0)
-
-    getMaybe :: String -> (Item -> Maybe String) -> Validation (Maybe String)
-    getMaybe name fn = case M.lookup name map of
-      Just (Just s) -> Right (Just s)
-      _ -> Right (fn item0)
-
-    getMaybeDate :: String -> (Item -> Maybe UTCTime) -> Validation (Maybe UTCTime)
-    getMaybeDate name fn = case M.lookup name map of
-      Just (Just s) -> (parseISO8601 s) `maybeToValidation` ["Could not parse time: " ++ s] >>= \time -> Right (Just time)
-      _ -> Right (fn item0)
-
+----createFolderItems :: UTCTime -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation [Item])
+--createItem :: UTCTime -> Options -> Validation Item
+----createItem _ opts | trace ("Utils.createItem: "++(show opts)) False = undefined
+--createItem time opts = do
+--  id <- get "id"
+--  type_ <- get "type"
+--  title <- get "title"
+--  status <- get "status"
+--  parent <- getMaybe "parent"
+--  stage <- getMaybe "stage"
+--  name <- getMaybe "name"
+--  title <- getMaybe "title"
+--  content <- getMaybe "content"
+--  closed <- getMaybeDate "closed"
+--  start <- getMaybe "start"
+--  end <- getMaybe "end"
+--  due <- getMaybe "due"
+--  defer <- getMaybe "defer"
+--  -- index
+--  return $ Item id time "default" type_ status parent name title content stage closed start end due defer Nothing
+--  where
+--    map = optionsMap opts
+--    get name = case M.lookup name map of
+--      Just (Just x) -> Right x
+--      _ -> Left ["missing value for `" ++ name ++ "`"]
+--    getMaybe name = case M.lookup name map of
+--      Just (Just s) -> Right (Just s)
+--      _ -> Right Nothing
+--    getMaybeDate :: String -> Validation (Maybe UTCTime)
+--    getMaybeDate name = case M.lookup name map of
+--      Just (Just s) ->
+--        (parseISO8601 s) `maybeToValidation` ["Could not parse time: " ++ s] >>= \time -> Right (Just time)
+--      _ -> Right Nothing
+--
+--updateItem :: UTCTime -> M.Map String (Maybe String) -> Item -> Validation Item
+--updateItem time map item0 =
+--  Item <$>
+--    get "id" itemUuid <*>
+--    Right (itemCreated item0) <*>
+--    Right (itemCreator item0) <*>
+--    get "type" itemType <*>
+--    get "status" itemStatus <*>
+--    getMaybe "parent" itemParent <*>
+--    getMaybe "name" itemName <*>
+--    getMaybe "title" itemTitle <*>
+--    getMaybe "content" itemContent <*>
+--    getMaybe "stage" itemStage <*>
+--    getMaybeDate "closed" itemClosed <*>
+--    getMaybe "start" itemStart <*>
+--    getMaybe "end" itemEnd <*>
+--    getMaybe "due" itemDue <*>
+--    getMaybe "defer" itemDefer <*>
+--    Right (itemIndex item0)
+--  where
+--    get :: String -> (Item -> String) -> Validation String
+--    get name fn = case M.lookup name map of
+--      Just (Just s) -> Right s
+--      _ -> Right (fn item0)
+--
+--    getMaybe :: String -> (Item -> Maybe String) -> Validation (Maybe String)
+--    getMaybe name fn = case M.lookup name map of
+--      Just (Just s) -> Right (Just s)
+--      _ -> Right (fn item0)
+--
+--    getMaybeDate :: String -> (Item -> Maybe UTCTime) -> Validation (Maybe UTCTime)
+--    getMaybeDate name fn = case M.lookup name map of
+--      Just (Just s) -> (parseISO8601 s) `maybeToValidation` ["Could not parse time: " ++ s] >>= \time -> Right (Just time)
+--      _ -> Right (fn item0)
+--
 itemFields = ["id", "type", "title", "status", "parent", "stage", "label", "index", "closed", "start", "end", "due", "review"]
 
 saveProperty :: String -> Mod -> SqlPersistT (NoLoggingT (ResourceT IO)) ()

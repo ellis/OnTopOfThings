@@ -116,7 +116,7 @@ createItem header uuid diffs = do
   title <- getMaybe "title"
   content <- getMaybe "content"
   stage <- getMaybe "stage"
-  closed <- getMaybeDate "closed"
+  closed <- getMaybe "closed"
   start <- getMaybe "start"
   end <- getMaybe "end"
   due <- getMaybe "due"
@@ -150,7 +150,7 @@ updateItem header diffs item0 = do
   title <- getMaybe "title" itemTitle
   content <- getMaybe "content" itemContent
   stage <- getMaybe "stage" itemStage
-  closed <- getMaybeDate "closed" itemClosed
+  closed <- getMaybe "closed" itemClosed
   start <- getMaybe "start" itemStart
   end <- getMaybe "end" itemEnd
   due <- getMaybe "due" itemDue

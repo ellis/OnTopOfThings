@@ -55,7 +55,7 @@ instance ToJSON ItemForJson where
       , getMaybe "title" itemTitle
       , getMaybe "content" itemContent
       , getMaybe "stage" itemStage
-      , getMaybeDate "closed" itemClosed
+      , getMaybe "closed" itemClosed
       , getMaybe "start" itemStart
       , getMaybe "end" itemEnd
       , getMaybe "due" itemDue

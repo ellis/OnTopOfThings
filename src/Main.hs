@@ -51,12 +51,8 @@ import OnTopOfThings.Actions.Env
 import qualified OnTopOfThings.Actions.Mod as Mod
 import OnTopOfThings.Actions.Mv
 import OnTopOfThings.Actions.Run
-import OnTopOfThings.Commands.Add
-import OnTopOfThings.Commands.Close
-import OnTopOfThings.Commands.Delete
 import OnTopOfThings.Commands.Import
 import OnTopOfThings.Commands.Show
-import OnTopOfThings.Commands.Mod
 import OnTopOfThings.Commands.Rebuild
 import OnTopOfThings.Data.FileJson
 import OnTopOfThings.Data.Patch
@@ -68,13 +64,8 @@ import qualified Database as DB
 
 modeInfo_l :: [ModeInfo]
 modeInfo_l =
-  [ modeInfo_add
-  , modeInfo_close
-  , modeInfo_delete
-  , modeInfo_import
-  , modeInfo_mod
+  [ modeInfo_import
   , modeInfo_rebuild
-  , modeInfo_show
   ]
 modeInfo :: M.Map String ModeInfo
 modeInfo = M.fromList $ map (\x@(mode, _) -> (head (modeNames mode), x)) modeInfo_l
@@ -253,18 +244,18 @@ runAction'' env0 action_ = do
 
 -------------------------------------------------------------
 
-mainOld :: IO ()
-mainOld = do
-  args <- getArgs
-  processMode args
-
-processMode :: [String] -> IO ()
-processMode args = do
-  -- Options read by CmdArgs
-  let opts = processValue mode_root args
-  --toStdErr opts
-  processOptions opts
-
+--mainOld :: IO ()
+--mainOld = do
+--  args <- getArgs
+--  processMode args
+--
+--processMode :: [String] -> IO ()
+--processMode args = do
+--  -- Options read by CmdArgs
+--  let opts = processValue mode_root args
+--  --toStdErr opts
+--  processOptions opts
+--
 processOptions :: Options -> IO ()
 processOptions opts = do
   -- find info for the chosen command mode
@@ -279,9 +270,6 @@ processOptions opts = do
         then print $ helpText [] HelpFormatDefault mode
         else
           case run of
-            ModeRunDB optsProcess1 optsProcess2 optsRunDB -> do
-              handleOptions opts mode optsProcess1 optsProcess2 optsRunDB
-              return ()
             ModeRunIO optsRunIO -> do
               x <- optsRunIO opts
               case x of
@@ -289,52 +277,52 @@ processOptions opts = do
                 _ -> return ()
   return ()
 
---handleOptions :: Options -> Mode -> (IO ()
-handleOptions opts mode optsProcess1 optsProcess2 optsRun = do
-  -- If help is selected or there are neither arguments nor flags:
-  if (optionsHelp opts) || (null (optionsArgs opts) && null (optionsFlags opts))
-    -- print help for the given mode
-    then print $ helpText [] HelpFormatDefault mode
-    else do
-      time <- getCurrentTime
-      chguuid <- U4.nextRandom >>= return . U.toString
-      record' <- runSqlite "otot.db" $ do
-        -- Validate options and add parameters required for the new command record
-        opts_ <- optsProcess1 opts
-        case opts_ of
-          Left msgs -> return (Left msgs)
-          Right opts' -> do
-            -- Convert Options to CommandRecord
-            let record = optsToCommandRecord time "default" opts'
-            liftIO $ toStdErr record
-            -- TODO: Save CommandRecord to temporary file
-            -- TODO: CommandRecord read in from file
-            -- TODO: Verify that CommandRecords are equal
-            -- Convert CommandRecord to Command
-            let command = DB.recordToCommand record
-            -- Command saved to DB
-            insert command
-            -- TODO: Command loaded from DB
-            -- TODO: Verify that Commands are equal
-            -- TODO: Command converted to a CommandRecord
-            -- TODO: Verify that CommandRecords are equal
-            -- TODO: CommandRecord converted to Options
-            -- TODO: Verify that Options are equal
-            -- Options are validated and processed for modification of DB 'item' and 'property' tables
-            opts__ <- optsProcess2 opts'
-            case opts__ of
-              Left msgs -> return (Left msgs)
-              Right opts'' -> do
-                -- Update items and properties
-                x_ <- optsRun record opts''
-                case x_ of
-                  Left msgs -> return (Left msgs)
-                  Right _ -> return (Right record)
-      case record' of
-        Left msgs -> mapM_ putStrLn msgs
-        Right record -> do
-          saveCommandRecord record chguuid
-          return ()
+----handleOptions :: Options -> Mode -> (IO ()
+--handleOptions opts mode optsProcess1 optsProcess2 optsRun = do
+--  -- If help is selected or there are neither arguments nor flags:
+--  if (optionsHelp opts) || (null (optionsArgs opts) && null (optionsFlags opts))
+--    -- print help for the given mode
+--    then print $ helpText [] HelpFormatDefault mode
+--    else do
+--      time <- getCurrentTime
+--      chguuid <- U4.nextRandom >>= return . U.toString
+--      record' <- runSqlite "otot.db" $ do
+--        -- Validate options and add parameters required for the new command record
+--        opts_ <- optsProcess1 opts
+--        case opts_ of
+--          Left msgs -> return (Left msgs)
+--          Right opts' -> do
+--            -- Convert Options to CommandRecord
+--            let record = optsToCommandRecord time "default" opts'
+--            liftIO $ toStdErr record
+--            -- TODO: Save CommandRecord to temporary file
+--            -- TODO: CommandRecord read in from file
+--            -- TODO: Verify that CommandRecords are equal
+--            -- Convert CommandRecord to Command
+--            let command = DB.recordToCommand record
+--            -- Command saved to DB
+--            insert command
+--            -- TODO: Command loaded from DB
+--            -- TODO: Verify that Commands are equal
+--            -- TODO: Command converted to a CommandRecord
+--            -- TODO: Verify that CommandRecords are equal
+--            -- TODO: CommandRecord converted to Options
+--            -- TODO: Verify that Options are equal
+--            -- Options are validated and processed for modification of DB 'item' and 'property' tables
+--            opts__ <- optsProcess2 opts'
+--            case opts__ of
+--              Left msgs -> return (Left msgs)
+--              Right opts'' -> do
+--                -- Update items and properties
+--                x_ <- optsRun record opts''
+--                case x_ of
+--                  Left msgs -> return (Left msgs)
+--                  Right _ -> return (Right ())
+--      case record' of
+--        Left msgs -> mapM_ putStrLn msgs
+--        Right record -> do
+--          --saveCommandRecord record chguuid
+--          return ()
 
 --modHandler args = do
 --  time <- liftIO $ getCurrentTime

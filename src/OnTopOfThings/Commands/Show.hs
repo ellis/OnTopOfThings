@@ -22,14 +22,16 @@ module OnTopOfThings.Commands.Show
 , optsRun_show
 ) where
 
+import Control.Monad (mplus)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
-import Data.List (intercalate, nub, sort)
+import Data.List (intercalate, nub, sort, sortBy)
 import Data.List.Split (splitOn)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Monoid
+import Data.Time (getCurrentTimeZone, TimeZone)
 import Data.Time.Clock
 import Data.Time.Format (parseTime, formatTime)
 import Database.Persist
@@ -51,6 +53,7 @@ import Args
 import DatabaseTables
 import Utils
 import OnTopOfThings.Commands.Utils
+import OnTopOfThings.Data.Time
 import OnTopOfThings.Parsers.NumberList
 
 type PropertyMap = M.Map String [String]
@@ -84,10 +87,12 @@ mode_show = Mode
 optsRun_show :: Options -> IO (Validation ())
 optsRun_show opts = do
   now <- getCurrentTime
+  tz <- getCurrentTimeZone
+  --let fromTime = (parseTime defaultTimeLocale "%Y%m%d" $ formatTime defaultTimeLocale "%Y%m%d" now) :: Maybe UTCTime
   let fromTime = (parseTime defaultTimeLocale "%Y%m%d" $ formatTime defaultTimeLocale "%Y%m%d" now) :: Maybe UTCTime
-  case fromTime of
-    Nothing -> return (Left ["bad time"])
-    Just t -> do
+  let fromTime2_ = parseTime' tz $ formatTime defaultTimeLocale "%Y%m%d" now
+  case (fromTime, fromTime2_) of
+    (Just t, Right fromTime2) -> do
       runSqlite "repl.db" $ do
         let parents0 = fromMaybe [] $ M.lookup "parent" (optionsParamsN opts)
         parents_l_ <- mapM fn parents0
@@ -101,15 +106,23 @@ optsRun_show opts = do
               Right opts' -> do
                 case optionsArgs opts of
                   [] -> do
-                    showTasks opts' t
+                    showTasks opts' fromTime2
                     return (Right ())
+                  ["calendar"] -> do
+                    let opts__ = optionsReplaceParamN "stage" ["today"] opts'
+                    case opts__ of
+                      Left msgs -> return (Left msgs)
+                      Right opts'' -> do
+                        showCalendar opts'' fromTime2
+                        return (Right ())
                   ["today"] -> do
                     let opts__ = optionsReplaceParamN "stage" ["today"] opts'
                     case opts__ of
                       Left msgs -> return (Left msgs)
                       Right opts'' -> do
-                        showTasks opts'' t
+                        showTasks opts'' fromTime2
                         return (Right ())
+    _ -> return (Left ["bad time"])
   where
     fn :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation [String])
     fn value =
@@ -123,7 +136,7 @@ optsRun_show opts = do
 expr' opts fromTime = expr4 where
   m = optionsMap opts
   -- select tasks which are open or were just closed today
-  expr0 = [ItemType ==. "task", FilterOr [ItemStatus ==. "open", ItemClosed >. Just fromTime]]
+  expr0 = [ItemType ==. "task", FilterOr [ItemStatus ==. "open", ItemClosed >. Just (formatTime' fromTime)]]
   -- restrict status
   expr1 = case splitN "status" of
     [] -> expr0
@@ -153,7 +166,7 @@ expr' opts fromTime = expr4 where
       Just l -> map Just $ concat $ map (splitOn ",") l
       Nothing -> []
 
-showTasks :: Options -> UTCTime -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+showTasks :: Options -> Time -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 showTasks opts fromTime | trace ("showTasks: "++(show opts)) False = undefined
 showTasks opts fromTime = do
   -- Load all tasks that meet the user's criteria
@@ -171,7 +184,7 @@ showTasks opts fromTime = do
       let stmt = "SELECT ?? FROM item, property WHERE " ++ (intercalate " AND " wheres)
       --liftIO $ print $ persistFieldDef ItemType
       liftIO $ putStrLn stmt
-      rawSql (T.pack stmt) [toPersistValue fromTime, toPersistValue $ head l]
+      rawSql (T.pack stmt) [toPersistValue $ formatTime' fromTime, toPersistValue $ head l]
       -- FIXME: implement this:
       --select $ from $ \(i, p) -> do
         --where_ ((expr' opts fromTime i) &&. p ^. PropertyUuid ==. i ^. ItemUuid &&. p ^. PropertyName ==. val "tag" &&. (in_ (p ^. PropertyValue) (valList l)))
@@ -205,6 +218,60 @@ showTasks opts fromTime = do
     else return ()
   return ()
   where
+    updateIndex :: (Item, Int) -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+    updateIndex (item, index) = do
+      updateWhere [ItemUuid ==. (itemUuid item)] [ItemIndex =. Just index]
+    fn :: M.Map String Int -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+    fn uuidToIndex_m item
+      | isContainerItem item = do
+        liftIO $ putStrLn ""
+        s <- itemToString opts item
+        liftIO $ putStrLn $ s
+      | otherwise = do
+        s <- itemToString opts item
+        liftIO $ putStrLn $ prefix ++ s
+        where
+          index :: Maybe Int
+          index = M.lookup (itemUuid item) uuidToIndex_m
+          index_s :: Maybe String
+          index_s = fmap (\i -> "(" ++ (show i) ++ ")  ") index
+          prefix = fromMaybe "" index_s
+
+showCalendar :: Options -> Time -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+showCalendar opts fromTime | trace ("showTasks: "++(show opts)) False = undefined
+showCalendar opts fromTime = do
+  tz <- liftIO $ getCurrentTimeZone
+  let fromTime_s = formatTime' fromTime
+  -- Load all tasks that meet the user's criteria
+  let filters = expr' opts fromTime
+  entities <- do
+    let wheres =
+                 [ "(item.type = 'event' OR item.type = 'task')"
+                 , "(item.start >= ? OR item.closed >= ?)"
+                 ]
+    let stmt = "SELECT ?? FROM item WHERE " ++ (intercalate " AND " wheres)
+    liftIO $ putStrLn stmt
+    rawSql (T.pack stmt) [toPersistValue fromTime_s, toPersistValue fromTime_s]
+  let tasks' = map entityVal entities
+  let timeToItem_l_ = (concatEithersN $ map (\item -> itemToTime tz item >>= \time -> Right (time, item)) tasks') >>= \l ->
+                      Right $ sortBy (\a b -> compare (fst a) (fst b)) l
+  case timeToItem_l_ of
+    Left msgs -> liftIO $ mapM_ putStrLn msgs
+    Right timeToItem_l -> do
+      let items = map snd timeToItem_l
+      -- Remove all previous indexes
+      updateWhere [ItemIndex !=. Nothing] [ItemIndex =. Nothing]
+      let itemToIndex_l = zip items [1..]
+      let uuidToIndex_m = M.fromList $ map (\(item, index) -> (itemUuid item, index)) itemToIndex_l
+      -- Set new indexes
+      mapM updateIndex itemToIndex_l
+      mapM_ (fn uuidToIndex_m) items
+      return ()
+  where
+    itemToTime :: TimeZone -> Item -> Validation Time
+    itemToTime tz item = do
+      s <- (itemStart item) `mplus` (itemClosed item) `maybeToValidation` ["INTERNAL: missing start or closed time"]
+      parseTime' tz s
     updateIndex :: (Item, Int) -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
     updateIndex (item, index) = do
       updateWhere [ItemUuid ==. (itemUuid item)] [ItemIndex =. Just index]
