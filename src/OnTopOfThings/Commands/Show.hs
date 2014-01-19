@@ -22,7 +22,7 @@ module OnTopOfThings.Commands.Show
 , optsRun_show
 ) where
 
-import Control.Monad (mplus)
+import Control.Monad (mplus, when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
@@ -31,7 +31,7 @@ import Data.List (intercalate, nub, sort, sortBy)
 import Data.List.Split (splitOn)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Monoid
-import Data.Time (getCurrentTimeZone, TimeZone)
+import Data.Time (Day, TimeZone, getCurrentTimeZone)
 import Data.Time.Clock
 import Data.Time.Format (parseTime, formatTime)
 import Database.Persist
@@ -90,7 +90,7 @@ optsRun_show opts = do
   tz <- getCurrentTimeZone
   --let fromTime = (parseTime defaultTimeLocale "%Y%m%d" $ formatTime defaultTimeLocale "%Y%m%d" now) :: Maybe UTCTime
   let fromTime = (parseTime defaultTimeLocale "%Y%m%d" $ formatTime defaultTimeLocale "%Y%m%d" now) :: Maybe UTCTime
-  let fromTime2_ = parseTime' tz $ formatTime defaultTimeLocale "%Y%m%d" now
+  let fromTime2_ = parseTime' tz $ formatTime defaultTimeLocale "%Y-%m-%d" now
   case (fromTime, fromTime2_) of
     (Just t, Right fromTime2) -> do
       runSqlite "repl.db" $ do
@@ -238,7 +238,7 @@ showTasks opts fromTime = do
           prefix = fromMaybe "" index_s
 
 showCalendar :: Options -> Time -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
-showCalendar opts fromTime | trace ("showTasks: "++(show opts)) False = undefined
+showCalendar opts fromTime | trace ("showCalendar: "++(show opts)) False = undefined
 showCalendar opts fromTime = do
   tz <- liftIO $ getCurrentTimeZone
   let fromTime_s = formatTime' fromTime
@@ -265,7 +265,8 @@ showCalendar opts fromTime = do
       let uuidToIndex_m = M.fromList $ map (\(item, index) -> (itemUuid item, index)) itemToIndex_l
       -- Set new indexes
       mapM updateIndex itemToIndex_l
-      mapM_ (fn uuidToIndex_m) items
+      recurse timeToItem_l uuidToIndex_m Nothing
+      --mapM_ (fn uuidToIndex_m) items
       return ()
   where
     itemToTime :: TimeZone -> Item -> Validation Time
@@ -275,6 +276,16 @@ showCalendar opts fromTime = do
     updateIndex :: (Item, Int) -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
     updateIndex (item, index) = do
       updateWhere [ItemUuid ==. (itemUuid item)] [ItemIndex =. Just index]
+    -- print list of items
+    recurse :: [(Time, Item)] -> M.Map String Int -> Maybe Day -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+    recurse [] _ _ = return ()
+    recurse ((time, item):rest) uuidToIndex_m maybeDay = do
+      let day = Just $ otimeDay time
+      when (day /= maybeDay) $ do
+        liftIO $ putStrLn (show $ otimeDay time)
+      fn uuidToIndex_m item
+      recurse rest uuidToIndex_m day
+    -- print an item
     fn :: M.Map String Int -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
     fn uuidToIndex_m item
       | isContainerItem item = do

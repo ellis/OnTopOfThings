@@ -60,7 +60,8 @@ Ideas:
 - [x] Go through my personal list of tasks and update it, seeing what needs to be added to program
 - [x] get rid of esqueleto dependency so that I can hopefully get workable dependencies on my laptop
 - [x] test: create a git repository for syncing my lists
-- [ ] start working on calendar
+- [x] start working on calendar
+- [ ] Show: show start and end time
 - [ ] Config: load config file on program startup
 - [ ] Config: load data directory, load sqlite filename
 - [ ] Repl: add some coloring to prompt and errors

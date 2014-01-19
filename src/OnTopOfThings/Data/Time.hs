@@ -21,7 +21,7 @@ module OnTopOfThings.Data.Time
 where
 
 import Control.Applicative ((<$>), (<*>), empty)
-import Control.Monad (mplus)
+import Control.Monad (mplus, msum)
 import Data.List (intercalate)
 import Data.Maybe (catMaybes, fromMaybe)
 import Data.Time.Calendar
@@ -60,12 +60,12 @@ instance Ord Time where
 -- For some time handling notes, see: <http://tab.snarc.org/posts/haskell/2011-12-16-date-in-haskell.html>
 
 parseTime' :: TimeZone -> String -> Validation Time
-parseTime' tz s = (step l s) `maybeToValidation` ["Could not parse time: "++s] where
+parseTime' tz s = msum x `maybeToValidation` ["Could not parse time: "++s] where
   l = [("%FT%T%QZ", 3, True), ("%Y-%m-%d", 0, False), ("%Y-%m-%dT%H:%M", 2, False), ("%Y-%m-%dT%H:%M:%S", 3, False), ("%Y-%m-%dT%H:%M%Z", 2, True), ("%Y-%m-%dT%H:%M:%S%Z", 3, True)]
-  step :: [(String, Int, Bool)] -> String -> Maybe Time
-  step [] s = Nothing
-  step ((format, n, hasTz):rest) s =
-    case parseTime defaultTimeLocale format s of
+  x = map step l
+  step :: (String, Int, Bool) -> Maybe Time
+  step (format, n, hasTz) =
+    case (parseTime defaultTimeLocale format s :: Maybe ZonedTime) of
       Nothing -> Nothing
       Just zoned -> Just $ zonedToTimeN zoned n hasTz
 
