@@ -61,6 +61,7 @@ Ideas:
 - [x] get rid of esqueleto dependency so that I can hopefully get workable dependencies on my laptop
 - [x] test: create a git repository for syncing my lists
 - [x] start working on calendar
+- [ ] Repl: newtask: add --start parameter 
 - [ ] Show: show start and end time
 - [ ] Config: load config file on program startup
 - [ ] Config: load data directory, load sqlite filename

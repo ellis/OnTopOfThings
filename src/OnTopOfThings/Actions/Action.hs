@@ -101,6 +101,7 @@ data ActionNewTask = ActionNewTask
   , newTaskContent :: Maybe String
   , newTaskStatus :: Maybe String
   , newTaskStage :: Maybe String
+  , newTaskStart :: Maybe Time
   , newTaskTags :: [String]
   } deriving (Show)
 

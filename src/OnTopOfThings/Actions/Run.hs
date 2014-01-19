@@ -27,7 +27,7 @@ import Control.Monad.Trans.Resource (ResourceT)
 import Data.List (inits, intercalate, partition, sort, sortBy)
 import Data.Maybe
 import Data.Monoid
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time (TimeZone, UTCTime, getCurrentTime, getCurrentTimeZone, utc)
 import Data.Time.ISO8601
 import Database.Persist (insert)
 import Database.Persist.Sqlite
@@ -59,6 +59,7 @@ import OnTopOfThings.Commands.Show
 import OnTopOfThings.Data.FileJson
 import OnTopOfThings.Data.Patch
 import OnTopOfThings.Data.PatchDatabase
+import OnTopOfThings.Data.Time
 
 
 instance Action ActionCat where
@@ -112,11 +113,12 @@ instance Action ActionNewTask where
   runAction env action = newtask env action >>= \result -> return (env, result)
   --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionMkdir)
   actionFromOptions env opts = do
-    let action_ = createAction
+    tz <- liftIO $ getCurrentTimeZone
+    let action_ = createAction tz
     return action_
     where
-      createAction :: Validation ActionNewTask
-      createAction = do
+      createAction :: TimeZone -> Validation ActionNewTask
+      createAction tz = do
         id <- getMaybe "id"
         let title = unwords $ optionsArgs opts
         status <- get "status"
@@ -124,11 +126,11 @@ instance Action ActionNewTask where
         stage <- getMaybe "stage"
         label <- getMaybe "label"
         -- index
-        closed <- getMaybeDate "closed"
-        start <- getMaybeDate "start"
-        end <- getMaybeDate "end"
-        due <- getMaybeDate "due"
-        review <- getMaybeDate "review"
+        closed <- getMaybeDate "closed" tz
+        start <- getMaybeDate "start" tz
+        end <- getMaybeDate "end" tz
+        due <- getMaybeDate "due" tz
+        review <- getMaybeDate "review" tz
         return $ ActionNewTask
           { newTaskHelp = False
           , newTaskUuid = id
@@ -138,6 +140,7 @@ instance Action ActionNewTask where
           , newTaskContent = Nothing
           , newTaskStatus = Just status
           , newTaskStage = stage
+          , newTaskStart = start
           , newTaskTags = []
           }
       map = optionsMap opts
@@ -147,19 +150,12 @@ instance Action ActionNewTask where
       getMaybe name = case M.lookup name map of
         Just (Just s) -> Right (Just s)
         _ -> Right Nothing
-      getMaybeDate :: String -> Validation (Maybe UTCTime)
-      getMaybeDate name = case M.lookup name map of
-        Just (Just s) ->
-          (parseISO8601 s) `maybeToValidation` ["Could not parse time: " ++ s] >>= \time -> Right (Just time)
+      getMaybeDate :: String -> TimeZone -> Validation (Maybe Time)
+      getMaybeDate name tz = case M.lookup name map of
+        Just (Just s) -> parseTime' tz s >>= \time -> Right (Just time)
         _ -> Right Nothing
 
-  actionToRecordArgs action = Just $ args ++ flags where
-    args = maybeToList (newTaskTitle action)
-    flags = catMaybes
-      [ newTaskUuid action >>= \x -> Just ("--id="++x)
-      , newTaskParentRef action >>= \x -> Just ("--parent="++x)
-      , newTaskName action >>= \x -> Just ("--name="++x)
-      ]
+  actionToRecordArgs action = Nothing
 
 instance Action ActionShow where
   runAction env action = show' env (showOptions action) >>= \result -> return (env, result)
@@ -233,7 +229,7 @@ mode_mkdir = Mode
 mode_newtask = Mode
   { modeGroupModes = mempty
   , modeNames = ["newtask"]
-  , modeValue = ActionNewTask False Nothing Nothing Nothing Nothing Nothing Nothing Nothing []
+  , modeValue = ActionNewTask False Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing []
   , modeCheck = Right
   , modeReform = const Nothing
   , modeExpandAt = True
@@ -247,6 +243,10 @@ mode_newtask = Mode
     , flagReq ["label", "l"] (\v a -> Right (a { newTaskName = Just v })) "LABEL" "A unique label for this item."
     , flagReq ["stage", "s"] (\v a -> Right (a { newTaskStage = Just v })) "STAGE" "new|incubator|today. (default=new)"
     , flagReq ["status"] (\v a -> Right (a { newTaskStatus = Just v })) "STATUS" "open|closed|deleted. (default=open)"
+    , flagReq ["start"] (\v a -> case parseTime' utc v of
+          Left msgs -> Left (unwords msgs)
+          Right time -> Right (a { newTaskStart = Just time })
+        ) "TIME" "Start time"
     --, flagReq ["tag", "t"] (updN "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
     --, flagReq ["title"] (upd1 "title") "TITLE" "Title of the item."
     --, flagReq ["type"] (upd1 "type") "TYPE" "list|task. (default=task)"
@@ -553,19 +553,23 @@ newtask (Env time user cwd) action0 = do
       Just s -> Right s
     getMaybe :: (ActionNewTask -> Maybe String) -> Validation (Maybe String)
     getMaybe fn = Right (fn action0)
+    getMaybeTime :: (ActionNewTask -> Maybe Time) -> Validation (Maybe String)
+    getMaybeTime fn = Right (flip fmap (fn action0) formatTime')
     createHunk :: String -> Item -> Validation PatchHunk
     createHunk uuid parent = do
       status <- getMaybe newTaskStatus
       name <- getMaybe newTaskName
       title <- getMaybe newTaskTitle
       stage <- getMaybe newTaskStage
+      start <- getMaybeTime newTaskStart
       let diffs = catMaybes
             [ Just $ DiffEqual "type" "task"
             , Just $ DiffEqual "status" $ fromMaybe "open" status
             , Just $ DiffEqual "parent" (itemUuid parent)
             , fmap (DiffEqual "name") name
             , fmap (DiffEqual "title") title
-            , Just $ DiffEqual "stage" $ fromMaybe "new" stage
+            , Just $ DiffEqual "stage" $ fromMaybe "inbox" stage
+            , fmap (DiffEqual "start") start
             ]
       return (PatchHunk [uuid] diffs)
 
