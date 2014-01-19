@@ -128,6 +128,10 @@ instance FromJSON Diff where
     "=" -> return $ DiffEqual (T.unpack name) (T.unpack value) where
       (name, value') = T.breakOn " " (T.tail t)
       value = T.drop 1 value'
+    "+" -> return $ DiffAdd (T.unpack name) (T.unpack value) where
+      (name, value') = T.breakOn " " (T.tail t)
+      value = T.drop 1 value'
+    _ -> fail ("Unrecognized operation in diff: "++(T.unpack t))
 
 instance ToJSON File where
   toJSON (CopyFile time_ user_ comment_ items) = object l where

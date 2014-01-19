@@ -50,7 +50,6 @@ import OnTopOfThings.Data.Types
 loadFiles :: IO (Validation [Event])
 loadFiles = do
   files <- getDirectoryContents "testdata"
-  --let files = filter (\f -> takeExtension f == ".yaml") files'
   --files <- FF.find (return False) (FF.extension `FF.==?` ".json") "testdata"
   events__ <- mapM (\f -> loadFile (joinPath ["testdata", f])) files
   let events_ = concatEithersN events__
@@ -81,8 +80,9 @@ loadFile path = do
               return $ Right (map copyToEvent items)
             PatchFile1 time user comment_ hunks ->
               return $ Right [(patch1ToEvent time user comment_ hunks)]
+    "" -> return (Right [])
     _ -> do
-      putStrLn ("unrecognized file: "++path)
+      putStrLn ("unrecognized file extension: "++path)
       return (Right [])
   where
     copyToEvent :: ItemForJson -> Event

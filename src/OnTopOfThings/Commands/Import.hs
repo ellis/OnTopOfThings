@@ -106,7 +106,8 @@ optsRun_import opts = do
           time <- getCurrentTime
           let items = sortBy (\(ItemForJson a _) (ItemForJson b _) -> compare (itemCreated a) (itemCreated b)) items'
           let export = CopyFile (Just time) (Just "default") (Just "Task Warrior import") items
-          BS.hPutStr h $ Yaml.encode export
+          --BS.hPutStr h $ Yaml.encode export
+          BL.hPutStr h $ encode export
           hClose h
           return (Right ())
 
