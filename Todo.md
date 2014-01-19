@@ -59,11 +59,9 @@ Ideas:
 - [x] Mod: bug: crashes on ``mod 272 -s month 273``
 - [x] Go through my personal list of tasks and update it, seeing what needs to be added to program
 - [x] get rid of esqueleto dependency so that I can hopefully get workable dependencies on my laptop
-- [ ] test: create a git repository for syncing my lists
+- [x] test: create a git repository for syncing my lists
 - [ ] Config: load config file on program startup
 - [ ] Config: load data directory, load sqlite filename
-- [ ] Main: if data directory is in a git repository, auto-add the file
-- [ ] Main: if data directory is in a git repository, auto-commit and auto-push the changes
 - [ ] start working on calendar
 - [ ] Repl: add some coloring to prompt and errors
 - [ ] Show: bug: folder names are sometimes listed multiple times
@@ -116,6 +114,8 @@ Ideas:
 - [ ] Action.Utils: organize functions, better names, stop using path chains?  Env should have IDs of repositories (e.g. map of mount path to repo information)?
 - [ ] Repl: ``ls`` should sort output, directories first, and everything alphabetically
 - [ ] Repl: ``show`` should share code with ls
+- [ ] Main: if data directory is in a git repository, auto-add the file
+- [ ] Main: if data directory is in a git repository, auto-commit and auto-push the changes
 - [ ] Item: consider renaming ItemForJson to Item, and separating more between Sqlite model and the data
 - [ ] Ask online whether it's possible to search a (Maybe String) field with esqueleto
 - [ ] Repl: add ``rm`` command as alias for ``close --delete``?
@@ -142,6 +142,7 @@ Ideas:
 - [ ] Add support for folders, taking the place of the old list concept
 - [ ] ``uuidRoot`` should not be all zeros: generate a root UUID somehow, probably need to have it in a config file in the data directory
 - [ ] Add support for lists as an ordered sequence of items
+- [ ] Show: decide how to handle AND vs OR queries for tags and contexts
 
 ## Design 2
 - [x] Command: instead of storing data changes, store commands

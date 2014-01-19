@@ -33,8 +33,8 @@ import Data.Monoid
 import Data.Time.Clock
 import Data.Time.Format (parseTime, formatTime)
 import Database.Persist
-import Database.Persist.Sql (insert, deleteWhere)
-import Database.Persist.Sqlite (SqlPersistT, runSqlite)
+import Database.Persist.Sql (insert, deleteWhere, toPersistValue)
+import Database.Persist.Sqlite (SqlPersistT, runSqlite, rawSql)
 import Database.Persist.Types
 import Debug.Trace
 import System.Console.CmdArgs.Explicit
@@ -157,9 +157,21 @@ showTasks :: Options -> UTCTime -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 showTasks opts fromTime | trace ("showTasks: "++(show opts)) False = undefined
 showTasks opts fromTime = do
   -- Load all tasks that meet the user's criteria
+  let filters = expr' opts fromTime
   tasks' <- case M.lookup "tag" (optionsParamsN opts) of
-    Nothing -> selectList (expr' opts fromTime) []
-    Just l -> selectList (expr' opts fromTime) []
+    Nothing -> selectList filters []
+    Just l -> do -- selectList filters []
+      let wheres =
+                   [ "item.type = 'task'"
+                   , "(item.status = 'open' OR item.closed >= ?)"
+                   , "item.uuid = property.uuid"
+                   , "property.name = 'tag'"
+                   , "property.value = ?"
+                   ]
+      let stmt = "SELECT ?? FROM item, property WHERE " ++ (intercalate " AND " wheres)
+      --liftIO $ print $ persistFieldDef ItemType
+      liftIO $ putStrLn stmt
+      rawSql (T.pack stmt) [toPersistValue fromTime, toPersistValue $ head l]
       -- FIXME: implement this:
       --select $ from $ \(i, p) -> do
         --where_ ((expr' opts fromTime i) &&. p ^. PropertyUuid ==. i ^. ItemUuid &&. p ^. PropertyName ==. val "tag" &&. (in_ (p ^. PropertyValue) (valList l)))
