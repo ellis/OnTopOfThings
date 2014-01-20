@@ -283,7 +283,7 @@ showCalendar opts fromTime = do
       let day = Just $ otimeDay time
       when (day /= maybeDay) $ do
         when (isJust maybeDay) (liftIO $ putStrLn "")
-        liftIO $ putStrLn (show $ otimeDay time)
+        liftIO $ putStrLn $ formatTime defaultTimeLocale "%Y-%m-%d %A" (otimeDay time)
       fn uuidToIndex_m item
       recurse rest uuidToIndex_m day
     -- print an item

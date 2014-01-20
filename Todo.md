@@ -67,7 +67,7 @@ Ideas:
 - [x] Repl: newtask: add parameter shortcuts (/work = -p work, +mustdo = -t mustdo)
 - [x] Show: calendar: space before date (except the first)
 - [?] Repl: newtask: add --end parameter 
-- [ ] Show: calendar: show weekday after date
+- [x] Show: calendar: show weekday after date
 - [ ] Show: show start and end time
 - [ ] Main: add current time zone to Env
 - [ ] Repl: newtask: add -P parameter to create folder if it doesn't exist 
