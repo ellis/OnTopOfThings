@@ -159,15 +159,8 @@ repl cwd = do
           x_ <- runAction' env0 mode_mv args
           runAction'' env0 (x_ :: Validation (Maybe ActionMv))
         "newtask":args -> do
-          case process mode_newtask args of
-            Left msg -> return (env0, ActionResult [] False [] [msg])
-            Right action -> do
-              if newTaskHelp action
-                then do
-                  liftIO $ print $ helpText [] HelpFormatDefault mode_newtask
-                  return (env0, mempty)
-                else do
-                  runAction env0 action
+          x_ <- runAction' env0 mode_newtask args
+          runAction'' env0 (x_ :: Validation (Maybe ActionNewTask))
         "show":args -> do
           let mode = fst modeInfo_show
           case process mode args of

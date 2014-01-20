@@ -29,7 +29,7 @@ import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
 import Data.List (intercalate, nub, sort, sortBy)
 import Data.List.Split (splitOn)
-import Data.Maybe (catMaybes, fromMaybe)
+import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.Monoid
 import Data.Time (Day, TimeZone, getCurrentTimeZone)
 import Data.Time.Clock
@@ -282,6 +282,7 @@ showCalendar opts fromTime = do
     recurse ((time, item):rest) uuidToIndex_m maybeDay = do
       let day = Just $ otimeDay time
       when (day /= maybeDay) $ do
+        when (isJust maybeDay) (liftIO $ putStrLn "")
         liftIO $ putStrLn (show $ otimeDay time)
       fn uuidToIndex_m item
       recurse rest uuidToIndex_m day

@@ -62,14 +62,18 @@ Ideas:
 - [x] test: create a git repository for syncing my lists
 - [x] start working on calendar
 - [x] Repl: newtask: add --start parameter 
-- [ ] Repl: newtask: add --tag parameter 
-- [ ] Repl: newtask: add --end parameter 
-- [ ] Repl: newtask: add -P parameter to create folder if it doesn't exist 
-- [ ] Show: calendar: space before date (except the first)
+- [x] Repl: change mode_newtask to create Options instead of ActionNewtask
+- [x] Repl: newtask: add --tag parameter 
+- [x] Repl: newtask: add parameter shortcuts (/work = -p work, +mustdo = -t mustdo)
+- [x] Show: calendar: space before date (except the first)
+- [?] Repl: newtask: add --end parameter 
 - [ ] Show: calendar: show weekday after date
 - [ ] Show: show start and end time
+- [ ] Main: add current time zone to Env
+- [ ] Repl: newtask: add -P parameter to create folder if it doesn't exist 
 - [ ] Config: load config file on program startup
 - [ ] Config: load data directory, load sqlite filename
+- [ ] Repl: handle "smart dates" as user input (see <http://hackage.haskell.org/package/hledger-0.5.1/docs/src/Ledger-Dates.html>)
 - [ ] Repl: add some coloring to prompt and errors
 - [ ] Show: bug: folder names are sometimes listed multiple times
 - [ ] Show: bug: empty folders shouldn't be listed normally

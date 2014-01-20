@@ -120,12 +120,11 @@ instance Action ActionNewTask where
       createAction :: TimeZone -> Validation ActionNewTask
       createAction tz = do
         id <- getMaybe "id"
-        let title = unwords $ optionsArgs opts
-        status <- get "status"
+        title <- get "title"
+        status <- getMaybe "status"
         parent <- getMaybe "parent"
         stage <- getMaybe "stage"
-        label <- getMaybe "label"
-        -- index
+        name <- getMaybe "name"
         closed <- getMaybeDate "closed" tz
         start <- getMaybeDate "start" tz
         end <- getMaybeDate "end" tz
@@ -135,13 +134,14 @@ instance Action ActionNewTask where
           { newTaskHelp = False
           , newTaskUuid = id
           , newTaskParentRef = parent
-          , newTaskName = label
+          , newTaskName = name
           , newTaskTitle = Just title
           , newTaskContent = Nothing
-          , newTaskStatus = Just status
+          , newTaskStatus = status
           , newTaskStage = stage
           , newTaskStart = start
-          , newTaskTags = []
+          , newTaskEnd = end
+          , newTaskTags = fromMaybe [] $ M.lookup "tag" (optionsParamsN opts)
           }
       map = optionsMap opts
       get name = case M.lookup name map of
@@ -229,31 +229,38 @@ mode_mkdir = Mode
 mode_newtask = Mode
   { modeGroupModes = mempty
   , modeNames = ["newtask"]
-  , modeValue = ActionNewTask False Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing []
+  , modeValue = options_empty "newtask"
   , modeCheck = Right
   , modeReform = const Nothing
   , modeExpandAt = True
   , modeHelp = "Add a new task"
   , modeHelpSuffix = []
-  , modeArgs = ([flagArg (\v a -> Right (a { newTaskTitle = Just v })) "TITLE"], Nothing)
+  , modeArgs = ([flagArg (upd1 "title") "TITLE"], Just (flagArg updNewTaskOption "OPTION"))
   , modeGroupFlags = toGroup
-    [ flagReq ["parent", "p"] (\v a -> Right (a { newTaskParentRef = Just v })) "ID" "reference to parent of this item"
+    [ flagReq ["parent", "p"] (upd1 "parent") "ID" "reference to parent of this item"
     --, flagReq ["closed"] (upd1 "closed") "TIME" "Time that this item was closed."
-    --, flagReq ["id"] (upd1 "id") "ID" "A unique ID for this item. (NOT FOR NORMAL USE!)"
-    , flagReq ["label", "l"] (\v a -> Right (a { newTaskName = Just v })) "LABEL" "A unique label for this item."
-    , flagReq ["stage", "s"] (\v a -> Right (a { newTaskStage = Just v })) "STAGE" "new|incubator|today. (default=new)"
-    , flagReq ["status"] (\v a -> Right (a { newTaskStatus = Just v })) "STATUS" "open|closed|deleted. (default=open)"
-    , flagReq ["start"] (\v a -> case parseTime' utc v of
-          Left msgs -> Left (unwords msgs)
-          Right time -> Right (a { newTaskStart = Just time })
-        ) "TIME" "Start time"
-    --, flagReq ["tag", "t"] (updN "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
-    --, flagReq ["title"] (upd1 "title") "TITLE" "Title of the item."
+    , flagReq ["id"] (upd1 "id") "ID" "A unique ID for this item.  Normally this is randomly assigned."
+    , flagReq ["name", "n"] (upd1 "name") "NAME" "A unique label for this item."
+    , flagReq ["stage", "s"] (upd1 "stage") "STAGE" "inbox|today|next|week|month|quarter|year. (default=inbox)"
+    , flagReq ["status"] (upd1 "status") "STATUS" "open|closed|deleted. (default=open)"
+    , flagReq ["start"] (upd1 "start") "TIME" "Start time"
+    , flagReq ["end"] (upd1 "end") "TIME" "End time"
+    , flagReq ["tag", "t"] (updN "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
+    , flagReq ["title"] (upd1 "title") "TITLE" "Title of the item."
     --, flagReq ["type"] (upd1 "type") "TYPE" "list|task. (default=task)"
     --, flagReq ["newfolder", "F"] (upd1 "newfolder") "FOLDER" "Place item in folder, and create the folder if necessary."
-    , flagHelpSimple (\a -> a { newTaskHelp = True })
+    , flagHelpSimple updHelp
     ]
   }
+
+-- parameter shortcuts (/work = -p work, +mustdo = -t mustdo, *next = -s next, "tomorrow 15h")
+updNewTaskOption :: String -> Options -> Either String Options
+updNewTaskOption s opts = case s of
+  '/':x -> upd1 "parent" x opts
+  '+':x -> updN "tag" x opts
+  '-':_ -> updN "tag" s opts
+  '*':x -> upd1 "stage" x opts
+  _ -> Left ("unrecognized option: "++s)
 
 cat :: Env -> ActionCat -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 cat env action | trace ("cat: "++(show action)) False = undefined
@@ -562,6 +569,8 @@ newtask (Env time user cwd) action0 = do
       title <- getMaybe newTaskTitle
       stage <- getMaybe newTaskStage
       start <- getMaybeTime newTaskStart
+      end <- getMaybeTime newTaskEnd
+      let tags = flip map (newTaskTags action0) (\s -> if take 1 s == "-" then DiffRemove "tag" (tail s) else DiffAdd "tag" s)
       let diffs = catMaybes
             [ Just $ DiffEqual "type" "task"
             , Just $ DiffEqual "status" $ fromMaybe "open" status
@@ -570,7 +579,9 @@ newtask (Env time user cwd) action0 = do
             , fmap (DiffEqual "title") title
             , Just $ DiffEqual "stage" $ fromMaybe "inbox" stage
             , fmap (DiffEqual "start") start
+            , fmap (DiffEqual "end") start
             ]
+            ++ tags
       return (PatchHunk [uuid] diffs)
 
 show' :: Env -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)

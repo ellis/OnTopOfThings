@@ -159,6 +159,7 @@
     * Vivia OnTop (vot)
     * Vivia OnTopOfThings
     * water, aqua, mind, atop, pura, nous pura, idea pura, pax, tranquil, idyll, serenity, tranquility, equanimity
+    * ocean
 
 ## GUI Ideas
 
