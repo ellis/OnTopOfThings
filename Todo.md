@@ -68,7 +68,11 @@ Ideas:
 - [x] Show: calendar: space before date (except the first)
 - [?] Repl: newtask: add --end parameter 
 - [x] Show: calendar: show weekday after date
-- [ ] Show: show start and end time
+- [x] Show: calendar: show start and end time
+- [ ] Item: create special database parser for Time, so that the time fields can be Times instead of Strings
+- [ ] Time: create timeToLocalTime function
+- [ ] Show: calendar: show nicer start and end time
+- [ ] Show: show start and end time for tasks too, not just calendar
 - [ ] Main: add current time zone to Env
 - [ ] Repl: newtask: add -P parameter to create folder if it doesn't exist 
 - [ ] Config: load config file on program startup

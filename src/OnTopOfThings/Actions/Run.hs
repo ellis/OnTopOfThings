@@ -579,7 +579,7 @@ newtask (Env time user cwd) action0 = do
             , fmap (DiffEqual "title") title
             , Just $ DiffEqual "stage" $ fromMaybe "inbox" stage
             , fmap (DiffEqual "start") start
-            , fmap (DiffEqual "end") start
+            , fmap (DiffEqual "end") end
             ]
             ++ tags
       return (PatchHunk [uuid] diffs)

@@ -297,7 +297,7 @@ showCalendar opts fromTime = do
         s <- itemToString opts item
         liftIO $ putStrLn $ s
       | otherwise = do
-        s <- itemToString opts item
+        s <- formatItem "${X}  ${H} ${t} ${T}" item
         liftIO $ putStrLn $ prefix ++ s
         where
           index :: Maybe Int
@@ -354,6 +354,55 @@ filterChildren items parent =
 --      -- Continuing by search for this items parent
 --      uuid' = M.lookup "parent" m'
 --findParentLabel' _ _ acc = acc
+
+formatItem :: String -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) String
+formatItem format item = parseFormatItem' format item
+
+parseFormatItem' :: [Char] -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) String
+parseFormatItem' [] _ = return ""
+parseFormatItem' format item = do
+  (s, format') <- parseFormatItem format item
+  s' <- parseFormatItem' format' item
+  return (s ++ s')
+
+parseFormatItem :: [Char] -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) (String, [Char])
+parseFormatItem [] _ = return ("", [])
+parseFormatItem ('$':'$':rest) item = return ("$", rest)
+-- TODO: would also like to handle format like: %{T^infix}, %{T^prefix^siffix}, %{T^prefix^infix^suffix}
+parseFormatItem ('$':'{':x:'}':rest) item = do
+  s <- formatElement (x:[]) ("", "", "") item
+  return (s, rest)
+parseFormatItem ('$':'{':x1:x2:'}':rest) item = do
+  s <- formatElement (x1:x2:[]) ("", "", "") item
+  return (s, rest)
+parseFormatItem (x:rest) item = return (x:[], rest)
+
+formatElement :: String -> (String, String, String) -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) String
+formatElement x (prefix, infix_, suffix) item = do
+  s_ <- case x of
+    "X" ->
+      return $ case (itemType item, itemStatus item) of
+        ("list", "open") -> Nothing
+        ("list", "closed") -> Just "[x]"
+        ("list", "deleted") -> Just "XXX"
+        ("task", "open") -> Just "[ ]"
+        (_, "open") -> Just "-"
+        (_, "closed") -> Just "[x]"
+        (_, "deleted") -> Just "XXX"
+        _ -> Nothing
+    "H" ->
+      return $ case (itemStart item, itemEnd item) of
+        (Just start, Just end) -> Just (start ++ " - " ++ end)
+        (Just start, Nothing) -> Just (start)
+        (Nothing, Just end) -> Just (end)
+        _ -> Nothing
+    "t" -> return (itemTitle item)
+    "T" -> do
+      tags' <- selectList [PropertyUuid ==. itemUuid item, PropertyName ==. "tag"] []
+      let l = map (\x -> '+':(propertyValue $ entityVal x)) tags'
+      let s = if null l then "" else "(" ++ (intercalate ", " l) ++ ")"
+      return (Just s)
+  return $ fromMaybe "" $ flip fmap s_ (\s -> prefix ++ s ++ suffix)
 
 itemToString :: Options -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) String
 itemToString opts item = do
