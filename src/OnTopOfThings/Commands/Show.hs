@@ -39,6 +39,7 @@ import Database.Persist.Sql (insert, deleteWhere, toPersistValue)
 import Database.Persist.Sqlite (SqlPersistT, runSqlite, rawSql)
 import Database.Persist.Types
 import Debug.Trace
+import System.Console.ANSI
 import System.Console.CmdArgs.Explicit
 import System.FilePath (joinPath)
 import System.Locale (defaultTimeLocale)
@@ -281,9 +282,11 @@ showCalendar opts fromTime = do
     recurse [] _ _ = return ()
     recurse ((time, item):rest) uuidToIndex_m maybeDay = do
       let day = Just $ otimeDay time
-      when (day /= maybeDay) $ do
-        when (isJust maybeDay) (liftIO $ putStrLn "")
-        liftIO $ putStrLn $ formatTime defaultTimeLocale "%Y-%m-%d %A" (otimeDay time)
+      when (day /= maybeDay) $ liftIO $ do
+        when (isJust maybeDay) (putStrLn "")
+        setSGR [SetConsoleIntensity BoldIntensity]
+        putStrLn $ formatTime defaultTimeLocale "%Y-%m-%d %A" (otimeDay time)
+        setSGR [Reset]
       fn uuidToIndex_m item
       recurse rest uuidToIndex_m day
     -- print an item
