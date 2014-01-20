@@ -62,7 +62,9 @@ Ideas:
 - [x] test: create a git repository for syncing my lists
 - [x] start working on calendar
 - [x] Repl: newtask: add --start parameter 
+- [ ] Repl: newtask: add --tag parameter 
 - [ ] Repl: newtask: add --end parameter 
+- [ ] Repl: newtask: add -P parameter to create folder if it doesn't exist 
 - [ ] Show: calendar: space before date (except the first)
 - [ ] Show: calendar: show weekday after date
 - [ ] Show: show start and end time
