@@ -69,8 +69,14 @@ Ideas:
 - [?] Repl: newtask: add --end parameter 
 - [x] Show: calendar: show weekday after date
 - [x] Show: calendar: show start and end time
+- [x] Repl: mod: add end parameters, and everything else newtask accepts
+- [ ] Repl: mod: add everything newtask accepts, including special args such as '+mustdo'
+- [ ] Show: let user specify subfolder, e.g. ``show -p /work/primers``
+- [ ] How to best schedule something for tomorrow?  Defer?  Start?
 - [ ] Item: create special database parser for Time, so that the time fields can be Times instead of Strings
 - [ ] Time: create timeToLocalTime function
+- [ ] Add field for time estimate
+- [ ] Create a ``waiting`` command to move a task to the waiting stage and remove
 - [ ] Show: calendar: show nicer start and end time
 - [ ] Show: show start and end time for tasks too, not just calendar
 - [ ] Main: add current time zone to Env
@@ -82,7 +88,9 @@ Ideas:
 - [ ] Show: bug: folder names are sometimes listed multiple times
 - [ ] Show: bug: empty folders shouldn't be listed normally
 - [ ] Show: ``oldest`` report, which orders from oldest to newest
+- [ ] Figure out how to handle multi-day events -- maybe have a ``template`` field that refers to the first part, and just modifies some fields
 - [ ] Show: ``-n`` options to limit number of tasks to display, in particular for listing items in some order (such as oldest first)
+- [ ] add ``--defer`` option to ``newtask`` and ``mod``, and create corresponding report
 - [ ] Repl: ``newtask`` should output a CopyFile instead of a PatchFile
 - [ ] Stages
    - it should be possible for the user to define custom stages

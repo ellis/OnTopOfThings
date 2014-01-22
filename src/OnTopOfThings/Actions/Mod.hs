@@ -95,6 +95,9 @@ instance Action ActionMod where
     start_ <- case M.lookup "start" (optionsParams1 opts) of
       Nothing -> return (Right Nothing)
       Just s -> return (parseTime' tz s >>= \time -> Right (Just time))
+    end_ <- case M.lookup "end" (optionsParams1 opts) of
+      Nothing -> return (Right Nothing)
+      Just s -> return (parseTime' tz s >>= \time -> Right (Just time))
     return $ do
       items <- items_
       let uuids = map itemUuid items
@@ -102,6 +105,7 @@ instance Action ActionMod where
       let parentUuid = parentItem  >>= \item -> Just (itemUuid item)
       closed <- closed_
       start <- start_
+      end <- end_
       return (ActionMod
                 { modUuids = uuids
                 , modType = M.lookup "type" (optionsParams1 opts)
@@ -113,6 +117,7 @@ instance Action ActionMod where
                 , modStage = M.lookup "stage" (optionsParams1 opts)
                 , modClosed = closed
                 , modStart = start
+                , modEnd = end
                 , modTag = M.lookup "tag" (optionsParamsN opts)
                 , modOptions = opts
                 })
@@ -138,6 +143,7 @@ mode_mod = Mode
     , flagReq ["stage", "s"] (upd1 "stage") "STAGE" "new|incubator|today. (default=new)"
     , flagReq ["closed"] (upd1 "closed") "TIME" "Time that this item was closed."
     , flagReq ["start"] (upd1 "start") "TIME" "Start time for this event."
+    , flagReq ["end"] (upd1 "end") "TIME" "End time for this event."
     , flagReq ["tag", "t"] (updN "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
     , flagHelpSimple updHelp
     ]
@@ -156,6 +162,7 @@ mod env action = do
         , get "stage" modStage
         , getUTC "closed" modClosed
         , getTime "start" modStart
+        , getTime "end" modEnd
         , (modTag action) >>= \l -> Just (map (\x -> DiffAdd "tag" x) l)
         ]
   let hunk = PatchHunk (modUuids action) diffs

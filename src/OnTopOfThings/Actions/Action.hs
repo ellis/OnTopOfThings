@@ -77,6 +77,7 @@ data ActionMod = ActionMod
   , modStage :: Maybe String
   , modClosed :: Maybe UTCTime
   , modStart :: Maybe Time
+  , modEnd :: Maybe Time
   , modTag :: Maybe [String]
   , modOptions :: Options
   } deriving (Show)
