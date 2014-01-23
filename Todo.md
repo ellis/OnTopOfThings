@@ -70,6 +70,8 @@ Ideas:
 - [x] Show: calendar: show weekday after date
 - [x] Show: calendar: show start and end time
 - [x] Repl: mod: add end parameters, and everything else newtask accepts
+- [x] Repl: color the ``otot>`` prompt
+- [ ] Rebuild: create the root folder too
 - [ ] Repl: mod: add everything newtask accepts, including special args such as '+mustdo'
 - [ ] Show: let user specify subfolder, e.g. ``show -p /work/primers``
 - [ ] How to best schedule something for tomorrow?  Defer?  Start?

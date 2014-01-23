@@ -26,9 +26,11 @@ import Data.Maybe (catMaybes, fromMaybe)
 import Data.Monoid
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
+import System.Console.ANSI
 import System.Console.CmdArgs.Explicit
 import System.Environment
 import System.Exit
+import System.FilePath (joinPath)
 import System.FilePath.Posix (splitDirectories)
 import System.IO
 import System.Locale (defaultTimeLocale)
@@ -108,7 +110,7 @@ main = do
             Right opts -> processOptions opts
 
 repl cwd = do
-  putStr "otot> "
+  putStr $ (setSGRCode [SetColor Foreground Vivid Green]) ++ (joinPath cwd) ++ " > " ++ (setSGRCode [])
   hFlush stdout
   input <- getLine
   time <- getCurrentTime
