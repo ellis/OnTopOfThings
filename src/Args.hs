@@ -29,6 +29,7 @@ module Args
 , upd0
 , upd1
 , updN
+, updM
 , updArgs
 , updHelp
 , optionsReplaceParamN
@@ -61,9 +62,11 @@ data Options = Options
   , optionsParams0 :: Set.Set String
   , optionsParams1 :: M.Map String String
   , optionsParamsN :: M.Map String [String]
+  , optionsParamsM :: M.Map String [Mod]
   }
   deriving (Show)
 
+-- REFACTOR: Get rid of this and use Diff instead
 data Mod
   = ModNull String
   | ModEqual String String
@@ -91,7 +94,7 @@ type ModeInfo =
   ( Mode Options, ModeRun )
 
 options_empty :: String -> Options
-options_empty name = Options name [] [] False [] M.empty Set.empty M.empty M.empty
+options_empty name = Options name [] [] False [] M.empty Set.empty M.empty M.empty M.empty
 
 updArgs value opts = Right opts' where
   args' = optionsArgs opts ++ [value]
@@ -107,6 +110,7 @@ upd name value opts = Right opts' where
 upd0 = optionsAddParam0
 upd1 = optionsAddParam1
 updN = optionsAddParamN
+updM = optionsAddParamM
 
 optionsAddParam0 :: String -> Options -> Options
 optionsAddParam0 name opts = opts' where
@@ -126,22 +130,26 @@ optionsAddParam1 name value opts = Right opts' where
 optionsAddParamN :: String -> String -> Options -> Either String Options
 optionsAddParamN name value opts = Right opts' where
   flags' = optionsFlags opts ++ [(name, value)]
-  (mods', paramsN') = case value of
-    '-':value' -> (mods', paramsN') where
-      mods' = optionsMods opts ++ (if null value then [] else [(ModRemove name value')])
-      paramsN' = M.alter fn name (optionsParamsN opts)
-      fn :: Maybe [String] -> Maybe [String]
-      fn Nothing = Nothing
-      fn (Just l) = case filter (/= value') l of
-        [] -> Nothing
-        l' -> Just l'
-    value' -> (mods', paramsN') where
-      mods' = optionsMods opts ++ (if null value then [] else [(ModAdd name value)])
-      paramsN' = M.alter fn name (optionsParamsN opts)
-      fn :: Maybe [String] -> Maybe [String]
-      fn Nothing = Just ([value])
-      fn (Just l) = Just (l ++ [value])
-  opts' = opts { optionsFlags = flags', optionsMods = mods', optionsParamsN = paramsN' }
+  opts' = opts { optionsFlags = flags', optionsMods = mods', optionsParamsN = paramsN' } where
+    mods' = optionsMods opts ++ (if null value then [] else [(ModAdd name value)])
+    paramsN' = M.alter fn name (optionsParamsN opts)
+    fn :: Maybe [String] -> Maybe [String]
+    fn Nothing = Just ([value])
+    fn (Just l) = Just (l ++ [value])
+
+optionsAddParamM :: String -> String -> Options -> Either String Options
+optionsAddParamM name value opts = Right opts' where
+  flags' = optionsFlags opts ++ [(name, value)]
+  mod = case value of
+    [] -> ModNull name
+    '-':[] -> ModUnset name
+    '-':value' -> ModRemove name value'
+    value' -> ModAdd name value
+  (mods', paramsM') = (optionsMods opts ++ [mod], M.alter fn name (optionsParamsM opts)) where
+      fn :: Maybe [Mod] -> Maybe [Mod]
+      fn Nothing = Just [mod]
+      fn (Just l) = Just (l ++ [mod])
+  opts' = opts { optionsFlags = flags', optionsMods = mods', optionsParamsM = paramsM' }
 
 updHelp opts = opts { optionsHelp = True }
 

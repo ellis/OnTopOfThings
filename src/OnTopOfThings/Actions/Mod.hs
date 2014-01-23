@@ -118,7 +118,7 @@ instance Action ActionMod where
                 , modClosed = closed
                 , modStart = start
                 , modEnd = end
-                , modTag = M.lookup "tag" (optionsParamsN opts)
+                , modTag = M.lookup "tag" (optionsParamsM opts)
                 , modOptions = opts
                 })
   actionToRecordArgs action = Nothing
@@ -144,7 +144,7 @@ mode_mod = Mode
     , flagReq ["closed"] (upd1 "closed") "TIME" "Time that this item was closed."
     , flagReq ["start"] (upd1 "start") "TIME" "Start time for this event."
     , flagReq ["end"] (upd1 "end") "TIME" "End time for this event."
-    , flagReq ["tag", "t"] (updN "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
+    , flagReq ["tag", "t"] (updM "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
     , flagHelpSimple updHelp
     ]
   }
@@ -163,7 +163,7 @@ mod env action = do
         , getUTC "closed" modClosed
         , getTime "start" modStart
         , getTime "end" modEnd
-        , (modTag action) >>= \l -> Just (map (\x -> DiffAdd "tag" x) l)
+        , (modTag action) >>= \l -> Just (map modToDiff l)
         ]
   let hunk = PatchHunk (modUuids action) diffs
   return (ActionResult [hunk] False [] [])
@@ -174,3 +174,11 @@ mod env action = do
     getUTC name fn = (fn action) >>= \x -> Just [DiffEqual name (formatISO8601 x)]
     getTime :: String -> (ActionMod -> Maybe Time) -> Maybe [Diff]
     getTime name fn = (fn action) >>= \x -> Just [DiffEqual name (formatTime' x)]
+
+modToDiff :: Mod -> Diff
+modToDiff mod = case mod of
+  ModNull name -> DiffNull name
+  ModEqual n v -> DiffEqual n v
+  ModAdd n v -> DiffAdd n v
+  ModUnset n -> DiffUnset n
+  ModRemove n v -> DiffRemove n v

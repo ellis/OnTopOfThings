@@ -72,6 +72,7 @@ Ideas:
 - [x] Repl: mod: add end parameters, and everything else newtask accepts
 - [x] Repl: color the ``otot>`` prompt
 - [x] Rebuild: create the root folder too
+- [?] Mod: let user remove tags
 - [ ] Repl: mod: add everything newtask accepts, including special args such as '+mustdo'
 - [ ] Show: let user specify subfolder, e.g. ``show -p /work/primers``
 - [ ] How to best schedule something for tomorrow?  Defer?  Start?
