@@ -191,16 +191,16 @@ showTasks opts fromTime = do
         --where_ ((expr' opts fromTime i) &&. p ^. PropertyUuid ==. i ^. ItemUuid &&. p ^. PropertyName ==. val "tag" &&. (in_ (p ^. PropertyValue) (valList l)))
         --return i
   let tasks = map entityVal tasks'
-  liftIO $ putStrLn "tasks:"
-  liftIO $ mapM_ print tasks
+  --liftIO $ putStrLn "tasks:"
+  --liftIO $ mapM_ print tasks
   -- Recursively load all parent items
   items <- loadRecursive tasks
-  liftIO $ putStrLn "items:"
-  liftIO $ mapM_ print items
+  --liftIO $ putStrLn "items:"
+  --liftIO $ mapM_ print items
   -- Get the lists
   let lists = (filter isContainerItem items) :: [Item]
-  liftIO $ putStrLn "lists:"
-  liftIO $ print lists
+  --liftIO $ putStrLn "lists:"
+  --liftIO $ print lists
   let children = concat $ map (filterChildren items) lists :: [Item]
   let orphans = filter (\task -> (itemParent task) == Nothing) tasks
   -- Remove all previous indexes

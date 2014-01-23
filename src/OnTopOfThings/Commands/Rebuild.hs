@@ -44,6 +44,7 @@ import Command
 import DatabaseTables
 import DatabaseUtils
 import Utils
+import OnTopOfThings.Actions.Utils (getroot)
 import OnTopOfThings.Data.FileJson
 import OnTopOfThings.Data.Json
 import OnTopOfThings.Data.PatchDatabase
@@ -94,6 +95,8 @@ optsRun_rebuild opts = do
         deleteWhere ([] :: [Filter Event])
         deleteWhere ([] :: [Filter Item])
         deleteWhere ([] :: [Filter Property])
+        -- Force creation of root folder
+        getroot
         -- Add the command records and process them
         mapM insert events
         result <- mapM processEvent events
