@@ -198,7 +198,8 @@ showTasks opts fromTime = do
   --liftIO $ putStrLn "items:"
   --liftIO $ mapM_ print items
   -- Get the lists
-  let lists = (filter isContainerItem items) :: [Item]
+  let lists0 = (filter isContainerItem items) :: [Item]
+  let lists = sortBy compareItemName lists0
   --liftIO $ putStrLn "lists:"
   --liftIO $ print lists
   let children = concat $ map (filterChildren items) lists :: [Item]
@@ -240,6 +241,8 @@ showTasks opts fromTime = do
           index_s :: Maybe String
           index_s = fmap (\i -> "(" ++ (show i) ++ ")  ") index
           prefix = fromMaybe "" index_s
+    --compareItemName :: Item -> Item -> 
+    compareItemName a b = compare (itemName a) (itemName b)
 
 showCalendar :: Options -> Time -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 showCalendar opts fromTime | trace ("showCalendar: "++(show opts)) False = undefined

@@ -73,6 +73,12 @@ Ideas:
 - [x] Repl: color the ``otot>`` prompt
 - [x] Rebuild: create the root folder too
 - [?] Mod: let user remove tags
+- [ ] Rebuild: handle diff "-tag XXX"
+- [ ] handle type=note
+- [ ] Show: handle sub-tasks
+- [ ] need to think about sub-types
+  - [ ] for example, a task to spend a certain amount of time on a task
+  - [ ] a task to do something for a "do-more" goal
 - [ ] Repl: mod: add everything newtask accepts, including special args such as '+mustdo'
 - [ ] Show: let user specify subfolder, e.g. ``show -p /work/primers``
 - [ ] How to best schedule something for tomorrow?  Defer?  Start?
