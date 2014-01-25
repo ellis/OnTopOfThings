@@ -75,12 +75,14 @@ Ideas:
 - [?] Mod: let user remove tags
 - [x] Rebuild: handle diff "-tag XXX"
 - [x] Show: sort lists alphabetically and fix display of some lists as items
+- [ ] Repl: newtask: default to '--stage=week' if parent is set?
 - [ ] Repl: cat: let user pass index too
 - [ ] handle type=note
 - [ ] Show: handle sub-tasks
 - [ ] need to think about sub-types
   - [ ] for example, a task to spend a certain amount of time on a task
   - [ ] a task to do something for a "do-more" goal
+  - [ ] task to work on a project, perhaps with a subset of project tasks
 - [ ] Repl: mod: add everything newtask accepts, including special args such as '+mustdo'
 - [ ] Show: let user specify subfolder, e.g. ``show -p /work/primers``
 - [ ] How to best schedule something for tomorrow?  Defer?  Start?
