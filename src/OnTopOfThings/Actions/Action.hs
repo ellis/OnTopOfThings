@@ -46,7 +46,7 @@ import OnTopOfThings.Data.Types
 import OnTopOfThings.Actions.Env
 
 data ActionCat = ActionCat
-  { catArgs :: [String]
+  { catUuids :: [String]
   } deriving (Show)
 
 data ActionClose = ActionClose
@@ -75,9 +75,10 @@ data ActionMod = ActionMod
   , modTitle :: Maybe String
   , modContent :: Maybe String
   , modStage :: Maybe String
-  , modClosed :: Maybe UTCTime
+  , modClosed :: Maybe Time
   , modStart :: Maybe Time
   , modEnd :: Maybe Time
+  , modDue :: Maybe Time
   , modTag :: Maybe [Mod]
   , modOptions :: Options
   } deriving (Show)
@@ -104,6 +105,7 @@ data ActionNewTask = ActionNewTask
   , newTaskStage :: Maybe String
   , newTaskStart :: Maybe Time
   , newTaskEnd :: Maybe Time
+  , newTaskDue :: Maybe Time
   , newTaskTags :: [String]
   } deriving (Show)
 

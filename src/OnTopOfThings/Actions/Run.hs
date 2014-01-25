@@ -64,10 +64,17 @@ import OnTopOfThings.Data.Time
 
 instance Action ActionCat where
   runAction env action = cat env action >>= \result -> return (env, result)
-  actionFromOptions env opts = let
-      args = optionsArgs opts
-    in do
-      return (Right (ActionCat args))
+  actionFromOptions env opts = do
+    let refs_ = concatEithersN $ map parseNumberList (optionsArgs opts)
+    case refs_ of
+      Left msgs -> return (Left msgs)
+      Right refs' -> do
+        let refs = concat refs'
+        items_ <- mapM (lookupItem env) refs
+        case concatEithersN items_ of
+          Left msgs -> return (Left msgs)
+          Right items -> return (Right (ActionCat uuids)) where
+            uuids = map itemUuid items
   actionToRecordArgs action = Nothing
 
 instance Action ActionClose where
@@ -141,6 +148,7 @@ instance Action ActionNewTask where
           , newTaskStage = stage
           , newTaskStart = start
           , newTaskEnd = end
+          , newTaskDue = due
           , newTaskTags = fromMaybe [] $ M.lookup "tag" (optionsParamsN opts)
           }
       map = optionsMap opts
@@ -245,6 +253,7 @@ mode_newtask = Mode
     , flagReq ["status"] (upd1 "status") "STATUS" "open|closed|deleted. (default=open)"
     , flagReq ["start"] (upd1 "start") "TIME" "Start time"
     , flagReq ["end"] (upd1 "end") "TIME" "End time"
+    , flagReq ["due"] (upd1 "due") "TIME" "Due time"
     , flagReq ["tag", "t"] (updN "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
     , flagReq ["title"] (upd1 "title") "TITLE" "Title of the item."
     --, flagReq ["type"] (upd1 "type") "TYPE" "list|task. (default=task)"
@@ -570,6 +579,7 @@ newtask (Env time user cwd) action0 = do
       stage <- getMaybe newTaskStage
       start <- getMaybeTime newTaskStart
       end <- getMaybeTime newTaskEnd
+      due <- getMaybeTime newTaskDue
       let tags = flip map (newTaskTags action0) (\s -> if take 1 s == "-" then DiffRemove "tag" (tail s) else DiffAdd "tag" s)
       let diffs = catMaybes
             [ Just $ DiffEqual "type" "task"
@@ -580,6 +590,7 @@ newtask (Env time user cwd) action0 = do
             , Just $ DiffEqual "stage" $ fromMaybe "inbox" stage
             , fmap (DiffEqual "start") start
             , fmap (DiffEqual "end") end
+            , fmap (DiffEqual "due") due
             ]
             ++ tags
       return (PatchHunk [uuid] diffs)

@@ -72,11 +72,13 @@ Ideas:
 - [x] Repl: mod: add end parameters, and everything else newtask accepts
 - [x] Repl: color the ``otot>`` prompt
 - [x] Rebuild: create the root folder too
-- [?] Mod: let user remove tags
+- [x] Mod: let user remove tags
 - [x] Rebuild: handle diff "-tag XXX"
 - [x] Show: sort lists alphabetically and fix display of some lists as items
+- [?] Repl: cat: let user pass index too
+- [x] Repl: add `due` to newtask and mod
+- [ ] Show: due date
 - [ ] Repl: newtask: default to '--stage=week' if parent is set?
-- [ ] Repl: cat: let user pass index too
 - [ ] handle type=note
 - [ ] Show: handle sub-tasks
 - [ ] need to think about sub-types
@@ -265,7 +267,6 @@ Ideas:
 - [ ] Show: when listing with '--parent=ID', also list sublists of the given parent
 - [ ] Show: --type for just listing lists, for example
 - [ ] NumberList: accept '/' and other symbols in identifiers
-- [ ] Add: due date
 - [ ] Import: due date
 - [ ] Args: make upd1 and updN functions, where upd1 updates the map and ensures only once instance of the flag
 - [ ] Show: --orphans for items without parents

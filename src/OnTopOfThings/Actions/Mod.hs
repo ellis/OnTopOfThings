@@ -28,7 +28,7 @@ import Control.Monad.Trans.Resource (ResourceT)
 import Data.List (inits, intercalate, partition, sort, sortBy)
 import Data.Maybe
 import Data.Monoid
-import Data.Time (UTCTime, getCurrentTime, getCurrentTimeZone)
+import Data.Time (TimeZone, UTCTime, getCurrentTime, getCurrentTimeZone)
 import Data.Time.ISO8601
 import Database.Persist (insert)
 import Database.Persist.Sqlite
@@ -87,25 +87,15 @@ instance Action ActionMod where
         case item_ of
           Left msgs -> return (Left msgs)
           Right item -> return (Right (Just item))
-    closed_ <- case M.lookup "closed" (optionsParams1 opts) of
-      Nothing -> return (Right Nothing)
-      Just s -> case parseISO8601 s of
-        Nothing -> return (Left ["Expected ISO8601 format for `closed` time: "++s])
-        Just utc -> return (Right (Just utc))
-    start_ <- case M.lookup "start" (optionsParams1 opts) of
-      Nothing -> return (Right Nothing)
-      Just s -> return (parseTime' tz s >>= \time -> Right (Just time))
-    end_ <- case M.lookup "end" (optionsParams1 opts) of
-      Nothing -> return (Right Nothing)
-      Just s -> return (parseTime' tz s >>= \time -> Right (Just time))
     return $ do
       items <- items_
       let uuids = map itemUuid items
       parentItem <- parentItem_
       let parentUuid = parentItem  >>= \item -> Just (itemUuid item)
-      closed <- closed_
-      start <- start_
-      end <- end_
+      closed <- getMaybeDate "closed" tz
+      start <- getMaybeDate "start" tz
+      end <- getMaybeDate "end" tz
+      due <- getMaybeDate "due" tz
       return (ActionMod
                 { modUuids = uuids
                 , modType = M.lookup "type" (optionsParams1 opts)
@@ -118,9 +108,15 @@ instance Action ActionMod where
                 , modClosed = closed
                 , modStart = start
                 , modEnd = end
+                , modDue = due
                 , modTag = M.lookup "tag" (optionsParamsM opts)
                 , modOptions = opts
                 })
+    where
+      getMaybeDate :: String -> TimeZone -> Validation (Maybe Time)
+      getMaybeDate name tz = case M.lookup name (optionsParams1 opts) of
+        Just s -> parseTime' tz s >>= \time -> Right (Just time)
+        _ -> Right Nothing
   actionToRecordArgs action = Nothing
 
 mode_mod = Mode
@@ -144,6 +140,7 @@ mode_mod = Mode
     , flagReq ["closed"] (upd1 "closed") "TIME" "Time that this item was closed."
     , flagReq ["start"] (upd1 "start") "TIME" "Start time for this event."
     , flagReq ["end"] (upd1 "end") "TIME" "End time for this event."
+    , flagReq ["due"] (upd1 "due") "TIME" "Due time."
     , flagReq ["tag", "t"] (updM "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
     , flagHelpSimple updHelp
     ]
@@ -160,7 +157,7 @@ mod env action = do
         , get "title" modTitle
         , get "content" modContent
         , get "stage" modStage
-        , getUTC "closed" modClosed
+        , getTime "closed" modClosed
         , getTime "start" modStart
         , getTime "end" modEnd
         , (modTag action) >>= \l -> Just (map modToDiff l)
@@ -170,8 +167,6 @@ mod env action = do
   where
     get :: String -> (ActionMod -> Maybe String) -> Maybe [Diff]
     get name fn = (fn action) >>= \x -> Just [DiffEqual name x]
-    getUTC :: String -> (ActionMod -> Maybe UTCTime) -> Maybe [Diff]
-    getUTC name fn = (fn action) >>= \x -> Just [DiffEqual name (formatISO8601 x)]
     getTime :: String -> (ActionMod -> Maybe Time) -> Maybe [Diff]
     getTime name fn = (fn action) >>= \x -> Just [DiffEqual name (formatTime' x)]
 
