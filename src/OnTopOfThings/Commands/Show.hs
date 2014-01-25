@@ -22,7 +22,7 @@ module OnTopOfThings.Commands.Show
 , optsRun_show
 ) where
 
-import Control.Monad (mplus, when)
+import Control.Monad (liftM2, mplus, when)
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
@@ -199,7 +199,11 @@ showTasks opts fromTime = do
   --liftIO $ mapM_ print items
   -- Get the lists
   let lists0 = (filter isContainerItem items) :: [Item]
-  let lists = sortBy compareItemName lists0
+  lists1 <- mapM (\item -> itemToString opts item >>= \s -> return (s, item)) lists0
+  let lists2 = sortBy (\a b -> compare (fst a) (fst b)) lists1
+  --liftIO $ putStrLn "lists:"
+  --liftIO $ mapM_ (putStrLn . fst) lists2
+  let lists = map snd lists2
   --liftIO $ putStrLn "lists:"
   --liftIO $ print lists
   let children = concat $ map (filterChildren items) lists :: [Item]
@@ -241,8 +245,6 @@ showTasks opts fromTime = do
           index_s :: Maybe String
           index_s = fmap (\i -> "(" ++ (show i) ++ ")  ") index
           prefix = fromMaybe "" index_s
-    --compareItemName :: Item -> Item -> 
-    compareItemName a b = compare (itemName a) (itemName b)
 
 showCalendar :: Options -> Time -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 showCalendar opts fromTime | trace ("showCalendar: "++(show opts)) False = undefined
@@ -339,7 +341,7 @@ loadByUuid uuids = do
 -- Get the children of the given 'parent' from the 'items'
 filterChildren :: [Item] -> Item -> [Item]
 filterChildren items parent =
-  filter (\item -> itemParent item == Just (itemUuid parent)) items
+  filter (\item -> (not. isContainerItem) item && itemParent item == Just (itemUuid parent)) items
 
 --findParentLabel :: Maybe [String] -> EntityMap -> [String]
 --findParentLabel uuid m = findParentLabel' uuid m []

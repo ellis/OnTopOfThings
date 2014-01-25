@@ -74,6 +74,8 @@ Ideas:
 - [x] Rebuild: create the root folder too
 - [?] Mod: let user remove tags
 - [x] Rebuild: handle diff "-tag XXX"
+- [x] Show: sort lists alphabetically and fix display of some lists as items
+- [ ] Repl: cat: let user pass index too
 - [ ] handle type=note
 - [ ] Show: handle sub-tasks
 - [ ] need to think about sub-types
