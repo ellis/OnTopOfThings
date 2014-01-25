@@ -131,6 +131,9 @@ instance FromJSON Diff where
     "+" -> return $ DiffAdd (T.unpack name) (T.unpack value) where
       (name, value') = T.breakOn " " (T.tail t)
       value = T.drop 1 value'
+    "-" -> return $ DiffRemove (T.unpack name) (T.unpack value) where
+      (name, value') = T.breakOn " " (T.tail t)
+      value = T.drop 1 value'
     _ -> fail ("Unrecognized operation in diff: "++(T.unpack t))
 
 instance ToJSON File where

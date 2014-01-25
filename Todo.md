@@ -73,7 +73,7 @@ Ideas:
 - [x] Repl: color the ``otot>`` prompt
 - [x] Rebuild: create the root folder too
 - [?] Mod: let user remove tags
-- [ ] Rebuild: handle diff "-tag XXX"
+- [x] Rebuild: handle diff "-tag XXX"
 - [ ] handle type=note
 - [ ] Show: handle sub-tasks
 - [ ] need to think about sub-types
