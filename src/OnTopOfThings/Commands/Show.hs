@@ -256,12 +256,14 @@ showCalendar opts fromTime = do
   entities <- do
     let wheres =
                  [ "(item.type = 'event' OR item.type = 'task')"
-                 , "(item.start >= ? OR item.closed >= ?)"
+                 , "(item.start >= ? OR item.closed >= ? OR item.due >= ?)"
                  ]
     let stmt = "SELECT ?? FROM item WHERE " ++ (intercalate " AND " wheres)
     liftIO $ putStrLn stmt
-    rawSql (T.pack stmt) [toPersistValue fromTime_s, toPersistValue fromTime_s]
+    rawSql (T.pack stmt) [toPersistValue fromTime_s, toPersistValue fromTime_s, toPersistValue fromTime_s]
   let tasks' = map entityVal entities
+  liftIO $ putStrLn "tasks':"
+  liftIO $ mapM_ print tasks'
   let timeToItem_l_ = (concatEithersN $ map (\item -> itemToTime tz item >>= \time -> Right (time, item)) tasks') >>= \l ->
                       Right $ sortBy (\a b -> compare (fst a) (fst b)) l
   case timeToItem_l_ of
@@ -280,7 +282,7 @@ showCalendar opts fromTime = do
   where
     itemToTime :: TimeZone -> Item -> Validation Time
     itemToTime tz item = do
-      s <- (itemStart item) `mplus` (itemClosed item) `maybeToValidation` ["INTERNAL: missing start or closed time"]
+      s <- (itemStart item) `mplus` (itemClosed item) `mplus` (itemDue item) `maybeToValidation` ["INTERNAL: missing start, closed, or due time"]
       parseTime' tz s
     updateIndex :: (Item, Int) -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
     updateIndex (item, index) = do
@@ -399,10 +401,14 @@ formatElement x (prefix, infix_, suffix) item = do
         (_, "deleted") -> Just "XXX"
         _ -> Nothing
     "H" ->
-      return $ case (itemStart item, itemEnd item) of
-        (Just start, Just end) -> Just (start ++ " - " ++ end)
-        (Just start, Nothing) -> Just (start)
-        (Nothing, Just end) -> Just (end)
+      return $ case (itemStart item, itemEnd item, itemDue item) of
+        (Just start, Just end, Just due) -> Just (start ++ " - " ++ end ++ ", due " ++ due)
+        (Just start, Just end, Nothing) -> Just (start ++ " - " ++ end)
+        (Just start, Nothing, Just due) -> Just (start ++ ", due " ++ due)
+        (Just start, Nothing, Nothing) -> Just (start)
+        (Nothing, Just end, Just due) -> Just ("end " ++ end ++ ", due " ++ due)
+        (Nothing, Just end, Nothing) -> Just (end)
+        (Nothing, Nothing, Just due) -> Just ("due " ++ due)
         _ -> Nothing
     "t" -> return (itemTitle item)
     "T" -> do
