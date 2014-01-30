@@ -95,7 +95,7 @@ data ActionMv
     } deriving (Show)
 
 data ActionNewTask = ActionNewTask
-  { newTaskHelp :: Bool
+  { newTaskType :: Maybe String
   , newTaskUuid :: Maybe String
   , newTaskParentRef :: Maybe String
   , newTaskName :: Maybe String

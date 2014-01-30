@@ -78,6 +78,7 @@ Ideas:
 - [x] Repl: cat: let user pass index too
 - [x] Repl: add `due` to newtask and mod
 - [x] Show: due date (figure out why it's not working)
+- [x] Mod: add 'due' field to Diff
 - [ ] Repl: newtask: default to '--stage=week' if parent is set?
 - [ ] handle type=note
 - [ ] Show: handle sub-tasks

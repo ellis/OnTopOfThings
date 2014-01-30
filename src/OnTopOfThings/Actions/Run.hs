@@ -573,17 +573,18 @@ newtask (Env time user cwd) action0 = do
     getMaybeTime fn = Right (flip fmap (fn action0) formatTime')
     createHunk :: String -> Item -> Validation PatchHunk
     createHunk uuid parent = do
-      status <- getMaybe newTaskStatus
+      type_ <- fromMaybe "task" $ getMaybe newTaskType
+      status <- fromMaybe "open" $ getMaybe newTaskStatus
       name <- getMaybe newTaskName
       title <- getMaybe newTaskTitle
-      stage <- getMaybe newTaskStage
       start <- getMaybeTime newTaskStart
       end <- getMaybeTime newTaskEnd
       due <- getMaybeTime newTaskDue
+      stage <- getStage type_ status start due
       let tags = flip map (newTaskTags action0) (\s -> if take 1 s == "-" then DiffRemove "tag" (tail s) else DiffAdd "tag" s)
       let diffs = catMaybes
-            [ Just $ DiffEqual "type" "task"
-            , Just $ DiffEqual "status" $ fromMaybe "open" status
+            [ Just $ DiffEqual "type" type_
+            , Just $ DiffEqual "status" status
             , Just $ DiffEqual "parent" (itemUuid parent)
             , fmap (DiffEqual "name") name
             , fmap (DiffEqual "title") title
@@ -594,6 +595,15 @@ newtask (Env time user cwd) action0 = do
             ]
             ++ tags
       return (PatchHunk [uuid] diffs)
+    getStage :: String -> String -> Maybe String -> Maybe String -> Validation (Maybe String)
+    getStage type_ status start due = case newTaskStage action0 of
+      Just x -> Right (Just x)
+      Nothing ->
+        case status of
+          "open" ->
+            case (type_, start, due) of
+              (
+          _ -> Right Nothing
 
 show' :: Env -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 show' (Env time user cwd) opts = do
