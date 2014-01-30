@@ -160,7 +160,7 @@ mod env action = do
         , getTime "closed" modClosed
         , getTime "start" modStart
         , getTime "end" modEnd
-        , getTime "due" modEnd
+        , getTime "due" modDue
         , (modTag action) >>= \l -> Just (map modToDiff l)
         ]
   let hunk = PatchHunk (modUuids action) diffs

@@ -79,7 +79,7 @@ Ideas:
 - [x] Repl: add `due` to newtask and mod
 - [x] Show: due date (figure out why it's not working)
 - [x] Mod: add 'due' field to Diff
-- [ ] Repl: newtask: default to '--stage=week' if parent is set?
+- [?] Repl: newtask: default to null stage when stage is irrelevant
 - [ ] handle type=note
 - [ ] Show: handle sub-tasks
 - [ ] need to think about sub-types

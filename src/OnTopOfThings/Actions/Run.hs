@@ -16,6 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 -}
 
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiWayIf #-}
 
 module OnTopOfThings.Actions.Run where
 
@@ -128,6 +129,7 @@ instance Action ActionNewTask where
       createAction tz = do
         id <- getMaybe "id"
         title <- get "title"
+        type_ <- getMaybe "type"
         status <- getMaybe "status"
         parent <- getMaybe "parent"
         stage <- getMaybe "stage"
@@ -138,7 +140,7 @@ instance Action ActionNewTask where
         due <- getMaybeDate "due" tz
         review <- getMaybeDate "review" tz
         return $ ActionNewTask
-          { newTaskHelp = False
+          { newTaskType = type_
           , newTaskUuid = id
           , newTaskParentRef = parent
           , newTaskName = name
@@ -248,6 +250,7 @@ mode_newtask = Mode
     [ flagReq ["parent", "p"] (upd1 "parent") "ID" "reference to parent of this item"
     --, flagReq ["closed"] (upd1 "closed") "TIME" "Time that this item was closed."
     , flagReq ["id"] (upd1 "id") "ID" "A unique ID for this item.  Normally this is randomly assigned."
+    , flagReq ["type"] (upd1 "type") "TYPE" "task|note|folder. (default=task)"
     , flagReq ["name", "n"] (upd1 "name") "NAME" "A unique label for this item."
     , flagReq ["stage", "s"] (upd1 "stage") "STAGE" "inbox|today|next|week|month|quarter|year. (default=inbox)"
     , flagReq ["status"] (upd1 "status") "STATUS" "open|closed|deleted. (default=open)"
@@ -573,13 +576,15 @@ newtask (Env time user cwd) action0 = do
     getMaybeTime fn = Right (flip fmap (fn action0) formatTime')
     createHunk :: String -> Item -> Validation PatchHunk
     createHunk uuid parent = do
-      type_ <- fromMaybe "task" $ getMaybe newTaskType
-      status <- fromMaybe "open" $ getMaybe newTaskStatus
+      type_' <- getMaybe newTaskType
+      status' <- getMaybe newTaskStatus
       name <- getMaybe newTaskName
       title <- getMaybe newTaskTitle
       start <- getMaybeTime newTaskStart
       end <- getMaybeTime newTaskEnd
       due <- getMaybeTime newTaskDue
+      let type_ = fromMaybe "task" type_'
+      let status = fromMaybe "open" status'
       stage <- getStage type_ status start due
       let tags = flip map (newTaskTags action0) (\s -> if take 1 s == "-" then DiffRemove "tag" (tail s) else DiffAdd "tag" s)
       let diffs = catMaybes
@@ -588,7 +593,7 @@ newtask (Env time user cwd) action0 = do
             , Just $ DiffEqual "parent" (itemUuid parent)
             , fmap (DiffEqual "name") name
             , fmap (DiffEqual "title") title
-            , Just $ DiffEqual "stage" $ fromMaybe "inbox" stage
+            , fmap (DiffEqual "stage") stage
             , fmap (DiffEqual "start") start
             , fmap (DiffEqual "end") end
             , fmap (DiffEqual "due") due
@@ -596,14 +601,14 @@ newtask (Env time user cwd) action0 = do
             ++ tags
       return (PatchHunk [uuid] diffs)
     getStage :: String -> String -> Maybe String -> Maybe String -> Validation (Maybe String)
-    getStage type_ status start due = case newTaskStage action0 of
-      Just x -> Right (Just x)
-      Nothing ->
-        case status of
-          "open" ->
-            case (type_, start, due) of
-              (
-          _ -> Right Nothing
+    getStage type_ status start due =
+      if  | isJust (newTaskStage action0) -> Right (newTaskStage action0)
+          -- Closed items don't need a stage
+          | status /= "open" -> Right Nothing
+          -- Folders and notes don't need a stage
+          | elem type_ ["folder", "note"] -> Right Nothing
+          -- | elem type_ ["goal", "project", "task"] =
+          | otherwise -> Right (Just "inbox")
 
 show' :: Env -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 show' (Env time user cwd) opts = do
