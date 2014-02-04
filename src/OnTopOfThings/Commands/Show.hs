@@ -255,8 +255,8 @@ showCalendar opts fromTime = do
   let filters = expr' opts fromTime
   entities <- do
     let wheres =
-                 [ "(item.type = 'event' OR item.type = 'task')"
-                 , "(item.start >= ? OR item.closed >= ? OR item.due >= ?)"
+                 --[ "(item.type = 'event' OR item.type = 'task')"
+                 [ "(item.start >= ? OR item.closed >= ? OR item.due >= ?)"
                  ]
     let stmt = "SELECT ?? FROM item WHERE " ++ (intercalate " AND " wheres)
     liftIO $ putStrLn stmt

@@ -80,8 +80,9 @@ Ideas:
 - [x] Show: due date (figure out why it's not working)
 - [x] Mod: add 'due' field to Diff
 - [?] Repl: newtask: default to null stage when stage is irrelevant
-- [ ] handle type=note
+- [ ] Show: tasks: display start, end, due dates
 - [ ] Show: handle sub-tasks
+- [ ] Show: handle showing item hierarchy in general, not just tasks (e.g. notes)
 - [ ] need to think about sub-types
   - [ ] for example, a task to spend a certain amount of time on a task
   - [ ] a task to do something for a "do-more" goal
@@ -186,6 +187,7 @@ Ideas:
 - [ ] Add support for lists as an ordered sequence of items
 - [ ] Show: decide how to handle AND vs OR queries for tags and contexts
 - [ ] consider using pretty JSON output for file output, especially for ``import``
+- [ ] Show: calendar: somehow let user choose which items to show on calendar which are assigned to someone else
 
 ## Design 2
 - [x] Command: instead of storing data changes, store commands
