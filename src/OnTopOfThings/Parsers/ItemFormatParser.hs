@@ -49,25 +49,33 @@ parseItemFormat s = case parse pmain "ItemFormat" s of
   Right l -> Right l
 
 pmain :: Parser [ItemFormatElement]
-pmain = many (pcall <|> pchar)
+pmain = many (pcall <|> pstring)
 
 pcall :: Parser ItemFormatElement
 pcall = do
   char '$'
-  name <- braces identifier
-  return (ItemFormatElement_Call name "" "" "" "")
+  braces pcall'
+  where
+    pcall' = do
+      name <- identifier
+      missing <- parg
+      prefix <- parg
+      infix_ <- parg
+      suffix <- parg
+      return (ItemFormatElement_Call name missing prefix infix_ suffix)
 
-pchar :: Parser ItemFormatElement
-pchar = do
+parg :: Parser String
+parg = do
+  option "" (do
+    stringLiteral)
+
+pstring :: Parser ItemFormatElement
+pstring = do
   s <- many1 (noneOf "$")
   return (ItemFormatElement_String s)
 
-_ALPHANUM :: String
-_ALPHANUM = ['a'..'z'] ++ ['A'..'Z'] ++ ['0'..'9']
-
 -- The lexer
 lexer       = P.makeTokenParser haskellDef
-parens      = P.parens lexer
 braces      = P.braces lexer
 identifier  = P.identifier lexer
-reserved    = P.reserved lexer
+stringLiteral = P.stringLiteral lexer
