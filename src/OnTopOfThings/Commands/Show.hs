@@ -16,6 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 -}
 
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module OnTopOfThings.Commands.Show
 ( modeInfo_show
@@ -43,6 +44,7 @@ import System.Console.ANSI
 import System.Console.CmdArgs.Explicit
 import System.FilePath (joinPath)
 import System.Locale (defaultTimeLocale)
+import Text.RawString.QQ
 import Text.Regex (mkRegex, matchRegexAll)
 
 import qualified Data.Map as M
@@ -308,7 +310,8 @@ showCalendar opts fromTime = do
         s <- itemToString opts item
         liftIO $ putStrLn $ s
       | otherwise = do
-        s <- formatItem "${X}  ${H} ${title} ${tags}" item
+        let format = [r|${X} ${times "" " " "" " --"}${name "" " (" "" ")"}${title "" " "}${tags "" " (+" ",+" ")"}|]
+        s <- formatItem format item
         liftIO $ putStrLn $ prefix ++ s
         where
           index :: Maybe Int
@@ -385,11 +388,12 @@ formatItemElem (ItemFormatElement_Call name missing prefix infix_ suffix) item =
         ("list", "closed") -> ["[x]"]
         ("list", "deleted") -> ["XXX"]
         ("task", "open") -> ["[ ]"]
-        (_, "open") -> ["-"]
+        (_, "open") -> [" - "]
         (_, "closed") -> ["[x]"]
         (_, "deleted") -> ["XXX"]
         _ -> []
-    "H" ->
+    "name" -> return (maybeToList $ itemName item)
+    "times" ->
       return $ case (itemStart item, itemEnd item, itemDue item) of
         (Just start, Just end, Just due) -> [start ++ " - " ++ end ++ ", due " ++ due]
         (Just start, Just end, Nothing) -> [start ++ " - " ++ end]
@@ -411,39 +415,15 @@ formatItemElem (ItemFormatElement_Call name missing prefix infix_ suffix) item =
   return s
 
 itemToString :: Options -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) String
-itemToString opts item = do
-  tags <- if Set.member "hide-tags" (optionsParams0 opts)
-    then return ([] :: [String])
-    else do
-      tags' <- selectList [PropertyUuid ==. itemUuid item, PropertyName ==. "tag"] []
-      return $ map (\x -> '+':(propertyValue $ entityVal x)) tags'
-  l <- getParts tags
-  return $ unwords l
-  where
-    --path = findParentLabel (itemParent item >>= \x -> Just [x]) entities
-    check :: Maybe String
-    check = case (itemType item, itemStatus item) of
-      ("list", "open") -> Nothing
-      ("list", "closed") -> Just "[x]"
-      ("list", "deleted") -> Just "XXX"
-      ("task", "open") -> Just "[ ]"
-      (_, "open") -> Just "-"
-      (_, "closed") -> Just "[x]"
-      (_, "deleted") -> Just "XXX"
-      _ -> Nothing
-    --getParts :: [String] -> [String]
-    getParts tags
-      | (itemType item) == "folder" = do
-        path <- getAbsPath item
-        return $ catMaybes [Just path, itemTitle item]
-      | otherwise =
-        return $ catMaybes
-          [ check
-          , fmap (\label -> "(" ++ label ++ ")") (itemName item)
-          --, if null path then Nothing else Just $ intercalate "/" path ++ ":"
-          , itemTitle item
-          , if null tags then Nothing else Just $ "(" ++ (intercalate "," tags) ++ ")"
-          ]
+itemToString opts item = formatItem' where
+  format = case Set.member "hide-tags" (optionsParams0 opts) of
+    True -> [r|${X} ${times "" " " "" " --"}${name "" " (" "" ")"}${title "" " "}|]
+    False -> [r|${X} ${times "" " " "" " --"}${name "" " (" "" ")"}${title "" " "}${tags "" " (+" ",+" ")"}|]
+  formatItem'
+    | (itemType item) == "folder" = do
+      path <- getAbsPath item
+      return $ unwords $ catMaybes [Just path, itemTitle item]
+    | otherwise = formatItem format item
 
 getAbsPath :: Item -> SqlPersistT (NoLoggingT (ResourceT IO)) FilePath
 getAbsPath item = do

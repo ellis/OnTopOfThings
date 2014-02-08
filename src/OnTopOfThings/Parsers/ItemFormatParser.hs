@@ -45,7 +45,7 @@ data ItemFormatElement
 
 parseItemFormat :: String -> Validation [ItemFormatElement]
 parseItemFormat s = case parse pmain "ItemFormat" s of
-  Left _ -> Left ["Couldn't parse item format string: "++s]
+  Left msg -> Left $ ("Couldn't parse item format string: "++s) : (show msg) : []
   Right l -> Right l
 
 pmain :: Parser [ItemFormatElement]
