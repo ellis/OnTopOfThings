@@ -56,6 +56,7 @@ import Utils
 import OnTopOfThings.Commands.Utils
 import OnTopOfThings.Data.Time
 import OnTopOfThings.Parsers.NumberList
+import OnTopOfThings.Parsers.ItemFormatParser
 
 type PropertyMap = M.Map String [String]
 type EntityMap = M.Map String PropertyMap
