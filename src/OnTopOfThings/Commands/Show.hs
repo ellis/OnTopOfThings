@@ -365,6 +365,8 @@ filterChildren items parent =
 --      uuid' = M.lookup "parent" m'
 --findParentLabel' _ _ acc = acc
 
+-- ${title}
+-- ${title, 'missing', 'prefix', 'infix', 'suffix'}
 formatItem :: String -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) String
 formatItem format item = parseFormatItem' format item
 
