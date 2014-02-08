@@ -80,8 +80,8 @@ Ideas:
 - [x] Show: due date (figure out why it's not working)
 - [x] Mod: add 'due' field to Diff
 - [x] Show: handle formats such as "${title 'missing' 'prefix' 'infix' 'suffix'}"
+- [x] Show: tasks: display start, end, due dates
 - [?] Repl: newtask: default to null stage when stage is irrelevant
-- [ ] Show: tasks: display start, end, due dates
 - [ ] Show: handle sub-tasks
 - [ ] Show: handle showing item hierarchy in general, not just tasks (e.g. notes)
 - [ ] need to think about sub-types
