@@ -181,7 +181,7 @@ expr' opts fromTime = expr4 where
       Nothing -> []
 
 showTasks :: Options -> Time -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
-showTasks opts fromTime | trace ("showTasks: "++(show opts)) False = undefined
+--showTasks opts fromTime | trace ("showTasks: "++(show opts)) False = undefined
 showTasks opts fromTime = do
   -- Load all tasks that meet the user's criteria
   let filters = expr' opts fromTime

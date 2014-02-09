@@ -83,11 +83,17 @@ Ideas:
 - [x] Show: tasks: display start, end, due dates
 - [x] Repl: newtask: default to null stage when stage is irrelevant
 - [x] Show: let user specify subfolder, e.g. ``show -p /work/primers``
-- [ ] Show: read in template file
-- [ ] create template file for show
+- [x] Show: read in template file
+- [x] Show: create sample template files to test ``show template``
+- [ ] Show: for ``show -p /work/primers``, don't display directories / and /work
+- [ ] Show: should be recursive by default, with a --no-recurse option to suppress recursion
+- [ ] Show: ``show inbox`` should list items with folder in title rather than as a header
+- [ ] Repl: mod/newtask: ``-s -`` should remove stage
+- [ ] Repl: mod/newtask: Use '?' shortcut for stage
+- [ ] Show: Use '?' shortcut for stage
+- [ ] Rename stage to horizon?
 - [ ] Repl: edit: create edit command to edit lists and template contents
 - [ ] Actions.Utils: refactor to create a logical set of functions to lookup a paths, including parsing or number ranges and comma-separated lists
-- [ ] Show: for ``show -p /work/primers``, don't display directories / and /work
 - [ ] Show: handle sub-tasks
 - [ ] Show: handle showing item hierarchy in general, not just tasks (e.g. notes)
 - [ ] need to think about sub-types
