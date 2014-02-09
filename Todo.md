@@ -85,7 +85,8 @@ Ideas:
 - [x] Show: let user specify subfolder, e.g. ``show -p /work/primers``
 - [x] Show: read in template file
 - [x] Show: create sample template files to test ``show template``
-- [ ] Show: for ``show -p /work/primers``, don't display directories / and /work
+- [x] Show: for ``show -p /work/primers``, don't display directories / and /work
+- [ ] Show template: don't restart indexes from 1 for each call to show
 - [ ] Show: should be recursive by default, with a --no-recurse option to suppress recursion
 - [ ] Show: ``show inbox`` should list items with folder in title rather than as a header
 - [ ] Repl: mod/newtask: ``-s -`` should remove stage

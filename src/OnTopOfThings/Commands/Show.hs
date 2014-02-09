@@ -216,7 +216,10 @@ showTasks opts fromTime = do
   let lists2 = sortBy (\a b -> compare (fst a) (fst b)) lists1
   --liftIO $ putStrLn "lists:"
   --liftIO $ mapM_ (putStrLn . fst) lists2
-  let lists = map snd lists2
+  let lists3 = map snd lists2
+  let lists4 = map (\list -> (list, filterChildren items list)) lists3
+  let lists5 = filter (\(_, l) -> (not . null) l) lists4
+  let lists = map fst lists5
   --liftIO $ putStrLn "lists:"
   --liftIO $ print lists
   let children = concat $ map (filterChildren items) lists :: [Item]
