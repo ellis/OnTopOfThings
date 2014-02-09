@@ -66,7 +66,7 @@ Ideas:
 - [x] Repl: newtask: add --tag parameter 
 - [x] Repl: newtask: add parameter shortcuts (/work = -p work, +mustdo = -t mustdo)
 - [x] Show: calendar: space before date (except the first)
-- [?] Repl: newtask: add --end parameter 
+- [x] Repl: newtask: add --end parameter 
 - [x] Show: calendar: show weekday after date
 - [x] Show: calendar: show start and end time
 - [x] Repl: mod: add end parameters, and everything else newtask accepts
@@ -81,7 +81,10 @@ Ideas:
 - [x] Mod: add 'due' field to Diff
 - [x] Show: handle formats such as "${title 'missing' 'prefix' 'infix' 'suffix'}"
 - [x] Show: tasks: display start, end, due dates
-- [?] Repl: newtask: default to null stage when stage is irrelevant
+- [x] Repl: newtask: default to null stage when stage is irrelevant
+- [x] Show: let user specify subfolder, e.g. ``show -p /work/primers``
+- [ ] Actions.Utils: refactor to create a logical set of functions to lookup a path
+- [ ] Show: for ``show -p /work/primers``, don't display directories / and /work
 - [ ] Show: handle sub-tasks
 - [ ] Show: handle showing item hierarchy in general, not just tasks (e.g. notes)
 - [ ] need to think about sub-types
@@ -89,7 +92,6 @@ Ideas:
   - [ ] a task to do something for a "do-more" goal
   - [ ] task to work on a project, perhaps with a subset of project tasks
 - [ ] Repl: mod: add everything newtask accepts, including special args such as '+mustdo'
-- [ ] Show: let user specify subfolder, e.g. ``show -p /work/primers``
 - [ ] How to best schedule something for tomorrow?  Defer?  Start?
 - [ ] Item: create special database parser for Time, so that the time fields can be Times instead of Strings
 - [ ] Time: create timeToLocalTime function

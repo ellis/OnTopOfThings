@@ -55,6 +55,7 @@ import qualified Command as C
 import Args
 import DatabaseTables
 import Utils
+import OnTopOfThings.Actions.Utils (pathStringToItem)
 import OnTopOfThings.Commands.Utils
 import OnTopOfThings.Data.Time
 import OnTopOfThings.Parsers.NumberList
@@ -131,11 +132,15 @@ optsRun_show opts = do
     fn :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation [String])
     fn value =
       case parseNumberList value of
-        Left msgs -> return (Left msgs)
         Right ids1 -> do
           uuids_ <- mapM refToUuid ids1
           --liftIO $ print uuids_
           return $ concatEithersN uuids_
+        Left msgs -> do
+          item_ <- pathStringToItem [] value
+          case item_ of
+            Left msgs' -> return (Left (msgs ++ msgs'))
+            Right item -> return (Right [itemUuid item])
 
 expr' opts fromTime = expr4 where
   m = optionsMap opts

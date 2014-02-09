@@ -53,7 +53,6 @@ import Utils
 import OnTopOfThings.Parsers.NumberList
 import OnTopOfThings.Actions.Action
 import OnTopOfThings.Actions.Env
-import OnTopOfThings.Commands.Show
 import OnTopOfThings.Data.FileJson
 import OnTopOfThings.Data.Json
 import OnTopOfThings.Data.Patch
@@ -174,6 +173,11 @@ pathStringToAbsPathChain cwd path_s = chain4 where
   chain3 = dropDotDot chain2 []
   -- Prefix root '/'
   chain4 = "/":chain3
+
+pathStringToItem :: [FilePath] -> String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
+pathStringToItem cwd path_s = do
+  let chain = pathStringToAbsPathChain cwd path_s
+  absPathChainToItem chain
 
 -- REFACTOR: remove this function
 pathStringToPathChain :: [FilePath] -> String -> [FilePath]
