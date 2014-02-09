@@ -83,7 +83,10 @@ Ideas:
 - [x] Show: tasks: display start, end, due dates
 - [x] Repl: newtask: default to null stage when stage is irrelevant
 - [x] Show: let user specify subfolder, e.g. ``show -p /work/primers``
-- [ ] Actions.Utils: refactor to create a logical set of functions to lookup a path
+- [ ] Show: read in template file
+- [ ] create template file for show
+- [ ] Repl: edit: create edit command to edit lists and template contents
+- [ ] Actions.Utils: refactor to create a logical set of functions to lookup a paths, including parsing or number ranges and comma-separated lists
 - [ ] Show: for ``show -p /work/primers``, don't display directories / and /work
 - [ ] Show: handle sub-tasks
 - [ ] Show: handle showing item hierarchy in general, not just tasks (e.g. notes)

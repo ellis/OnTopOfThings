@@ -366,6 +366,17 @@ Then:
 * For all items, recursively find the name of the list
 * Sort the tickets 
 
+## Template files for display
+
+show /mytemplate1
+
+sample /mytemplate1 content:
+
+   "@Work"
+   /work/roboliq
+   /work/stflow
+   /work/cadmad
+
 ## Command Line Options
 
 Right now I'm using CmdArgs, which produces nice help output, but doesn't accommodate much of what I'd like.

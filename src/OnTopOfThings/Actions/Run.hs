@@ -144,8 +144,8 @@ instance Action ActionNewTask where
           , newTaskUuid = id
           , newTaskParentRef = parent
           , newTaskName = name
-          , newTaskTitle = Just title
-          , newTaskContent = Nothing
+          , newTaskTitle = (if type_ == Just "show" then Nothing else Just title)
+          , newTaskContent = (if type_ == Just "show" then Just title else Nothing)
           , newTaskStatus = status
           , newTaskStage = stage
           , newTaskStart = start
@@ -439,116 +439,6 @@ mkdir env@(Env time user cwd) action = do
     mkdir'' info = do
       let chain = pathInfoChainAbs info
       mkdir' chain
---    mkone :: PathInfo -> SqlActionResult
---    -- Item already exists
---    mkone (PathInfo path_s chainRel chainAbs items) = do
---      -- if --parents flag:
---      if mkdirParents action
---        then return mempty
---        else return (ActionResult [] False [] ["mkdir: cannot create directory ‘"++path_s++"’: File exists"])
---    mkone (path_s, (chain, Left chainError)) = do
---      if mkdirParents action
---        then do
---          let more = drop (length chainError) chain
---          
---      <== continue here: if '-parent', create directories from chainError to chain; otherwise if chainError is more than one item shorter than chain, error; otherwise create chain
---      And for each directory created, create a new PatchHunk
---    createFolders chain more 
---
------------
---  THESE ARE FROM 'ls'; ADAPT!
---  itemTop_ <- mapM absPathChainToItem chain_l
---  let (goodR, badR) = foldl partitionArgs ([], []) (zip args' itemTop_)
---  let bad = reverse badR
---  let good = reverse goodR
---  let -- Split folders and non-folders
---  let (folders, tasks) = partition partitionTypes good
---  let -- Only tell lsfolder to print a blank line in front of the first folder if items were aren't printed
---  let blankToFolder_l = zip ((if null tasks then False else True) : repeat True) folders
---  -- Show errors
---  liftIO $ mapM_ putStrLn bad
---  -- Show non-folder items
---  lsitems [] tasks
---  -- Show folders
---  mapM_ (\(blank, folder) -> lsfolder blank [] folder) blankToFolder_l
---  return mempty
------------
---
---  if null args
---    then return (ActionResult [] False ["mkdir: missing operand", "Try 'mkdir --help' for more information."] [])
---    else do
---      root_ <- getroot
---      case root_ of
---        Left msgs -> return ([], ActionResult False False [] msgs)
---        Right root -> do
---          chain_l <- mapM
---          result_ <- mapM (mkone root) (mkdirArgs action)
---          --let action' = action { mkdirUuid = 
---          return (mconcat result_)
---  where
---    args = (mkdirArgs action)
---    args' = args ++ (if mkdirParents action then ["--parents"] else [])
---    --record = CommandRecord 1 time (T.pack user) (T.pack "repl-mkdir") (map T.pack args')
---
---    mkone :: Item -> String -> SqlActionResult
---    --mkone path_s | trace ("mkone "++path_s) False = undefined
---    mkone root path_s =
---      let
---        chain = pathStringToPathChain cwd path_s
---        --chains = tail $ inits chain
---      in do
---        -- Check whether the item already exists
---        uuid_ <- pathChainToUuid chain
---        case uuid_ of
---          -- if the item already exists:
---          Right _ -> do
---            -- if --parents flag:
---            if mkdirParents action
---              then return mempty
---              else return (ActionResult False False [] ["mkdir: cannot create directory ‘"++path_s++"’: File exists"])
---          -- if the item doesn't already exist:
---          Left msgs -> do
---            if mkdirParents action
---              -- if all parents should be created
---              then do
---                uuid_ <- fn True chain root
---                case uuid_ of
---                  Left msgs -> return (ActionResult False False [] msgs)
---                  Right uuid -> return (ActionResult True False [] [])
---              -- if all parents should already exist
---              else do
---                parent_ <- fn False (init chain) root
---                case parent_ of
---                  Left msgs -> return (ActionResult False False [] msgs)
---                  Right parent -> do
---                    new_ <- mksub parent (last chain)
---                    case new_ of
---                      Left msgs -> return (ActionResult False False [] msgs)
---                      Right new -> do
---                        return (ActionResult True False [] [])
---
---    fn :: Bool -> [FilePath] -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
---    fn doMake l parent | trace ("fn "++(show l)) False = undefined
---    fn _ [] parent = return (Right parent)
---    fn doMake (name:rest) parent = do
---      item_ <- selectList [ItemLabel ==. (Just name), ItemParent ==. (Just (itemUuid parent))] [LimitTo 2]
---      case item_ of
---        [] -> if doMake
---          then do
---            new_ <- mksub parent name
---            case new_ of
---              Left msgs -> return (Left msgs)
---              Right new -> fn doMake rest new
---          else return (Left ["mkdir: ‘"++name++"’ not found"])
---        p:[] -> fn doMake rest (entityVal p)
---        _ -> return (Left ["conflict: multiple items at path"])
---
---    mksub :: Item -> String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
---    mksub parent name = do
---      uuid <- liftIO (U4.nextRandom >>= return . U.toString)
---      let item = (itemEmpty uuid time "folder" name "open") { itemParent = (Just $ itemUuid parent), itemLabel = Just name }
---      insert item
---      return (Right item)
 
 newtask :: Env -> ActionNewTask -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 newtask env action | trace "newtask" False = undefined
@@ -580,6 +470,7 @@ newtask (Env time user cwd) action0 = do
       status' <- getMaybe newTaskStatus
       name <- getMaybe newTaskName
       title <- getMaybe newTaskTitle
+      content <- getMaybe newTaskContent
       start <- getMaybeTime newTaskStart
       end <- getMaybeTime newTaskEnd
       due <- getMaybeTime newTaskDue
@@ -593,6 +484,7 @@ newtask (Env time user cwd) action0 = do
             , Just $ DiffEqual "parent" (itemUuid parent)
             , fmap (DiffEqual "name") name
             , fmap (DiffEqual "title") title
+            , fmap (DiffEqual "content") title
             , fmap (DiffEqual "stage") stage
             , fmap (DiffEqual "start") start
             , fmap (DiffEqual "end") end
@@ -606,7 +498,7 @@ newtask (Env time user cwd) action0 = do
           -- Closed items don't need a stage
           | status /= "open" -> Right Nothing
           -- Folders and notes don't need a stage
-          | elem type_ ["folder", "note"] -> Right Nothing
+          | elem type_ ["folder", "note", "show"] -> Right Nothing
           -- | elem type_ ["goal", "project", "task"] =
           | otherwise -> Right (Just "inbox")
 

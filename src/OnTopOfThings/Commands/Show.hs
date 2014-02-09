@@ -120,6 +120,11 @@ optsRun_show opts = do
                       Right opts'' -> do
                         showCalendar opts'' fromTime2
                         return (Right ())
+                  "template":[] -> do
+                    return (Left ["You must supply a template file"])
+                  "template":files -> do
+                    mapM_ showTemplateFile files
+                    return (Right ())
                   ["today"] -> do
                     let opts__ = optionsReplaceParamN "stage" ["today"] opts'
                     case opts__ of
@@ -324,6 +329,24 @@ showCalendar opts fromTime = do
           index_s :: Maybe String
           index_s = fmap (\i -> "(" ++ (show i) ++ ")  ") index
           prefix = fromMaybe "" index_s
+
+showTemplateFile :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+showTemplateFile filename = do
+  contents <- liftIO $ readFile filename
+  mapM_ showTemplateLine $ lines contents
+
+showTemplateLine :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+-- if is a string then print the string
+showTemplateLine ('"':line) = liftIO $ putStrLn line
+-- otherwise, parse as command line args and parse via Show's mode
+showTemplateLine line = do
+  let args = splitArgs line
+  let mode = fst modeInfo_show
+  case process mode args of
+    Left msg -> liftIO $ putStrLn msg
+    Right opts -> do
+      liftIO $ optsRun_show opts
+      return ()
 
 isContainerItem :: Item -> Bool
 isContainerItem item = elem (itemType item) ["folder", "list"]
