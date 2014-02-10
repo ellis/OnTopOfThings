@@ -49,6 +49,7 @@ import DatabaseTables
 import DatabaseUtils
 import Utils
 import OnTopOfThings.Actions.Action
+import OnTopOfThings.Actions.Cd
 import OnTopOfThings.Actions.Env
 import qualified OnTopOfThings.Actions.Mod as Mod
 import OnTopOfThings.Actions.Mv
@@ -115,7 +116,7 @@ repl cwd = do
   input <- getLine
   time <- getCurrentTime
   let args0 = splitArgs input
-  let env0 = Env time "default" cwd
+  let env0 = Env time "default" cwd Nothing
   env1 <- runSqlite "repl.db" $ do
     (env1, result_) <-
       case args0 of
@@ -131,6 +132,20 @@ repl cwd = do
                 else do
                   action_ <- actionFromOptions env0 opts
                   case (action_ :: Validation ActionCat) of
+                    Left msgs -> return (env0, ActionResult [] False [] msgs)
+                    Right action -> do
+                      runAction env0 action
+        "cd":args -> do
+          case process mode_cd args of
+            Left msg -> return (env0, ActionResult [] False [] [msg])
+            Right opts -> do
+              if optionsHelp opts
+                then do
+                  liftIO $ print $ helpText [] HelpFormatDefault mode_cd
+                  return (env0, mempty)
+                else do
+                  action_ <- actionFromOptions env0 opts
+                  case (action_ :: Validation ActionCd) of
                     Left msgs -> return (env0, ActionResult [] False [] msgs)
                     Right action -> do
                       runAction env0 action

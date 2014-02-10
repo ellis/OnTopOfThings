@@ -86,6 +86,7 @@ Ideas:
 - [x] Show: read in template file
 - [x] Show: create sample template files to test ``show template``
 - [x] Show: for ``show -p /work/primers``, don't display directories / and /work
+- [x] Repl: cd
 - [ ] Show template: don't restart indexes from 1 for each call to show
 - [ ] Show: should be recursive by default, with a --no-recurse option to suppress recursion
 - [ ] Show: ``show inbox`` should list items with folder in title rather than as a header
@@ -186,7 +187,6 @@ Ideas:
 - [ ] Rebuild: add an option to build from internal event table or reload the event table from files
 - [ ] Edit my data in 'testdata' to create folders instead of lists; also no use of 'label'
 - [ ] Rebuild: create root folder, perhaps use code from ``getroot`` in Run.hs
-- [ ] Repl: cd
 - [ ] Repl: ls -l
 - [ ] Repl: ls -a
 - [ ] Repl: ``ls -R`` should prefix everything with '/'

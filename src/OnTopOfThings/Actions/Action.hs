@@ -49,6 +49,11 @@ data ActionCat = ActionCat
   { catUuids :: [String]
   } deriving (Show)
 
+data ActionCd = ActionCd
+  { cdParentUuid :: Maybe String
+  , cdStage :: Maybe String
+  } deriving (Show)
+
 data ActionClose = ActionClose
   { closeUuids :: [String]
   , closeDelete :: Bool

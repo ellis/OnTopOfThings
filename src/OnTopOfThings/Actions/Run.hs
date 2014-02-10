@@ -271,12 +271,12 @@ updNewTaskOption s opts = case s of
   '/':x -> upd1 "parent" x opts
   '+':x -> updN "tag" x opts
   '-':_ -> updN "tag" s opts
-  '*':x -> upd1 "stage" x opts
+  '?':x -> upd1 "stage" x opts
   _ -> Left ("unrecognized option: "++s)
 
 cat :: Env -> ActionCat -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 cat env action | trace ("cat: "++(show action)) False = undefined
-cat (Env time user cwd) action@(ActionCat args0) = do
+cat (Env time user cwd stage) action@(ActionCat args0) = do
   results_ <- mapM catone args0
   return (mconcat results_)
   where
@@ -310,7 +310,7 @@ close env (ActionClose uuids delete) = do
 
 ls :: Env -> ActionLs -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 ls env action | trace ("ls: "++(show action)) False = undefined
-ls (Env time user cwd) action@(ActionLs args0 isRecursive) = do
+ls (Env time user cwd stage) action@(ActionLs args0 isRecursive) = do
   itemTop_ <- mapM absPathChainToItem chain_l
   let (goodR, badR) = foldl partitionArgs ([], []) (zip args' itemTop_)
   let bad = reverse badR
@@ -377,7 +377,7 @@ ls (Env time user cwd) action@(ActionLs args0 isRecursive) = do
 
 mkdir :: Env -> ActionMkdir -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 mkdir env action | trace "mkdir" False = undefined
-mkdir env@(Env time user cwd) action = do
+mkdir env@(Env time user cwd stage) action = do
   if null (mkdirArgs action)
     then return (ActionResult [] False ["mkdir: missing operand", "Try 'mkdir --help' for more information."] [])
     else do
@@ -442,7 +442,7 @@ mkdir env@(Env time user cwd) action = do
 
 newtask :: Env -> ActionNewTask -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 newtask env action | trace "newtask" False = undefined
-newtask (Env time user cwd) action0 = do
+newtask (Env time user cwd stage) action0 = do
   parent_ <- absPathChainToItem parentChain
   case parent_ of
     Left msgs -> return (ActionResult [] False [] msgs)
@@ -503,6 +503,6 @@ newtask (Env time user cwd) action0 = do
           | otherwise -> Right (Just "inbox")
 
 show' :: Env -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
-show' (Env time user cwd) opts = do
+show' (Env time user cwd stage) opts = do
   liftIO $ optsRun_show opts
   return mempty

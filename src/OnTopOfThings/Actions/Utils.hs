@@ -271,4 +271,23 @@ lookupItem env ref = do
                 entity:[] -> return (Right (entityVal entity))
                 _:_:[] -> return (Left ["Internal error.  Multiple items with given index: "++(show n)])
 
+itemToAbsPathChain :: Item -> SqlPersistT (NoLoggingT (ResourceT IO)) [FilePath]
+itemToAbsPathChain item = do
+  parentChain <- case (itemParent item) of
+    Nothing -> return []
+    Just uuid -> do
+      parent_ <- getBy $ ItemUniqUuid uuid
+      case parent_ of
+        Nothing -> return []
+        Just parent -> do
+          parentChain <- itemToAbsPathChain (entityVal parent)
+          return parentChain
+  return $ parentChain ++ [fromMaybe (itemUuid item) (itemName item)]
 
+uuidToItem :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
+uuidToItem uuid = do
+  entities <- selectList [ItemUuid ==. uuid] [LimitTo 2]
+  case entities of
+    [] -> return (Left ["couldn't find item UUID: "++uuid])
+    entity:[] -> return (Right (entityVal entity))
+    _:_:[] -> return (Left ["Internal error.  Multiple items with given UUID: "++uuid])

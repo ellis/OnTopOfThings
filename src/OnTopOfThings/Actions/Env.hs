@@ -41,4 +41,5 @@ data Env = Env
   { envTime :: UTCTime
   , envUser :: String
   , envCwdChain :: [FilePath]
+  , envStage :: Maybe String
   } deriving (Show)
