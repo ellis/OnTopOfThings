@@ -87,13 +87,15 @@ Ideas:
 - [x] Show: create sample template files to test ``show template``
 - [x] Show: for ``show -p /work/primers``, don't display directories / and /work
 - [x] Repl: cd
+- [x] Show: show stage
+- [ ] Show: convert it from a Command to an Action
 - [ ] Show template: don't restart indexes from 1 for each call to show
 - [ ] Show: should be recursive by default, with a --no-recurse option to suppress recursion
 - [ ] Show: ``show inbox`` should list items with folder in title rather than as a header
 - [ ] Repl: mod/newtask: ``-s -`` should remove stage
 - [ ] Repl: mod/newtask: Use '?' shortcut for stage
 - [ ] Show: Use '?' shortcut for stage
-- [ ] Rename stage to horizon?
+- [ ] Rename stage to horizon? or review?
 - [ ] Repl: edit: create edit command to edit lists and template contents
 - [ ] Actions.Utils: refactor to create a logical set of functions to lookup a paths, including parsing or number ranges and comma-separated lists
 - [ ] Show: handle sub-tasks
