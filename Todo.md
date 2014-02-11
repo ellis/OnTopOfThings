@@ -89,6 +89,10 @@ Ideas:
 - [x] Repl: cd
 - [x] Show: show stage
 - [ ] Show: convert it from a Command to an Action
+- [ ] Newtask: why does this produce an error:
+        /work/roboliq > newtask "Ask Johannes how time critical the operations are, due to problems with multipipetting and the small tips" /work/stflow
+        No such file or directory
+- [ ] Show: use cwd as default parent
 - [ ] Show template: don't restart indexes from 1 for each call to show
 - [ ] Show: should be recursive by default, with a --no-recurse option to suppress recursion
 - [ ] Show: ``show inbox`` should list items with folder in title rather than as a header
