@@ -30,7 +30,7 @@ import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
 import Data.List (intercalate, nub, sort, sortBy)
 import Data.List.Split (splitOn)
-import Data.Maybe (catMaybes, fromMaybe, isJust, maybeToList)
+import Data.Maybe (catMaybes, fromMaybe, isJust, listToMaybe, maybeToList)
 import Data.Monoid
 import Data.Time (Day, TimeZone, getCurrentTimeZone)
 import Data.Time.Clock
@@ -91,6 +91,11 @@ mode_show = Mode
 
 optsRun_show :: Options -> IO (Validation ())
 optsRun_show opts = do
+  result_ <- optsRun_show' opts 1
+  return (result_ >>= \_ -> Right ())
+
+optsRun_show' :: Options -> Int -> IO (Validation Int)
+optsRun_show' opts indexNext = do
   now <- getCurrentTime
   tz <- getCurrentTimeZone
   --let fromTime = (parseTime defaultTimeLocale "%Y%m%d" $ formatTime defaultTimeLocale "%Y%m%d" now) :: Maybe UTCTime
@@ -111,27 +116,28 @@ optsRun_show opts = do
               Right opts' -> do
                 case optionsArgs opts of
                   [] -> do
-                    showTasks opts' fromTime2
-                    return (Right ())
+                    indexLast <- showTasks opts' indexNext fromTime2
+                    return (Right indexLast)
                   ["calendar"] -> do
                     let opts__ = optionsReplaceParamN "stage" ["today"] opts'
                     case opts__ of
                       Left msgs -> return (Left msgs)
                       Right opts'' -> do
-                        showCalendar opts'' fromTime2
-                        return (Right ())
+                        indexLast <- showCalendar opts'' indexNext fromTime2
+                        return (Right indexLast)
                   "template":[] -> do
                     return (Left ["You must supply a template file"])
                   "template":files -> do
-                    mapM_ showTemplateFile files
-                    return (Right ())
+                    --mapM_ showTemplateFile indexNext files
+                    indexLast <- showTemplateFile indexNext (head files)
+                    return (Right indexLast)
                   ["today"] -> do
                     let opts__ = optionsReplaceParamN "stage" ["today"] opts'
                     case opts__ of
                       Left msgs -> return (Left msgs)
                       Right opts'' -> do
-                        showTasks opts'' fromTime2
-                        return (Right ())
+                        indexLast <- showTasks opts'' indexNext fromTime2
+                        return (Right indexLast)
     _ -> return (Left ["bad time"])
   where
     fn :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation [String])
@@ -180,9 +186,9 @@ expr' opts fromTime = expr4 where
       Just l -> map Just $ concat $ map (splitOn ",") l
       Nothing -> []
 
-showTasks :: Options -> Time -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+showTasks :: Options -> Int -> Time -> SqlPersistT (NoLoggingT (ResourceT IO)) (Int)
 --showTasks opts fromTime | trace ("showTasks: "++(show opts)) False = undefined
-showTasks opts fromTime = do
+showTasks opts indexNext fromTime = do
   -- Load all tasks that meet the user's criteria
   let filters = expr' opts fromTime
   tasks' <- case M.lookup "tag" (optionsParamsN opts) of
@@ -225,11 +231,12 @@ showTasks opts fromTime = do
   let children = concat $ map (filterChildren items) lists :: [Item]
   let orphans = filter (\task -> (itemParent task) == Nothing) tasks
   -- Remove all previous indexes
-  updateWhere [ItemIndex !=. Nothing] [ItemIndex =. Nothing]
-  let itemToIndex_l = zip (children ++ orphans) [1..]
+  when (indexNext == 1) $ updateWhere [ItemIndex !=. Nothing] [ItemIndex =. Nothing]
+  let itemToIndex_l = zip (children ++ orphans) [indexNext..]
   let uuidToIndex_m = M.fromList $ map (\(item, index) -> (itemUuid item, index)) itemToIndex_l
   -- Set new indexes
   mapM updateIndex itemToIndex_l
+  let indexNext' = (fromMaybe (indexNext - 1) . fmap snd . listToMaybe . take 1 . reverse) itemToIndex_l + 1
   --mapM setIndex children
   -- Get the items in the order they'll be printed
   let ordered = concat $ map (\parent -> parent : (filterChildren items parent)) lists
@@ -241,7 +248,7 @@ showTasks opts fromTime = do
       liftIO $ putStrLn "Tasks without a list:"
       mapM_ (fn uuidToIndex_m) orphans
     else return ()
-  return ()
+  return indexNext'
   where
     updateIndex :: (Item, Int) -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
     updateIndex (item, index) = do
@@ -262,9 +269,9 @@ showTasks opts fromTime = do
           index_s = fmap (\i -> "(" ++ (show i) ++ ")  ") index
           prefix = fromMaybe "" index_s
 
-showCalendar :: Options -> Time -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
-showCalendar opts fromTime | trace ("showCalendar: "++(show opts)) False = undefined
-showCalendar opts fromTime = do
+showCalendar :: Options -> Int -> Time -> SqlPersistT (NoLoggingT (ResourceT IO)) Int
+--showCalendar opts indexNext fromTime | trace ("showCalendar: "++(show opts)) False = undefined
+showCalendar opts indexNext fromTime = do
   tz <- liftIO $ getCurrentTimeZone
   let fromTime_s = formatTime' fromTime
   -- Load all tasks that meet the user's criteria
@@ -283,18 +290,21 @@ showCalendar opts fromTime = do
   let timeToItem_l_ = (concatEithersN $ map (\item -> itemToTime tz item >>= \time -> Right (time, item)) tasks') >>= \l ->
                       Right $ sortBy (\a b -> compare (fst a) (fst b)) l
   case timeToItem_l_ of
-    Left msgs -> liftIO $ mapM_ putStrLn msgs
+    Left msgs -> do
+      liftIO $ mapM_ putStrLn msgs
+      return indexNext
     Right timeToItem_l -> do
       let items = map snd timeToItem_l
       -- Remove all previous indexes
-      updateWhere [ItemIndex !=. Nothing] [ItemIndex =. Nothing]
+      when (indexNext == 1) $ updateWhere [ItemIndex !=. Nothing] [ItemIndex =. Nothing]
       let itemToIndex_l = zip items [1..]
       let uuidToIndex_m = M.fromList $ map (\(item, index) -> (itemUuid item, index)) itemToIndex_l
       -- Set new indexes
       mapM updateIndex itemToIndex_l
+      let indexNext' = (fromMaybe (indexNext - 1) . fmap snd . listToMaybe . take 1 . reverse) itemToIndex_l + 1
       recurse timeToItem_l uuidToIndex_m Nothing
       --mapM_ (fn uuidToIndex_m) items
-      return ()
+      return indexNext'
   where
     itemToTime :: TimeZone -> Item -> Validation Time
     itemToTime tz item = do
@@ -333,23 +343,34 @@ showCalendar opts fromTime = do
           index_s = fmap (\i -> "(" ++ (show i) ++ ")  ") index
           prefix = fromMaybe "" index_s
 
-showTemplateFile :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
-showTemplateFile filename = do
+showTemplateFile :: Int -> String -> SqlPersistT (NoLoggingT (ResourceT IO)) Int
+showTemplateFile indexNext filename = do
   contents <- liftIO $ readFile filename
-  mapM_ showTemplateLine $ lines contents
+  fn indexNext (lines contents)
+  where
+    fn indexNext [] = return indexNext
+    fn indexNext (line:rest) = do
+      indexLast <- showTemplateLine indexNext line
+      fn indexLast rest
 
-showTemplateLine :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+showTemplateLine :: Int -> String -> SqlPersistT (NoLoggingT (ResourceT IO)) Int
 -- if is a string then print the string
-showTemplateLine ('"':line) = liftIO $ putStrLn line
+showTemplateLine indexNext ('"':line) = do
+  liftIO $ putStrLn line
+  return indexNext
 -- otherwise, parse as command line args and parse via Show's mode
-showTemplateLine line = do
+showTemplateLine indexNext line = do
   let args = splitArgs line
   let mode = fst modeInfo_show
   case process mode args of
-    Left msg -> liftIO $ putStrLn msg
+    Left msg -> do
+      liftIO $ putStrLn msg
+      return indexNext
     Right opts -> do
-      liftIO $ optsRun_show opts
-      return ()
+      indexLast_ <- liftIO $ optsRun_show' opts indexNext
+      case indexLast_ of
+        Left msg -> return indexNext
+        Right indexLast -> return indexLast
 
 isContainerItem :: Item -> Bool
 isContainerItem item = elem (itemType item) ["folder", "list"]

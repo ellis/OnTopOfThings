@@ -88,6 +88,7 @@ Ideas:
 - [x] Show: for ``show -p /work/primers``, don't display directories / and /work
 - [x] Repl: cd
 - [x] Show: show stage
+- [x] Show template: don't restart indexes from 1 for each call to show
 - [ ] Show: convert it from a Command to an Action
 - [ ] day planning template: show items on today's calendar
 - [ ] day planning template: let user show all ?today items and also show any items from ?next or ?week up to a total of N items (minus the ?today items)
@@ -97,7 +98,6 @@ Ideas:
         /work/roboliq > newtask "Ask Johannes how time critical the operations are, due to problems with multipipetting and the small tips" /work/stflow
         No such file or directory
 - [ ] Show: use cwd as default parent
-- [ ] Show template: don't restart indexes from 1 for each call to show
 - [ ] Show: should be recursive by default, with a --no-recurse option to suppress recursion
 - [ ] Show: ``show inbox`` should list items with folder in title rather than as a header
 - [ ] Repl: mod/newtask: ``-s -`` should remove stage
