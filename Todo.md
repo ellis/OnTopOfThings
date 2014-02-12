@@ -89,6 +89,10 @@ Ideas:
 - [x] Repl: cd
 - [x] Show: show stage
 - [ ] Show: convert it from a Command to an Action
+- [ ] day planning template: show items on today's calendar
+- [ ] day planning template: let user show all ?today items and also show any items from ?next or ?week up to a total of N items (minus the ?today items)
+- [ ] day planning template: automatically move scheduled items to ?today
+- [ ] day planning template: mark automatically moved items as "new" or with some form of alert
 - [ ] Newtask: why does this produce an error:
         /work/roboliq > newtask "Ask Johannes how time critical the operations are, due to problems with multipipetting and the small tips" /work/stflow
         No such file or directory
