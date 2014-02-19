@@ -28,6 +28,7 @@ import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
 import System.Console.ANSI
 import System.Console.CmdArgs.Explicit
+import System.Console.Readline
 import System.Environment
 import System.Exit
 import System.FilePath (joinPath)
@@ -111,11 +112,18 @@ main = do
             Right opts -> processOptions opts
 
 repl cwd = do
-  putStr $ (setSGRCode [SetColor Foreground Vivid Green]) ++ (joinPath cwd) ++ " > " ++ (setSGRCode [])
-  hFlush stdout
-  input <- getLine
+  maybeLine <- readline prompt
+  case maybeLine of
+    Nothing     -> return () -- EOF / control-d
+    Just "exit" -> return ()
+    Just line -> do addHistory line
+                    replEval cwd line
+  where
+    prompt = (setSGRCode [SetColor Foreground Vivid Green]) ++ (joinPath cwd) ++ " > " ++ (setSGRCode [])
+
+replEval cwd line = do
   time <- getCurrentTime
-  let args0 = splitArgs input
+  let args0 = splitArgs line
   let env0 = Env time "default" cwd Nothing
   env1 <- runSqlite "repl.db" $ do
     (env1, result_) <-
