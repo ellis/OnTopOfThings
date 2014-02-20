@@ -89,8 +89,8 @@ Ideas:
 - [x] Repl: cd
 - [x] Show: show stage
 - [x] Show template: don't restart indexes from 1 for each call to show
+- [x] see whether I can get good command line interaction with history and cursor movements for Haskell
 - [ ] Show: convert it from a Command to an Action
-- [ ] see whether I can get good command line interaction with history and cursor movements for Haskell
 - [ ] day planning template: show items on today's calendar
 - [ ] day planning template: let user show all ?today items and also show any items from ?next or ?week up to a total of N items (minus the ?today items)
 - [ ] day planning template: automatically move scheduled items to ?today
@@ -103,6 +103,7 @@ Ideas:
 - [ ] Show: ``show inbox`` should list items with folder in title rather than as a header
 - [ ] Repl: mod/newtask: ``-s -`` should remove stage
 - [ ] Repl: mod/newtask: Use '?' shortcut for stage
+- [ ] Haskeline: use autocompletion for commands and parameters
 - [ ] Show: Use '?' shortcut for stage
 - [ ] Rename stage to horizon? or review?
 - [ ] Repl: edit: create edit command to edit lists and template contents
