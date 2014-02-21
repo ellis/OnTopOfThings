@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger (NoLoggingT)
+import Control.Monad.State.Strict (StateT, runStateT)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
 import Data.Maybe (catMaybes, fromMaybe)
@@ -28,7 +29,8 @@ import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.Format (formatTime)
 import System.Console.ANSI
 import System.Console.CmdArgs.Explicit
-import System.Console.Readline
+import System.Console.Haskeline
+import System.Console.Haskeline.Completion
 import System.Environment
 import System.Exit
 import System.FilePath (joinPath)
@@ -66,6 +68,11 @@ import OnTopOfThings.Parsers.NumberList
 import qualified Database as DB
 
 
+type Namespace = [String]
+type StateM = StateT Namespace IO
+type InputM = InputT StateM
+
+
 modeInfo_l :: [ModeInfo]
 modeInfo_l =
   [ modeInfo_import
@@ -97,7 +104,8 @@ main = do
         "repl" -> do
           runSqlite "repl.db" $ do
             runMigration migrateAll
-          repl ["/"]
+          runStateT (runInputT defaultSettings (repl ["/"])) []
+          return ()
         "import" -> do
           let mode = fst modeInfo_import
           let opts_ = process mode args
@@ -111,21 +119,23 @@ main = do
             Left msg -> putStrLn msg
             Right opts -> processOptions opts
 
+repl :: [FilePath] -> InputM ()
 repl cwd = do
-  maybeLine <- readline prompt
+  maybeLine <- getInputLine prompt
   case maybeLine of
     Nothing     -> return () -- EOF / control-d
     Just "exit" -> return ()
-    Just line -> do addHistory line
-                    replEval cwd line
+    Just line -> do
+      replEval cwd line
   where
     prompt = (setSGRCode [SetColor Foreground Vivid Green]) ++ (joinPath cwd) ++ " > " ++ (setSGRCode [])
 
+replEval :: [FilePath] -> String -> InputM ()
 replEval cwd line = do
-  time <- getCurrentTime
+  time <- liftIO $ getCurrentTime
   let args0 = splitArgs line
   let env0 = Env time "default" cwd Nothing
-  env1 <- runSqlite "repl.db" $ do
+  env1 <- liftIO $ runSqlite "repl.db" $ do
     (env1, result_) <-
       case args0 of
         [] -> return (env0, mempty)
