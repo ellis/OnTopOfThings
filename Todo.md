@@ -89,6 +89,8 @@ Ideas:
 - [x] Repl: cd
 - [x] Show: show stage
 - [x] Show template: don't restart indexes from 1 for each call to show
+- [ ] Repl: make 'rebuild' command available from the repl
+- [ ] Repl: newtask: BUG: when in a folder below the root, should still be able to create item in a folder given its absolute path
 - [ ] Show: convert it from a Command to an Action
 - [ ] see whether I can get good command line interaction with history and cursor movements for Haskell
 - [ ] day planning template: show items on today's calendar
@@ -104,7 +106,7 @@ Ideas:
 - [ ] Repl: mod/newtask: ``-s -`` should remove stage
 - [ ] Repl: mod/newtask: Use '?' shortcut for stage
 - [ ] Show: Use '?' shortcut for stage
-- [ ] Rename stage to horizon? or review?
+- [ ] Rename stage to horizon, parent to folder
 - [ ] Repl: edit: create edit command to edit lists and template contents
 - [ ] Actions.Utils: refactor to create a logical set of functions to lookup a paths, including parsing or number ranges and comma-separated lists
 - [ ] Show: handle sub-tasks
@@ -134,6 +136,7 @@ Ideas:
 - [ ] Show: ``-n`` options to limit number of tasks to display, in particular for listing items in some order (such as oldest first)
 - [ ] add ``--defer`` option to ``newtask`` and ``mod``, and create corresponding report
 - [ ] Repl: ``newtask`` should output a CopyFile instead of a PatchFile
+- [ ] A "horizon"/"stage" should have a numeric value, so they can be ordered.  I want the program to know that ?today is sooner than ?week.
 - [ ] Stages
    - it should be possible for the user to define custom stages
    - standard stages are as follows:
@@ -212,6 +215,7 @@ Ideas:
 - [ ] Show: decide how to handle AND vs OR queries for tags and contexts
 - [ ] consider using pretty JSON output for file output, especially for ``import``
 - [ ] Show: calendar: somehow let user choose which items to show on calendar which are assigned to someone else
+- [ ] Want to put alerts on items, such that email is sent out or phone buzzes if task isn't done by a certain time
 
 ## Design 2
 - [x] Command: instead of storing data changes, store commands
