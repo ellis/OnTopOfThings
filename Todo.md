@@ -183,6 +183,7 @@ Ideas:
       - in addition to the item, we need to specify quantity or other specifics
       - maybe this could be a "shop" item with an extra quantity property
 - [ ] Figure out SCHEDULE concept (i.e. Dora's schedule with kids and me)
+- [ ] Figure out AGENDA concept (how to flag project items for particular agendas)
 - [ ] Action.Utils: organize functions, better names, stop using path chains?  Env should have IDs of repositories (e.g. map of mount path to repo information)?
 - [ ] Repl: ``ls`` should sort output, directories first, and everything alphabetically
 - [ ] Repl: ``show`` should share code with ls
