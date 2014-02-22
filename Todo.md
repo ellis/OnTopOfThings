@@ -90,6 +90,9 @@ Ideas:
 - [x] Show: show stage
 - [x] Show template: don't restart indexes from 1 for each call to show
 - [x] see whether I can get good command line interaction with history and cursor movements for Haskell
+- [x] Repl: cd: should be able to switch to another absolute path (e.g. from /edu to /work)
+- [x] Repl: cd: should be able to use relative paths
+- [x] Repl: cd: should be able to use '..'
 - [ ] Repl: make 'rebuild' command available from the repl
 - [ ] Repl: newtask: BUG: when in a folder below the root, should still be able to create item in a folder given its absolute path
 - [ ] Show: convert it from a Command to an Action

@@ -114,9 +114,17 @@ absPathChainToItem chain = do
 parentToPathChainToItem :: Item -> [FilePath] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
 parentToPathChainToItem parent [] = return (Right parent)
 -- Ignore '.'
-parentToPathChainToItem parent (".":rest) = do
+parentToPathChainToItem parent (".":rest) =
   parentToPathChainToItem parent rest
--- TODO: Handle '..'
+-- '..' to move up to parent folder
+parentToPathChainToItem item ("..":rest) =
+  case itemParent item of
+    Nothing -> parentToPathChainToItem item rest
+    Just parentUuid -> do
+      parent_ <- uuidToItem parentUuid
+      case parent_ of
+        Left msgs -> return (Left msgs)
+        Right parent -> parentToPathChainToItem parent rest
 -- '/' is for the root
 parentToPathChainToItem _ ("/":rest) = do
   item_ <- getroot
@@ -251,16 +259,19 @@ pathStringToPathInfo env path_s = do
 
 lookupItem :: Env -> String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Item)
 lookupItem env ref = do
+  -- Try ID
   item1_ <- getBy $ ItemUniqUuid ref
   case item1_ of
     Just item -> return (Right (entityVal item))
     Nothing -> do
+      -- Try path
       let path = joinPath ((envCwdChain env) ++ [ref])
       let chain = splitDirectories path
       item2_ <- absPathChainToItem chain
       case item2_ of
         Right item -> return (Right item)
         Left msgs -> do
+          -- Try index
           let n' = readMaybe ref :: Maybe Int
           case n' of
             Nothing -> return (Left (("couldn't find item: "++ref) : msgs))

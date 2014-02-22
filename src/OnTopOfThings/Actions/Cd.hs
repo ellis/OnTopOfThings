@@ -105,10 +105,9 @@ mode_cd = Mode
 
 updCdOption :: String -> Options -> Either String Options
 updCdOption s opts = case s of
-  '/':x -> upd1 "parent" x opts
   '+':x -> updN "tag" x opts
   '?':x -> upd1 "stage" x opts
-  _ -> Left ("unrecognized option: "++s)
+  _ -> upd1 "parent" s opts
 
 cd :: Env -> ActionCd -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Env)
 cd env0 (ActionCd Nothing Nothing) = return $ Right $ env0 { envCwdChain = [], envStage = Nothing }
