@@ -93,8 +93,18 @@ Ideas:
 - [x] Repl: cd: should be able to switch to another absolute path (e.g. from /edu to /work)
 - [x] Repl: cd: should be able to use relative paths
 - [x] Repl: cd: should be able to use '..'
+- [?] Repl: newtask: BUG: when in a folder below the root, should still be able to create item in a folder given its absolute path
+- [ ] Figure out VIEW concept
+   - query: ANDs and ORs, along with flags
+   - item print format
+   - ordering
+   - headers
+   - variable substitution, so that I can easily list same conditions but with different horizons?
+   - can accept multiple such lists, making sure that first index isnn't overwritten when listing items multiple times
+   - (stage=today and folder=/edu with --non-recursive) or (...)
+- [ ] Repl: mod/newtask: ``-s -`` and ``-s ''`` should remove stage
+- [ ] Repl: mod/newtask: Use '?' shortcut for stage
 - [ ] Repl: make 'rebuild' command available from the repl
-- [ ] Repl: newtask: BUG: when in a folder below the root, should still be able to create item in a folder given its absolute path
 - [ ] Show: convert it from a Command to an Action
 - [ ] day planning template: show items on today's calendar
 - [ ] day planning template: let user show all ?today items and also show any items from ?next or ?week up to a total of N items (minus the ?today items)
@@ -106,8 +116,6 @@ Ideas:
 - [ ] Show: use cwd as default parent
 - [ ] Show: should be recursive by default, with a --no-recurse option to suppress recursion
 - [ ] Show: ``show inbox`` should list items with folder in title rather than as a header
-- [ ] Repl: mod/newtask: ``-s -`` should remove stage
-- [ ] Repl: mod/newtask: Use '?' shortcut for stage
 - [ ] Haskeline: use autocompletion for commands and parameters
 - [ ] Show: Use '?' shortcut for stage
 - [ ] Rename stage to horizon, parent to folder
@@ -115,6 +123,7 @@ Ideas:
 - [ ] Actions.Utils: refactor to create a logical set of functions to lookup a paths, including parsing or number ranges and comma-separated lists
 - [ ] Show: handle sub-tasks
 - [ ] Show: handle showing item hierarchy in general, not just tasks (e.g. notes)
+- [ ] Show: if an item gets shown twice, use the first index each time rather than assigning a new index
 - [ ] need to think about sub-types
   - [ ] for example, a task to spend a certain amount of time on a task
   - [ ] a task to do something for a "do-more" goal
