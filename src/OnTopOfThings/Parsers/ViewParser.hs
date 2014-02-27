@@ -34,8 +34,8 @@ import Utils
 
 data ViewElement
   = ViewElement_Value String [String]
-  | ViewElement_And [ViewElement_Value]
-  | ViewElement_Or [ViewElement_Value]
+  | ViewElement_And [ViewElement]
+  | ViewElement_Or [ViewElement]
   deriving (Show)
 
 parseView :: String -> Validation [ViewElement]
@@ -62,30 +62,17 @@ pand = do
   where
     pand' = do
       string "and"
-      many1 pone
+      elems <- many1 pone
+      return (ViewElement_And elems)
 
-pcall :: Parser ViewElement
-pcall = do
-  char '$'
-  braces pcall'
+por :: Parser ViewElement
+por = do
+  braces por'
   where
-    pcall' = do
-      name <- identifier
-      missing <- parg
-      prefix <- parg
-      infix_ <- parg
-      suffix <- parg
-      return (ItemFormatElement_Call name missing prefix infix_ suffix)
-
-parg :: Parser String
-parg = do
-  option "" (do
-    stringLiteral)
-
-pstring :: Parser ViewElement
-pstring = do
-  s <- many1 (noneOf "$")
-  return (ItemFormatElement_String s)
+    por' = do
+      string "or"
+      elems <- many1 pone
+      return (ViewElement_Or elems)
 
 -- The lexer
 lexer       = P.makeTokenParser haskellDef

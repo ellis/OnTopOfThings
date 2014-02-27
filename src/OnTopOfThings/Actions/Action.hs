@@ -118,6 +118,10 @@ data ActionShow = ActionShow
   { showOptions :: Options
   } deriving (Show)
 
+data ActionView = ActionView
+  { viewQueries :: [String]
+  } deriving (Show)
+
 data ActionResult = ActionResult
   { actionResultPatchHunks :: [PatchHunk]
   , actionResultRollback :: Bool

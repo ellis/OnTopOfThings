@@ -93,8 +93,8 @@ Ideas:
 - [x] Repl: cd: should be able to switch to another absolute path (e.g. from /edu to /work)
 - [x] Repl: cd: should be able to use relative paths
 - [x] Repl: cd: should be able to use '..'
-- [?] Repl: newtask: BUG: when in a folder below the root, should still be able to create item in a folder given its absolute path
-- [ ] Figure out VIEW concept
+- [ ] Repl: newtask: BUG: when in a folder below the root, should still be able to create item in a folder given its absolute path
+- [ ] Figure out VIEW concept (working on View.hs and ViewParser.hs)
    - query: ANDs and ORs, along with flags
    - item print format
    - ordering
