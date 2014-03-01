@@ -57,6 +57,7 @@ import OnTopOfThings.Actions.Env
 import qualified OnTopOfThings.Actions.Mod as Mod
 import OnTopOfThings.Actions.Mv
 import OnTopOfThings.Actions.Run
+import OnTopOfThings.Actions.View
 import OnTopOfThings.Commands.Import
 import OnTopOfThings.Commands.Show
 import OnTopOfThings.Commands.Rebuild
@@ -211,6 +212,9 @@ replEval cwd line = do
                     Left msgs -> return (env0, ActionResult [] False [] msgs)
                     Right action -> do
                       runAction env0 action
+        "view":args -> do
+          x_ <- runAction' env0 mode_view args
+          runAction'' env0 (x_ :: Validation (Maybe ActionView))
         cmd:_ -> do
           --liftIO $ processMode args0
           return (env0, ActionResult [] False [] ["command not found: "++cmd])

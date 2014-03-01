@@ -38,40 +38,37 @@ data ViewElement
   | ViewElement_Or [ViewElement]
   deriving (Show)
 
-parseView :: String -> Validation [ViewElement]
-parseView s = case parse pmain "View" s of
+parseView :: String -> Validation ViewElement
+parseView s = case parse pone "View" s of
   Left msg -> Left $ ("Couldn't parse view specification: "++s) : (show msg) : []
   Right l -> Right l
 
-pmain :: Parser [ViewElement]
-pmain = many (pcall <|> pstring)
-
 pone :: Parser ViewElement
-pone = (pvalue <|> pand <|> por)
+pone = do
+  x <- (plist <|> pvalue)
+  return x
 
 pvalue :: Parser ViewElement
 pvalue = do
   name <- identifier
   char '='
-  value <- many1 (noneOf " ")
-  return (ViewElement_Value name [value])
+  values <- commaSep1 (many $ noneOf " ),")
+  return (ViewElement_Value name values)
 
-pand :: Parser ViewElement
-pand = do
-  braces pand'
+plist :: Parser ViewElement
+plist = do
+  parens plist'
   where
+    plist' = pand' <|> por'
     pand' = do
       string "and"
-      elems <- many1 pone
+      spaces
+      elems <- sepBy pone (many1 space)
       return (ViewElement_And elems)
-
-por :: Parser ViewElement
-por = do
-  braces por'
-  where
     por' = do
       string "or"
-      elems <- many1 pone
+      spaces
+      elems <- many pone
       return (ViewElement_Or elems)
 
 -- The lexer
@@ -79,3 +76,5 @@ lexer       = P.makeTokenParser haskellDef
 parens      = P.parens lexer
 identifier  = P.identifier lexer
 stringLiteral = P.stringLiteral lexer
+commaSep1   = P.commaSep1 lexer
+semiSep     = P.semiSep lexer

@@ -75,7 +75,7 @@ instance Action ActionView where
     case queries_ of
       Nothing -> return (Left ["view: please supply a query"])
       Just queries ->
-        let viewElems = map parseView queries
+        --let viewElems = map parseView queries
         return (Right (ActionView queries))
   actionToRecordArgs action = Nothing
 
@@ -95,12 +95,10 @@ mode_view = Mode
   }
 
 view :: Env -> ActionView -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Env)
-view env0 (ActionView Nothing Nothing) = return $ Right $ env0 { envCwdChain = [], envStage = Nothing }
-view env0 (ActionView (Just parentUuid) Nothing) = do
-  item_ <- uuidToItem parentUuid
-  case item_ of
+view env0 (ActionView queries) = do
+  let query_ = parseView (head queries)
+  case query_ of
     Left msgs -> return (Left msgs)
-    Right item -> do
-      chain <- itemToAbsPathChain item
-      return $ Right $ env0 { envCwdChain = chain, envStage = Nothing }
-
+    Right elem -> do
+      liftIO $ putStrLn $ show elem
+      return (Right env0)
