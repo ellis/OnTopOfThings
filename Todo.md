@@ -102,6 +102,7 @@ Ideas:
    - variable substitution, so that I can easily list same conditions but with different horizons?
    - can accept multiple such lists, making sure that first index isnn't overwritten when listing items multiple times
    - (stage=today and folder=/edu with --non-recursive) or (...)
+- [ ] Add field for time estimate
 - [ ] Repl: mod/newtask: ``-s -`` and ``-s ''`` should remove stage
 - [ ] Repl: mod/newtask: Use '?' shortcut for stage
 - [ ] Repl: make 'rebuild' command available from the repl
@@ -132,7 +133,6 @@ Ideas:
 - [ ] How to best schedule something for tomorrow?  Defer?  Start?
 - [ ] Item: create special database parser for Time, so that the time fields can be Times instead of Strings
 - [ ] Time: create timeToLocalTime function
-- [ ] Add field for time estimate
 - [ ] Create a ``waiting`` command to move a task to the waiting stage and remove
 - [ ] Show: calendar: show nicer start and end time
 - [ ] Show: show start and end time for tasks too, not just calendar

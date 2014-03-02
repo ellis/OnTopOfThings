@@ -101,4 +101,26 @@ view env0 (ActionView queries) = do
     Left msgs -> return (Left msgs)
     Right elem -> do
       liftIO $ putStrLn $ show elem
+      let wheres = constructViewQuery elem
+      liftIO $ putStrLn wheres
+      let stmt = "SELECT ?? FROM item, property WHERE " ++ wheres
+      --rawSql (T.pack stmt) [toPersistValue $ formatTime' fromTime, toPersistValue $ head l]
       return (Right env0)
+
+constructViewQuery :: ViewElement -> String
+constructViewQuery (ViewElement_And elems) = intercalate " AND " queries where
+  queries = map constructViewQuery elems
+constructViewQuery (ViewElement_Value "tag" values) = "property.name = 'tag' AND property.value = '" ++ (head values) ++ "'"
+constructViewQuery (ViewElement_Value "stage" values) = constructViewQueryStringValue "item" "stage" values
+constructViewQuery (ViewElement_Value field values) = constructViewQueryValue "item" field values
+
+constructViewQueryValue :: String -> String -> [String] -> String
+constructViewQueryValue table property values = table ++ "." ++ property ++ " " ++ rhs where
+  rhs = case values of
+    [] -> "IS NULL"
+    x:[] -> "= "++x
+    xs -> "IN (" ++ (intercalate "," xs) ++ ")"
+
+constructViewQueryStringValue :: String -> String -> [String] -> String
+constructViewQueryStringValue table property values = constructViewQueryValue table property values2 where
+  values2 = map (\s -> "\"" ++ s ++ "\"") values
