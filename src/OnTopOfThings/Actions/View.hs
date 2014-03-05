@@ -29,8 +29,9 @@ import Data.Maybe
 import Data.Monoid
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.ISO8601
-import Database.Persist (insert)
-import Database.Persist.Sqlite
+import Database.Persist (entityVal, insert)
+--import Database.Persist.Sqlite
+import Database.Persist.Sqlite (SqlPersistT, runSqlite, rawSql)
 import Debug.Trace
 import System.Console.ANSI
 import System.Console.CmdArgs.Explicit
@@ -103,8 +104,12 @@ view env0 (ActionView queries) = do
       liftIO $ putStrLn $ show elem
       let wheres = constructViewQuery elem
       liftIO $ putStrLn wheres
-      let stmt = "SELECT ?? FROM item, property WHERE " ++ wheres
-      --rawSql (T.pack stmt) [toPersistValue $ formatTime' fromTime, toPersistValue $ head l]
+      let stmt = "SELECT ?? FROM item, property WHERE item.uuid = property.uuid AND (" ++ wheres ++ ")"
+      tasks' <- rawSql (T.pack stmt) [] -- [toPersistValue $ formatTime' fromTime, toPersistValue $ head l]
+      let tasks = map entityVal tasks'
+      let x = itemTitle $ head tasks
+      --liftIO $ mapM_ (putStrLn . show . itemTitle) tasks
+      liftIO $ putStrLn $ show $ length tasks
       return (Right env0)
 
 constructViewQuery :: ViewElement -> String
