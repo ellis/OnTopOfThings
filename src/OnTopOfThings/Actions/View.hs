@@ -29,7 +29,7 @@ import Data.Maybe
 import Data.Monoid
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.ISO8601
-import Database.Persist (entityVal, insert)
+import Database.Persist (PersistValue, entityVal, insert, toPersistValue)
 --import Database.Persist.Sqlite
 import Database.Persist.Sqlite (SqlPersistT, runSqlite, rawSql)
 import Debug.Trace
@@ -95,6 +95,24 @@ mode_view = Mode
     ]
   }
 
+data QueryData = QueryData
+  { queryWhere :: Maybe String
+  , queryTables :: Set.Set String
+  , queryValues :: [PersistValue]
+  }
+
+newtype QueryDataAnd = QueryDataAnd QueryData
+newtype QueryDataOr = QueryDataOr QueryData
+
+extractQueryDataAnd (QueryDataAnd qd) = qd
+
+instance Monoid QueryDataAnd where
+  mempty = QueryDataAnd (QueryData Nothing mempty [])
+  mappend (QueryDataAnd (QueryData Nothing _ _)) b = b
+  mappend a (QueryDataAnd (QueryData Nothing _ _)) = a
+  mappend (QueryDataAnd (QueryData (Just where1) tables1 values1)) (QueryDataAnd (QueryData (Just where2) tables2 values2)) =
+    QueryDataAnd (QueryData (Just $ where1 ++ " AND " ++ where2) (tables1 `mappend` tables2) (values1 ++ values2))
+
 view :: Env -> ActionView -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Env)
 view env0 (ActionView queries) = do
   let query_ = parseView (head queries)
@@ -102,30 +120,36 @@ view env0 (ActionView queries) = do
     Left msgs -> return (Left msgs)
     Right elem -> do
       liftIO $ putStrLn $ show elem
-      let wheres = constructViewQuery elem
-      liftIO $ putStrLn wheres
-      let stmt = "SELECT ?? FROM item, property WHERE item.uuid = property.uuid AND (" ++ wheres ++ ")"
-      tasks' <- rawSql (T.pack stmt) [] -- [toPersistValue $ formatTime' fromTime, toPersistValue $ head l]
-      let tasks = map entityVal tasks'
-      let x = itemTitle $ head tasks
-      --liftIO $ mapM_ (putStrLn . show . itemTitle) tasks
-      liftIO $ putStrLn $ show $ length tasks
-      return (Right env0)
+      let qd = constructViewQuery elem
+      case queryWhere qd of
+        Nothing -> return (Left ["no query found"])
+        Just wheres -> do
+          liftIO $ putStrLn wheres
+          --let stmt = "SELECT ?? FROM item, property WHERE item.uuid = property.uuid AND (" ++ wheres ++ ")"
+          --tasks' <- rawSql (T.pack stmt) [] -- [toPersistValue $ formatTime' fromTime, toPersistValue $ head l]
+          --let tasks = map entityVal tasks'
+          --let x = itemTitle $ head tasks
+          --liftIO $ mapM_ (putStrLn . show . itemTitle) tasks
+          --liftIO $ putStrLn $ show $ length tasks
+          return (Right env0)
 
-constructViewQuery :: ViewElement -> String
-constructViewQuery (ViewElement_And elems) = intercalate " AND " queries where
-  queries = map constructViewQuery elems
-constructViewQuery (ViewElement_Value "tag" values) = "property.name = 'tag' AND property.value = '" ++ (head values) ++ "'"
-constructViewQuery (ViewElement_Value "stage" values) = constructViewQueryStringValue "item" "stage" values
+constructViewQuery :: ViewElement -> QueryData
+constructViewQuery (ViewElement_And elems) = extractQueryDataAnd (mconcat queries) where
+  queries :: [QueryDataAnd]
+  queries = map (\elem -> QueryDataAnd (constructViewQuery elem)) elems
+constructViewQuery (ViewElement_Value "tag" values) = QueryData (Just "property.name = 'tag' AND property.value = ?") (Set.fromList ["property"]) [toPersistValue (head values)]
+constructViewQuery (ViewElement_Value "stage" values) = constructViewQueryValue "item" "stage" values
 constructViewQuery (ViewElement_Value field values) = constructViewQueryValue "item" field values
 
-constructViewQueryValue :: String -> String -> [String] -> String
-constructViewQueryValue table property values = table ++ "." ++ property ++ " " ++ rhs where
-  rhs = case values of
-    [] -> "IS NULL"
-    x:[] -> "= "++x
-    xs -> "IN (" ++ (intercalate "," xs) ++ ")"
-
-constructViewQueryStringValue :: String -> String -> [String] -> String
-constructViewQueryStringValue table property values = constructViewQueryValue table property values2 where
-  values2 = map (\s -> "\"" ++ s ++ "\"") values
+constructViewQueryValue :: String -> String -> [String] -> QueryData
+constructViewQueryValue table property values = QueryData (Just wheres) tables values' where
+  wheres = table ++ "." ++ property ++ " " ++ rhs where
+  (rhs, values') = case values of
+    [] -> ("IS NULL", [])
+    x:[] -> ("= ?", [toPersistValue x])
+    xs -> (s, l) where
+      s :: String
+      s = "IN (" ++ (intercalate "," (map (\_ -> "?") xs)) ++ ")"
+      l :: [PersistValue]
+      l = map toPersistValue xs
+  tables = Set.fromList [table]
