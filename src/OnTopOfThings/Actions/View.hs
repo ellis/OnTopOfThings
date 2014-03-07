@@ -123,6 +123,7 @@ view env0 (ActionView queries) = do
           liftIO $ putStrLn whereUuid
           let stmt = "SELECT ?? FROM " ++ froms ++ " WHERE " ++ whereUuid ++ "(" ++ wheres ++ ")"
           liftIO $ putStrLn stmt
+          liftIO $ putStrLn $ show $ queryValues qd
           --tasks' <- rawSql (T.pack stmt) [] -- [toPersistValue $ formatTime' fromTime, toPersistValue $ head l]
           tasks' <- rawSql (T.pack stmt) (queryValues qd)
           let tasks = map entityVal tasks'
@@ -151,10 +152,24 @@ constructViewQuery (ViewElement_And elems) propertyIndex = (extractQueryDataAnd 
   step (r, propertyIndex) elem = (r', propertyIndex') where
     (qd, propertyIndex') = constructViewQuery elem propertyIndex
     r' = (QueryDataAnd qd) : r
-constructViewQuery (ViewElement_Value "tag" values) propertyIndex = (QueryData (Just (tableName ++ ".name = 'tag' AND " ++ tableName ++ ".value = ?")) (Set.fromList [tableName]) [toPersistValue (head values)], propertyIndex + 1) where
+constructViewQuery (ViewElement_Value field values) propertyIndex
+  | Set.member field (Set.fromList ["tag"]) = constructViewPropertyQuery field values propertyIndex
+  | Set.member field (Set.fromList ["stage"]) = constructViewItemQuery field values propertyIndex
+--constructViewQuery (ViewElement_Value field values) propertyIndex = (constructViewQueryValue "item" field values, propertyIndex)
+
+constructViewItemQuery :: String -> [String] -> Int -> (QueryData, Int)
+constructViewItemQuery field values propertyIndex = (qd, propertyIndex) where
+  qd = constructViewQueryValue "item" field values
+
+constructViewPropertyQuery :: String -> [String] -> Int -> (QueryData, Int)
+constructViewPropertyQuery field values propertyIndex = (qd, propertyIndex') where
+  qd = QueryData (Just s) tables values'
+  s = tableName ++ ".name = '" ++ field ++ "' AND " ++ tableName ++ ".value = ?"
   tableName = "property" ++ show propertyIndex
-constructViewQuery (ViewElement_Value "stage" values) propertyIndex = (constructViewQueryValue "item" "stage" values, propertyIndex)
-constructViewQuery (ViewElement_Value field values) propertyIndex = (constructViewQueryValue "item" field values, propertyIndex)
+  tables = Set.fromList [tableName]
+  --values = map toPersistValue values
+  values' = [toPersistValue $ head values]
+  propertyIndex' = propertyIndex + 1
 
 constructViewQueryValue :: String -> String -> [String] -> QueryData
 constructViewQueryValue table property values = QueryData (Just wheres) tables values' where
