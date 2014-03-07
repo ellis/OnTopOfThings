@@ -115,12 +115,13 @@ view env0 (ActionView queries) = do
           liftIO $ putStrLn wheres
           liftIO $ putStrLn $ show $ queryTables qd
           let tables = filter (/= "item") $ Set.toList $ queryTables qd
+          let froms = intercalate ", " $ "item" : (map (\s -> "property " ++ s) tables)
           let whereUuid = case tables of
                             [] -> ""
                             tables -> "(" ++ s ++ ") AND " where
                               s = intercalate " AND " $ map (\table -> "item.uuid = " ++ table ++ ".uuid") tables
           liftIO $ putStrLn whereUuid
-          let stmt = "SELECT ?? FROM item, property WHERE " ++ whereUuid ++ "(" ++ wheres ++ ")"
+          let stmt = "SELECT ?? FROM " ++ froms ++ " WHERE " ++ whereUuid ++ "(" ++ wheres ++ ")"
           liftIO $ putStrLn stmt
           --tasks' <- rawSql (T.pack stmt) [] -- [toPersistValue $ formatTime' fromTime, toPersistValue $ head l]
           tasks' <- rawSql (T.pack stmt) (queryValues qd)
