@@ -101,18 +101,6 @@ data QueryData = QueryData
   , queryValues :: [PersistValue]
   }
 
-newtype QueryDataAnd = QueryDataAnd QueryData
-newtype QueryDataOr = QueryDataOr QueryData
-
-extractQueryDataAnd (QueryDataAnd qd) = qd
-
-instance Monoid QueryDataAnd where
-  mempty = QueryDataAnd (QueryData Nothing mempty [])
-  mappend (QueryDataAnd (QueryData Nothing _ _)) b = b
-  mappend a (QueryDataAnd (QueryData Nothing _ _)) = a
-  mappend (QueryDataAnd (QueryData (Just where1) tables1 values1)) (QueryDataAnd (QueryData (Just where2) tables2 values2)) =
-    QueryDataAnd (QueryData (Just $ where1 ++ " AND " ++ where2) (tables1 `mappend` tables2) (values1 ++ values2))
-
 view :: Env -> ActionView -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Env)
 view env0 (ActionView queries) = do
   let query_ = parseView (head queries)
@@ -126,13 +114,33 @@ view env0 (ActionView queries) = do
         Just wheres -> do
           liftIO $ putStrLn wheres
           liftIO $ putStrLn $ show $ queryTables qd
-          --let stmt = "SELECT ?? FROM item, property WHERE item.uuid = property.uuid AND (" ++ wheres ++ ")"
+          let tables = filter (/= "item") $ Set.toList $ queryTables qd
+          let whereUuid = case tables of
+                            [] -> ""
+                            tables -> "(" ++ s ++ ") AND " where
+                              s = intercalate " AND " $ map (\table -> "item.uuid = " ++ table ++ ".uuid") tables
+          liftIO $ putStrLn whereUuid
+          let stmt = "SELECT ?? FROM item, property WHERE " ++ whereUuid ++ "(" ++ wheres ++ ")"
+          liftIO $ putStrLn stmt
           --tasks' <- rawSql (T.pack stmt) [] -- [toPersistValue $ formatTime' fromTime, toPersistValue $ head l]
-          --let tasks = map entityVal tasks'
-          --let x = itemTitle $ head tasks
-          --liftIO $ mapM_ (putStrLn . show . itemTitle) tasks
-          --liftIO $ putStrLn $ show $ length tasks
+          tasks' <- rawSql (T.pack stmt) (queryValues qd)
+          let tasks = map entityVal tasks'
+          let x = itemTitle $ head tasks
+          liftIO $ mapM_ (putStrLn . show . itemTitle) tasks
+          liftIO $ putStrLn $ show $ length tasks
           return (Right env0)
+
+newtype QueryDataAnd = QueryDataAnd QueryData
+newtype QueryDataOr = QueryDataOr QueryData
+
+extractQueryDataAnd (QueryDataAnd qd) = qd
+
+instance Monoid QueryDataAnd where
+  mempty = QueryDataAnd (QueryData Nothing mempty [])
+  mappend (QueryDataAnd (QueryData Nothing _ _)) b = b
+  mappend a (QueryDataAnd (QueryData Nothing _ _)) = a
+  mappend (QueryDataAnd (QueryData (Just where1) tables1 values1)) (QueryDataAnd (QueryData (Just where2) tables2 values2)) =
+    QueryDataAnd (QueryData (Just $ where1 ++ " AND " ++ where2) (tables1 `mappend` tables2) (values1 ++ values2))
 
 constructViewQuery :: ViewElement -> Int -> (QueryData, Int)
 constructViewQuery (ViewElement_And elems) propertyIndex = (extractQueryDataAnd (mconcat queries), propertyIndex') where
