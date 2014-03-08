@@ -269,6 +269,25 @@ When building DB from files:
 * Options are validated and processed for modification of DB 'item' and 'property' tables
 * items and properties are updated
 
+## Data storage
+
+Folders and tasks are the main object types, but there are many more object types to consider.
+
+Properties may have different rules:
+* value
+* set
+* list
+
+For some properties we want to track history.
+
+History:
+* user
+* date
+* item
+* property
+* operation
+* parameters
+
 ## Command Records
 
 For now I'm saving Change Records, but it might be better to save Command Records instead.
