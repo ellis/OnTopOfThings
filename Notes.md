@@ -273,12 +273,24 @@ When building DB from files:
 
 Folders and tasks are the main object types, but there are many more object types to consider.
 
-Properties may have different rules:
+Properties may be three kinds of collections:
 * value
 * set
 * list
 
-For some properties we want to track history.
+Property table:
+* item
+* property
+* version?
+* index?
+* value
+
+For some properties we want to track history.  For example, the
+pomodoro technique suggests keeping track of changes in work estimates.
+This could be done by making the estimate a list, but normally only using the last value.
+Or perhaps the property table should have a 'version' field too.
+
+We might track history explicity with its own table:
 
 History:
 * user
@@ -287,6 +299,8 @@ History:
 * property
 * operation
 * parameters
+
+Stages/review-horizons may need to have its own table, or the stages should be items.  They should be ordered and some should even have a quantitative value (e.g. number of days or months)
 
 ## Command Records
 
