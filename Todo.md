@@ -93,7 +93,7 @@ Ideas:
 - [x] Repl: cd: should be able to switch to another absolute path (e.g. from /edu to /work)
 - [x] Repl: cd: should be able to use relative paths
 - [x] Repl: cd: should be able to use '..'
-- [ ] Repl: newtask: BUG: when in a folder below the root, should still be able to create item in a folder given its absolute path
+- [ ] Add field for time estimate
 - [ ] Figure out VIEW concept (working on View.hs and ViewParser.hs)
    - query: ANDs and ORs, along with flags
    - item print format
@@ -102,10 +102,10 @@ Ideas:
    - variable substitution, so that I can easily list same conditions but with different horizons?
    - can accept multiple such lists, making sure that first index isnn't overwritten when listing items multiple times
    - (stage=today and folder=/edu with --non-recursive) or (...)
-- [ ] Add field for time estimate
 - [ ] Repl: mod/newtask: ``-s -`` and ``-s ''`` should remove stage
 - [ ] Repl: mod/newtask: Use '?' shortcut for stage
 - [ ] Repl: make 'rebuild' command available from the repl
+- [ ] Repl: newtask: BUG: when in a folder below the root, should still be able to create item in a folder given its absolute path
 - [ ] Show: convert it from a Command to an Action
 - [ ] day planning template: show items on today's calendar
 - [ ] day planning template: let user show all ?today items and also show any items from ?next or ?week up to a total of N items (minus the ?today items)

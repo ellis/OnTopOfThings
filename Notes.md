@@ -290,6 +290,9 @@ pomodoro technique suggests keeping track of changes in work estimates.
 This could be done by making the estimate a list, but normally only using the last value.
 Or perhaps the property table should have a 'version' field too.
 
+Some properties are complex and require multiple fields.  For example,
+for logging time spend working on a task, we want to know both the start time and duration.
+
 We might track history explicity with its own table:
 
 History:
@@ -300,7 +303,14 @@ History:
 * operation
 * parameters
 
-Stages/review-horizons may need to have its own table, or the stages should be items.  They should be ordered and some should even have a quantitative value (e.g. number of days or months)
+Stages/review-horizons may need to have its own table, or the stages should be items.  They should be ordered and some should even have a quantitative value (e.g. number of days or months).
+
+This may all become much more complicated for collaboration with teams.  For example, what if
+multiple people enter time estimates for a task, and we want to see them all.  Or if multiple people
+work on a task, and we want to track work time per user.
+One possibility would be to make the Item table very minimal, with just id, uuid, type.
+Complex pProperties could then hold the uuid value for other items.
+Time logs could then be items of type "timelog" with a property "parentUuid" that references the parent item.
 
 ## Command Records
 
