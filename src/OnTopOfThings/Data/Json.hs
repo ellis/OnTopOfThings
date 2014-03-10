@@ -60,6 +60,7 @@ instance ToJSON ItemForJson where
       , getMaybe "end" itemEnd
       , getMaybe "due" itemDue
       , getMaybe "defer" itemDefer
+      , getMaybeInt "estimate" itemEstimate
       , M.lookup "tag" properties >>= \tags -> Just ("tag" .= Array (V.fromList (map (String . T.pack) tags)))
       ]
     get :: T.Text -> (Item -> String) -> Maybe Pair
@@ -70,6 +71,9 @@ instance ToJSON ItemForJson where
 
     getMaybe :: T.Text -> (Item -> Maybe String) -> Maybe Pair
     getMaybe name fn = fmap (\x -> name .= String (T.pack x)) (fn item)
+
+    getMaybeInt :: T.Text -> (Item -> Maybe Int) -> Maybe Pair
+    getMaybeInt name fn = fmap (\x -> name .= (T.pack $ show x)) (fn item)
 
     getMaybeDate :: T.Text -> (Item -> Maybe UTCTime) -> Maybe Pair
     getMaybeDate name fn = fmap (\x -> name .= (T.pack $ formatISO8601 x)) (fn item)
@@ -92,7 +96,8 @@ instance FromJSON ItemForJson where
         m .:? "start" <*>
         m .:? "end" <*>
         m .:? "due" <*>
-        m .:? "review" <*>
+        m .:? "defer" <*>
+        m .:? "estimate" <*>
         return Nothing
     properties <- makeProperties <$> m .:? "tag"
     return (ItemForJson item properties)

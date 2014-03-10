@@ -120,8 +120,9 @@ createItem header uuid diffs = do
   start <- getMaybe "start"
   end <- getMaybe "end"
   due <- getMaybe "due"
-  review <- getMaybe "review"
-  let item = Item uuid created creator type_ status parent name title content stage closed start end due review Nothing
+  defer <- getMaybe "defer"
+  estimate <- getMaybeInt "estimate"
+  let item = Item uuid created creator type_ status parent name title content stage closed start end due defer estimate Nothing
   return (ItemForJson item properties)
   where
     maps = diffsToMaps diffs
@@ -134,6 +135,9 @@ createItem header uuid diffs = do
       _ -> Left ["missing value for `" ++ name ++ "`"]
     getMaybe name = case M.lookup name map of
       Just s -> Right (Just s)
+      _ -> Right Nothing
+    getMaybeInt name = case M.lookup name map of
+      Just s -> Right (Just $ (read s :: Int))
       _ -> Right Nothing
     getMaybeDate :: String -> Validation (Maybe UTCTime)
     getMaybeDate name = case M.lookup name map of
@@ -155,7 +159,8 @@ updateItem header diffs item0 = do
   end <- getMaybe "end" itemEnd
   due <- getMaybe "due" itemDue
   defer <- getMaybe "defer" itemDefer
-  return $ Item uuid created creator type_ status parent name title content stage closed start end due defer index
+  estimate <- getMaybeInt "estimate" itemEstimate
+  return $ Item uuid created creator type_ status parent name title content stage closed start end due defer estimate index
   where
     maps = diffsToMaps diffs
     map = diffMapsEqual maps
@@ -171,6 +176,11 @@ updateItem header diffs item0 = do
     getMaybe :: String -> (Item -> Maybe String) -> Validation (Maybe String)
     getMaybe name fn = case M.lookup name map of
       Just s -> Right (Just s)
+      _ -> Right (fn item0)
+
+    getMaybeInt :: String -> (Item -> Maybe Int) -> Validation (Maybe Int)
+    getMaybeInt name fn = case M.lookup name map of
+      Just s -> Right (Just (read s :: Int))
       _ -> Right (fn item0)
 
     getMaybeDate :: String -> (Item -> Maybe UTCTime) -> Validation (Maybe UTCTime)

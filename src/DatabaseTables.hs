@@ -69,10 +69,11 @@ Item
   due String Maybe
   defer String Maybe -- When to next review this item (like GTD tickler)
   --reviewed UTCTime Maybe -- Last time reviewed
+  estimate Int Maybe -- time estimate in minutes
   index Int Maybe
   deriving Show
 |]
 
 itemEmpty :: String -> UTCTime -> String -> String -> String -> Item
 itemEmpty uuid created creator type_ status =
-  Item uuid created creator type_ status Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+  Item uuid created creator type_ status Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
