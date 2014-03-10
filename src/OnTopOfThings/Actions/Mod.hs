@@ -96,6 +96,7 @@ instance Action ActionMod where
       start <- getMaybeDate "start" tz
       end <- getMaybeDate "end" tz
       due <- getMaybeDate "due" tz
+      estimate <- getMaybeDuration "estimate"
       return (ActionMod
                 { modUuids = uuids
                 , modType = M.lookup "type" (optionsParams1 opts)
@@ -109,6 +110,7 @@ instance Action ActionMod where
                 , modStart = start
                 , modEnd = end
                 , modDue = due
+                , modEstimate = estimate
                 , modTag = M.lookup "tag" (optionsParamsM opts)
                 , modOptions = opts
                 })
@@ -116,6 +118,10 @@ instance Action ActionMod where
       getMaybeDate :: String -> TimeZone -> Validation (Maybe Time)
       getMaybeDate name tz = case M.lookup name (optionsParams1 opts) of
         Just s -> parseTime' tz s >>= \time -> Right (Just time)
+        _ -> Right Nothing
+      getMaybeDuration :: String -> Validation (Maybe Int)
+      getMaybeDuration name = case M.lookup name (optionsParams1 opts) of
+        Just s -> Right (Just (read s :: Int))
         _ -> Right Nothing
   actionToRecordArgs action = Nothing
 
@@ -141,6 +147,7 @@ mode_mod = Mode
     , flagReq ["start"] (upd1 "start") "TIME" "Start time for this event."
     , flagReq ["end"] (upd1 "end") "TIME" "End time for this event."
     , flagReq ["due"] (upd1 "due") "TIME" "Due time."
+    , flagReq ["estimate"] (upd1 "estimate") "DURATION" "Estimated time required to complete."
     , flagReq ["tag", "t"] (updM "tag") "TAG" "Associate this item with the given tag or context.  Maybe be applied multiple times."
     , flagHelpSimple updHelp
     ]
@@ -161,6 +168,7 @@ mod env action = do
         , getTime "start" modStart
         , getTime "end" modEnd
         , getTime "due" modDue
+        , getInt "estimate" modEstimate
         , (modTag action) >>= \l -> Just (map modToDiff l)
         ]
   let hunk = PatchHunk (modUuids action) diffs
@@ -168,6 +176,8 @@ mod env action = do
   where
     get :: String -> (ActionMod -> Maybe String) -> Maybe [Diff]
     get name fn = (fn action) >>= \x -> Just [DiffEqual name x]
+    getInt :: String -> (ActionMod -> Maybe Int) -> Maybe [Diff]
+    getInt name fn = (fn action) >>= \x -> Just [DiffEqual name (show x)]
     getTime :: String -> (ActionMod -> Maybe Time) -> Maybe [Diff]
     getTime name fn = (fn action) >>= \x -> Just [DiffEqual name (formatTime' x)]
 

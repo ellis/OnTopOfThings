@@ -84,6 +84,7 @@ data ActionMod = ActionMod
   , modStart :: Maybe Time
   , modEnd :: Maybe Time
   , modDue :: Maybe Time
+  , modEstimate :: Maybe Int
   , modTag :: Maybe [Mod]
   , modOptions :: Options
   } deriving (Show)

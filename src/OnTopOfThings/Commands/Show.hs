@@ -333,7 +333,7 @@ showCalendar opts indexNext fromTime = do
         s <- itemToString opts item
         liftIO $ putStrLn $ s
       | otherwise = do
-        let format = [r|${X} ${times "" " " "" " --"}${name "" " (" "" ")"}${title "" " "}${tags "" " (" "," ")"}|]
+        let format = [r|${X} ${times "" " " "" " --"}${name "" " (" "" ")"}${title "" " "}${estimate "" " (" "" ")"}${tags "" " (" "," ")"}|]
         s <- formatItem format item
         liftIO $ putStrLn $ prefix ++ s
         where
@@ -456,6 +456,8 @@ formatItemElem (ItemFormatElement_Call name missing prefix infix_ suffix) item =
         (Nothing, Nothing, Just due) -> ["due " ++ due]
         _ -> []
     "title" -> return (maybeToList $ itemTitle item)
+    "estimate" -> do
+      return (maybeToList (fmap (\n -> show n ++ "min") $ itemEstimate item))
     "tags" -> do
       let l1 = maybeToList $ (itemStage item >>= \stage -> Just ('?':stage))
       tags' <- selectList [PropertyUuid ==. itemUuid item, PropertyName ==. "tag"] []
@@ -471,7 +473,7 @@ itemToString :: Options -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) Strin
 itemToString opts item = formatItem' where
   format = case Set.member "hide-tags" (optionsParams0 opts) of
     True -> [r|${X} ${times "" " " "" " --"}${name "" " (" "" ")"}${title "" " "}|]
-    False -> [r|${X} ${times "" " " "" " --"}${name "" " (" "" ")"}${title "" " "}${tags "" " (" "," ")"}|]
+    False -> [r|${X} ${times "" " " "" " --"}${name "" " (" "" ")"}${title "" " "}${estimate "" " (" "" ")"}${tags "" " (" "," ")"}|]
   formatItem'
     | (itemType item) == "folder" = do
       path <- getAbsPath item
