@@ -101,11 +101,35 @@ data QueryData = QueryData
   , queryValues :: [PersistValue]
   }
 
+data ViewItem = ViewItem
+  { viewItemItem :: Item
+  , viewItemProperties :: [(String, String)]
+  , viewItemFolder :: FilePath
+  }
+
+data ViewData = ViewData
+  { viewDataItems :: [ViewItem]
+  , viewDataSortFns :: [(ViewItem -> ViewItem -> Ordering)]
+  , viewDataHeaderFn :: (ViewItem -> ViewItem -> Maybe String)
+  , viewDataItemFn :: (ViewItem -> String)
+  }
+
 view :: Env -> ActionView -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Env)
 view env0 (ActionView queries) = do
-  let query_ = parseView (head queries)
+  let vd0 = (ViewData [] [] (\a b -> Nothing) (\vi -> (show . itemTitle) (viewItemItem vi)))
+  viewsub env0 vd0 queries
+
+viewsub :: Env -> ViewData -> [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Env)
+viewsub env0 vd [] = do
+  viewPrint vd
+  return (Right env0)
+viewsub env0 vd (queryString:rest) = do
+  let query_ = parseView queryString
   case query_ of
     Left msgs -> return (Left msgs)
+    Right (ViewElement_Value "print" _) -> do
+      viewPrint vd
+      viewsub env0 (vd { viewDataItems = [] }) rest
     Right elem -> do
       liftIO $ putStrLn $ show elem
       let (qd, _) = constructViewQuery elem 1
@@ -125,12 +149,24 @@ view env0 (ActionView queries) = do
           liftIO $ putStrLn stmt
           liftIO $ putStrLn $ show $ queryValues qd
           --tasks' <- rawSql (T.pack stmt) [] -- [toPersistValue $ formatTime' fromTime, toPersistValue $ head l]
-          tasks' <- rawSql (T.pack stmt) (queryValues qd)
-          let tasks = map entityVal tasks'
-          let x = itemTitle $ head tasks
-          liftIO $ mapM_ (putStrLn . show . itemTitle) tasks
-          liftIO $ putStrLn $ show $ length tasks
-          return (Right env0)
+          items' <- rawSql (T.pack stmt) (queryValues qd)
+          let items = map entityVal items'
+          --let x = itemTitle $ head items
+          let vis = map (\item -> ViewItem item [] "") items
+          let vd' = vd { viewDataItems = (viewDataItems vd) ++ vis }
+          --liftIO $ mapM_ (putStrLn . show . itemTitle) tasks
+          --liftIO $ putStrLn $ show $ length tasks
+          --return (Right env0)
+          viewsub env0 vd' rest
+
+viewPrint :: ViewData -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+viewPrint vd = do
+  -- TODO: sort items
+  -- TODO: fold over items, printings headers where appropriate
+  let vis = viewDataItems vd
+  let ss = map (viewDataItemFn vd) vis
+  liftIO $ mapM_ putStrLn ss
+  return ()
 
 newtype QueryDataAnd = QueryDataAnd QueryData
 newtype QueryDataOr = QueryDataOr QueryData
