@@ -190,7 +190,7 @@ constructViewQuery (ViewElement_And elems) propertyIndex = (extractQueryDataAnd 
     r' = (QueryDataAnd qd) : r
 constructViewQuery (ViewElement_Value field values) propertyIndex
   | Set.member field (Set.fromList ["tag"]) = constructViewPropertyQuery field values propertyIndex
-  | Set.member field (Set.fromList ["stage"]) = constructViewItemQuery field values propertyIndex
+  | Set.member field (Set.fromList ["stage", "status"]) = constructViewItemQuery field values propertyIndex
 --constructViewQuery (ViewElement_Value field values) propertyIndex = (constructViewQueryValue "item" field values, propertyIndex)
 
 constructViewItemQuery :: String -> [String] -> Int -> (QueryData, Int)
