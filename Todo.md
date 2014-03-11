@@ -93,7 +93,8 @@ Ideas:
 - [x] Repl: cd: should be able to switch to another absolute path (e.g. from /edu to /work)
 - [x] Repl: cd: should be able to use relative paths
 - [x] Repl: cd: should be able to use '..'
-- [ ] Add field for time estimate
+- [x] Add field for time estimate
+- [ ] Handle more fields in view element parser, such as 'status'
 - [ ] Figure out VIEW concept (working on View.hs and ViewParser.hs)
    - query: ANDs and ORs, along with flags
    - item print format
