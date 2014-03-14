@@ -95,6 +95,7 @@ Ideas:
 - [x] Repl: cd: should be able to use '..'
 - [x] Add field for time estimate
 - [ ] Handle more fields in view element parser, such as 'status'
+- [ ] BUG: 'show template' isn't preserving index settings anymore
 - [ ] Figure out VIEW concept (working on View.hs and ViewParser.hs)
    - query: ANDs and ORs, along with flags
    - item print format
@@ -108,6 +109,7 @@ Ideas:
 - [ ] Repl: make 'rebuild' command available from the repl
 - [ ] Repl: newtask: BUG: when in a folder below the root, should still be able to create item in a folder given its absolute path
 - [ ] Show: convert it from a Command to an Action
+- [ ] item indexes should probably have it's own table, since it really has nothing to do with the item
 - [ ] day planning template: show items on today's calendar
 - [ ] day planning template: let user show all ?today items and also show any items from ?next or ?week up to a total of N items (minus the ?today items)
 - [ ] day planning template: automatically move scheduled items to ?today
