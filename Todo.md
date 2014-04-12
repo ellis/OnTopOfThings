@@ -1,5 +1,18 @@
 # Todos
 
+## View command
+
+Sample command:
+
+    view "(and tag=mustdo status=open stage=today,next)"
+
+- [ ] sort items (current need to add "item." prefix where appropriate)
+      In View.view, build the "ORDER BY" string using the appropriate prefixes?
+      Or maybe better to build the ORDER string in actionFromOptions?
+- [ ] recurse into children
+- [ ] group items
+- [ ] print headings for item groups
+
 ## Design 3
 
 Ideas:

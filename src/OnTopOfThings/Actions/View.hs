@@ -75,9 +75,10 @@ instance Action ActionView where
     let queries_ = M.lookup "query" (optionsParamsN opts)
     case queries_ of
       Nothing -> return (Left ["view: please supply a query"])
-      Just queries ->
+      Just queries -> do
         --let viewElems = map parseView queries
-        return (Right (ActionView queries))
+        let sorts = fromMaybe [] $ M.lookup "sort" (optionsParamsN opts)
+        return (Right (ActionView queries sorts))
   actionToRecordArgs action = Nothing
 
 mode_view = Mode
@@ -91,7 +92,8 @@ mode_view = Mode
   , modeHelpSuffix = []
   , modeArgs = ([], Just (flagArg (updN "query") "QUERY"))
   , modeGroupFlags = toGroup
-    [ flagNone ["help"] updHelp "display this help and exit"
+    [ flagReq ["sort"] (updN "sort") "FIELD" "Field to sort by, fields may be comma separated"
+    , flagNone ["help"] updHelp "display this help and exit"
     ]
   }
 
@@ -115,21 +117,21 @@ data ViewData = ViewData
   }
 
 view :: Env -> ActionView -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Env)
-view env0 (ActionView queries) = do
+view env0 (ActionView queries sorts) = do
   let vd0 = (ViewData [] [] (\a b -> Nothing) (\vi -> (show . itemTitle) (viewItemItem vi)))
-  viewsub env0 vd0 queries
+  viewsub env0 vd0 queries sorts
 
-viewsub :: Env -> ViewData -> [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Env)
-viewsub env0 vd [] = do
+viewsub :: Env -> ViewData -> [String] -> [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Env)
+viewsub env0 vd [] _ = do
   viewPrint vd
   return (Right env0)
-viewsub env0 vd (queryString:rest) = do
+viewsub env0 vd (queryString:rest) sorts = do
   let query_ = parseView queryString
   case query_ of
     Left msgs -> return (Left msgs)
     Right (ViewElement_Value "print" _) -> do
       viewPrint vd
-      viewsub env0 (vd { viewDataItems = [] }) rest
+      viewsub env0 (vd { viewDataItems = [] }) rest sorts
     Right elem -> do
       liftIO $ putStrLn $ show elem
       let (qd, _) = constructViewQuery elem 1
@@ -145,7 +147,10 @@ viewsub env0 vd (queryString:rest) = do
                             tables -> "(" ++ s ++ ") AND " where
                               s = intercalate " AND " $ map (\table -> "item.uuid = " ++ table ++ ".uuid") tables
           liftIO $ putStrLn whereUuid
-          let stmt = "SELECT ?? FROM " ++ froms ++ " WHERE " ++ whereUuid ++ "(" ++ wheres ++ ")"
+          let stmt0 = "SELECT ?? FROM " ++ froms ++ " WHERE " ++ whereUuid ++ "(" ++ wheres ++ ")"
+          let stmt = case sorts of
+                        [] -> stmt0
+                        _ -> stmt0 ++ " ORDER BY " ++ intercalate " " sorts
           liftIO $ putStrLn stmt
           liftIO $ putStrLn $ show $ queryValues qd
           --tasks' <- rawSql (T.pack stmt) [] -- [toPersistValue $ formatTime' fromTime, toPersistValue $ head l]
@@ -157,7 +162,7 @@ viewsub env0 vd (queryString:rest) = do
           --liftIO $ mapM_ (putStrLn . show . itemTitle) tasks
           --liftIO $ putStrLn $ show $ length tasks
           --return (Right env0)
-          viewsub env0 vd' rest
+          viewsub env0 vd' rest sorts
 
 viewPrint :: ViewData -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 viewPrint vd = do

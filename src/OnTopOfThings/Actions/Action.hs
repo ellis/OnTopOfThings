@@ -121,6 +121,7 @@ data ActionShow = ActionShow
 
 data ActionView = ActionView
   { viewQueries :: [String]
+  , viewSorts :: [String]
   } deriving (Show)
 
 data ActionResult = ActionResult
