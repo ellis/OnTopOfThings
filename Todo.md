@@ -12,6 +12,7 @@ Sample command:
 - [ ] recurse into children
 - [ ] group items
 - [ ] print headings for item groups
+- [ ] print items
 
 ## Design 3
 
