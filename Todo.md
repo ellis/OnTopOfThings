@@ -108,6 +108,8 @@ Ideas:
 - [x] Repl: cd: should be able to use relative paths
 - [x] Repl: cd: should be able to use '..'
 - [x] Add field for time estimate
+- [ ] Newtask: handle `estimate` option
+- [ ] Mod: use `-e` for estimate field
 - [ ] Handle more fields in view element parser, such as 'status'
 - [ ] BUG: 'show template' isn't preserving index settings anymore
 - [ ] Figure out VIEW concept (working on View.hs and ViewParser.hs)
