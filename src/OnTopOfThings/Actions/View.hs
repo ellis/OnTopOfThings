@@ -16,6 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>
 -}
 
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module OnTopOfThings.Actions.View where
 
@@ -29,7 +30,7 @@ import Data.Maybe
 import Data.Monoid
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Data.Time.ISO8601
-import Database.Persist (PersistValue, entityVal, insert, toPersistValue)
+import Database.Persist -- (PersistValue, entityVal, insert, toPersistValue, selectList)
 --import Database.Persist.Sqlite
 import Database.Persist.Sqlite (SqlPersistT, runSqlite, rawSql)
 import Debug.Trace
@@ -38,6 +39,7 @@ import System.Console.CmdArgs.Explicit
 import System.Environment
 import System.FilePath.Posix (joinPath, splitDirectories)
 import System.IO
+import Text.RawString.QQ
 import Text.Read (readMaybe)
 import qualified Data.ByteString as BS
 import qualified Data.Map as M
@@ -51,6 +53,7 @@ import Args
 import DatabaseTables
 import DatabaseUtils
 import Utils
+import OnTopOfThings.Parsers.ItemFormatParser
 import OnTopOfThings.Parsers.NumberList
 import OnTopOfThings.Parsers.ViewParser
 import OnTopOfThings.Actions.Action
@@ -113,13 +116,28 @@ data ViewData = ViewData
   { viewDataItems :: [ViewItem]
   , viewDataSortFns :: [(ViewItem -> ViewItem -> Ordering)]
   , viewDataHeaderFn :: (ViewItem -> ViewItem -> Maybe String)
-  , viewDataItemFn :: (ViewItem -> String)
+  , viewDataItemFn :: (ViewItem -> SqlPersistT (NoLoggingT (ResourceT IO)) (String))
   }
 
 view :: Env -> ActionView -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Env)
 view env0 (ActionView queries sorts) = do
-  let vd0 = (ViewData [] [] (\a b -> Nothing) (\vi -> (show . itemTitle) (viewItemItem vi)))
+  let vd0 = (ViewData [] [] (\a b -> Nothing) showItem)
   viewsub env0 vd0 queries sorts
+  where
+    showItem :: ViewItem -> SqlPersistT (NoLoggingT (ResourceT IO)) (String)
+    showItem vi = do
+      s <- formatItem format item
+      return $ prefix ++ s
+      where
+        item = viewItemItem vi
+        format = [r|${X} ${times "" " " "" " --"}${name "" " (" "" ")"}${title "" " "}${estimate "" " (" "" ")"}${tags "" " (" "," ")"}|]
+        index :: Maybe Int
+        index = case lookup "index" (viewItemProperties vi) of
+          Nothing -> Nothing
+          Just s -> readMaybe s :: Maybe Int
+        index_s :: Maybe String
+        index_s = fmap (\i -> "(" ++ (show i) ++ ")  ") index
+        prefix = fromMaybe "" index_s
 
 viewsub :: Env -> ViewData -> [String] -> [String] -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Env)
 viewsub env0 vd [] _ = do
@@ -169,7 +187,7 @@ viewPrint vd = do
   -- TODO: sort items
   -- TODO: fold over items, printings headers where appropriate
   let vis = viewDataItems vd
-  let ss = map (viewDataItemFn vd) vis
+  ss <- mapM (viewDataItemFn vd) vis
   liftIO $ mapM_ putStrLn ss
   return ()
 
@@ -247,3 +265,50 @@ constructViewPropertyQuery field values propertyIndex = (qd, propertyIndex') whe
   --values = map toPersistValue values
   values' = [toPersistValue $ head values]
   propertyIndex' = propertyIndex + 1
+
+
+formatItem :: String -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) String
+formatItem format item = case parseItemFormat format of
+  Left msgs -> return (intercalate ";" msgs)
+  Right elems -> do
+    l <- mapM (\elem -> formatItemElem elem item) elems
+    return (concat l)
+
+formatItemElem :: ItemFormatElement -> Item -> SqlPersistT (NoLoggingT (ResourceT IO)) String
+formatItemElem (ItemFormatElement_String s) _ = return s
+formatItemElem (ItemFormatElement_Call name missing prefix infix_ suffix) item = do
+  ss <- case name of
+    "X" ->
+      return $ case (itemType item, itemStatus item) of
+        ("list", "open") -> []
+        ("list", "closed") -> ["[x]"]
+        ("list", "deleted") -> ["XXX"]
+        ("task", "open") -> ["[ ]"]
+        (_, "open") -> [" - "]
+        (_, "closed") -> ["[x]"]
+        (_, "deleted") -> ["XXX"]
+        _ -> []
+    "name" -> return (maybeToList $ itemName item)
+    "times" ->
+      return $ case (itemStart item, itemEnd item, itemDue item) of
+        (Just start, Just end, Just due) -> [start ++ " - " ++ end ++ ", due " ++ due]
+        (Just start, Just end, Nothing) -> [start ++ " - " ++ end]
+        (Just start, Nothing, Just due) -> [start ++ ", due " ++ due]
+        (Just start, Nothing, Nothing) -> [start]
+        (Nothing, Just end, Just due) -> ["end " ++ end ++ ", due " ++ due]
+        (Nothing, Just end, Nothing) -> [end]
+        (Nothing, Nothing, Just due) -> ["due " ++ due]
+        _ -> []
+    "title" -> return (maybeToList $ itemTitle item)
+    "estimate" -> do
+      return (maybeToList (fmap (\n -> show n ++ "min") $ itemEstimate item))
+    "tags" -> do
+      let l1 = maybeToList $ (itemStage item >>= \stage -> Just ('?':stage))
+      tags' <- selectList [PropertyUuid ==. itemUuid item, PropertyName ==. "tag"] []
+      let l2 = map (\x -> ('+' : (propertyValue $ entityVal x))) tags'
+      return (l1 ++ l2)
+    _ -> return ["unknown format spec: "++name]
+  let s = case ss of
+            [] -> missing
+            _ -> prefix ++ (intercalate infix_ ss) ++ suffix
+  return s

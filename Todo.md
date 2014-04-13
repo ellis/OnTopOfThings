@@ -5,15 +5,16 @@
 Sample command:
 
     view "(and tag=mustdo status=open stage=today,next)"
+    view "(and status=open estimate<30)"
 
 - [x] allow for operators other than `=`, such as `<=` for `estimate<=2`
+- [x] print items
 - [ ] sort items (current need to add "item." prefix where appropriate)
       In View.view, build the "ORDER BY" string using the appropriate prefixes?
       Or maybe better to build the ORDER string in actionFromOptions?
 - [ ] recurse into children
 - [ ] group items
 - [ ] print headings for item groups
-- [ ] print items
 
 ## Design 3
 
