@@ -46,22 +46,19 @@ parseView s = case parse pone "View" s of
 
 pone :: Parser ViewElement
 pone = do
-  x <- (plist <|> pvalue <|> pbinop)
+  x <- (plist <|> pop)
   return x
 
-pvalue :: Parser ViewElement
-pvalue = do
+pop :: Parser ViewElement
+pop = do
   name <- identifier
-  char '='
+  op <- choice $ map string ["=", "<", "<=", ">", ">="]
   values <- commaSep1 (many $ noneOf " ),")
-  return (ViewElement_Value name values)
-
-pbinop :: Parser ViewElement
-pbinop = do
-  name <- identifier
-  op <- string "<"
-  value <- (many $ noneOf " ),")
-  return (ViewElement_BinOp name op value)
+  case (op, values) of
+    ("=", value:[]) -> return (ViewElement_BinOp name op value)
+    ("=", _) -> return (ViewElement_Value name values)
+    (_, value:[]) -> return (ViewElement_BinOp name op value)
+    _ -> fail ("operator `" ++ op ++ "` does not accept a list of values")
 
 plist :: Parser ViewElement
 plist = do

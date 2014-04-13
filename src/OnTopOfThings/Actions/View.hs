@@ -196,9 +196,9 @@ constructViewQuery (ViewElement_And elems) propertyIndex = (extractQueryDataAnd 
 constructViewQuery (ViewElement_Value field values) propertyIndex
   | Set.member field (Set.fromList ["stage", "status"]) = constructViewItemQuery field values propertyIndex
   | Set.member field (Set.fromList ["tag"]) = constructViewPropertyQuery field values propertyIndex
---constructViewQuery (ViewElement_Value field values) propertyIndex = (constructViewQueryValue "item" field values, propertyIndex)
 constructViewQuery (ViewElement_BinOp field op value) propertyIndex
   | Set.member field (Set.fromList ["estimate"]) = constructItemBinOpIntQuery "item" field op (read value :: Int) propertyIndex
+  | otherwise = constructItemBinOpStringQuery "item" field op value propertyIndex
 
 constructViewItemQuery :: String -> [String] -> Int -> (QueryData, Int)
 constructViewItemQuery field values propertyIndex = (qd, propertyIndex) where
@@ -215,6 +215,13 @@ constructViewQueryValue table property values = QueryData (Just wheres) tables v
       s = "IN (" ++ (intercalate "," (map (\_ -> "?") xs)) ++ ")"
       l :: [PersistValue]
       l = map toPersistValue xs
+  tables = Set.fromList [table]
+
+constructItemBinOpStringQuery :: String -> String -> String -> String -> Int -> (QueryData, Int)
+constructItemBinOpStringQuery table property op value propertyIndex = (QueryData (Just wheres) tables values', propertyIndex) where
+  wheres = table ++ "." ++ property ++ " " ++ rhs
+  rhs = constructItemBinOpQueryRhs op
+  values' = [toPersistValue value]
   tables = Set.fromList [table]
 
 constructItemBinOpIntQuery :: String -> String -> String -> Int -> Int -> (QueryData, Int)
