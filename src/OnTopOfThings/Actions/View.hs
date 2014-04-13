@@ -63,6 +63,22 @@ import OnTopOfThings.Data.Patch
 import OnTopOfThings.Data.PatchDatabase
 
 
+mode_view = Mode
+  { modeGroupModes = mempty
+  , modeNames = ["view"]
+  , modeValue = options_empty "view"
+  , modeCheck = Right
+  , modeReform = Just . reform
+  , modeExpandAt = True
+  , modeHelp = "View by query."
+  , modeHelpSuffix = []
+  , modeArgs = ([], Just (flagArg (updN "query") "QUERY"))
+  , modeGroupFlags = toGroup
+    [ flagReq ["sort"] (updN "sort") "FIELD" "Field to sort by, fields may be comma separated"
+    , flagNone ["help"] updHelp "display this help and exit"
+    ]
+  }
+
 instance Action ActionView where
   --runAction env action | trace ("runAction") False = undefined
   runAction env action = do
@@ -80,22 +96,6 @@ instance Action ActionView where
         let sorts = fromMaybe [] $ M.lookup "sort" (optionsParamsN opts)
         return (Right (ActionView queries sorts))
   actionToRecordArgs action = Nothing
-
-mode_view = Mode
-  { modeGroupModes = mempty
-  , modeNames = ["view"]
-  , modeValue = options_empty "view"
-  , modeCheck = Right
-  , modeReform = Just . reform
-  , modeExpandAt = True
-  , modeHelp = "View by query."
-  , modeHelpSuffix = []
-  , modeArgs = ([], Just (flagArg (updN "query") "QUERY"))
-  , modeGroupFlags = toGroup
-    [ flagReq ["sort"] (updN "sort") "FIELD" "Field to sort by, fields may be comma separated"
-    , flagNone ["help"] updHelp "display this help and exit"
-    ]
-  }
 
 data QueryData = QueryData
   { queryWhere :: Maybe String
@@ -194,13 +194,42 @@ constructViewQuery (ViewElement_And elems) propertyIndex = (extractQueryDataAnd 
     (qd, propertyIndex') = constructViewQuery elem propertyIndex
     r' = (QueryDataAnd qd) : r
 constructViewQuery (ViewElement_Value field values) propertyIndex
-  | Set.member field (Set.fromList ["tag"]) = constructViewPropertyQuery field values propertyIndex
   | Set.member field (Set.fromList ["stage", "status"]) = constructViewItemQuery field values propertyIndex
+  | Set.member field (Set.fromList ["tag"]) = constructViewPropertyQuery field values propertyIndex
 --constructViewQuery (ViewElement_Value field values) propertyIndex = (constructViewQueryValue "item" field values, propertyIndex)
+constructViewQuery (ViewElement_BinOp field op value) propertyIndex
+  | Set.member field (Set.fromList ["estimate"]) = constructItemBinOpIntQuery "item" field op (read value :: Int) propertyIndex
 
 constructViewItemQuery :: String -> [String] -> Int -> (QueryData, Int)
 constructViewItemQuery field values propertyIndex = (qd, propertyIndex) where
   qd = constructViewQueryValue "item" field values
+
+constructViewQueryValue :: String -> String -> [String] -> QueryData
+constructViewQueryValue table property values = QueryData (Just wheres) tables values' where
+  wheres = table ++ "." ++ property ++ " " ++ rhs
+  (rhs, values') = case values of
+    [] -> ("IS NULL", [])
+    x:[] -> ("= ?", [toPersistValue x])
+    xs -> (s, l) where
+      s :: String
+      s = "IN (" ++ (intercalate "," (map (\_ -> "?") xs)) ++ ")"
+      l :: [PersistValue]
+      l = map toPersistValue xs
+  tables = Set.fromList [table]
+
+constructItemBinOpIntQuery :: String -> String -> String -> Int -> Int -> (QueryData, Int)
+constructItemBinOpIntQuery table property op value propertyIndex = (QueryData (Just wheres) tables values', propertyIndex) where
+  wheres = table ++ "." ++ property ++ " " ++ rhs
+  rhs = constructItemBinOpQueryRhs op
+  values' = [toPersistValue value]
+  tables = Set.fromList [table]
+
+constructItemBinOpQueryRhs :: String -> String
+constructItemBinOpQueryRhs op = rhs where
+  rhs = case op of
+    "=" -> "= ?"
+    "<" -> "< ?"
+    "<=" -> "<= ?"
 
 constructViewPropertyQuery :: String -> [String] -> Int -> (QueryData, Int)
 constructViewPropertyQuery field values propertyIndex = (qd, propertyIndex') where
@@ -211,16 +240,3 @@ constructViewPropertyQuery field values propertyIndex = (qd, propertyIndex') whe
   --values = map toPersistValue values
   values' = [toPersistValue $ head values]
   propertyIndex' = propertyIndex + 1
-
-constructViewQueryValue :: String -> String -> [String] -> QueryData
-constructViewQueryValue table property values = QueryData (Just wheres) tables values' where
-  wheres = table ++ "." ++ property ++ " " ++ rhs where
-  (rhs, values') = case values of
-    [] -> ("IS NULL", [])
-    x:[] -> ("= ?", [toPersistValue x])
-    xs -> (s, l) where
-      s :: String
-      s = "IN (" ++ (intercalate "," (map (\_ -> "?") xs)) ++ ")"
-      l :: [PersistValue]
-      l = map toPersistValue xs
-  tables = Set.fromList [table]

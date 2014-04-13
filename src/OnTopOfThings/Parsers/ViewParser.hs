@@ -34,6 +34,7 @@ import Utils
 
 data ViewElement
   = ViewElement_Value String [String]
+  | ViewElement_BinOp String String String
   | ViewElement_And [ViewElement]
   | ViewElement_Or [ViewElement]
   deriving (Show)
@@ -45,7 +46,7 @@ parseView s = case parse pone "View" s of
 
 pone :: Parser ViewElement
 pone = do
-  x <- (plist <|> pvalue)
+  x <- (plist <|> pvalue <|> pbinop)
   return x
 
 pvalue :: Parser ViewElement
@@ -54,6 +55,13 @@ pvalue = do
   char '='
   values <- commaSep1 (many $ noneOf " ),")
   return (ViewElement_Value name values)
+
+pbinop :: Parser ViewElement
+pbinop = do
+  name <- identifier
+  op <- string "<"
+  value <- (many $ noneOf " ),")
+  return (ViewElement_BinOp name op value)
 
 plist :: Parser ViewElement
 plist = do

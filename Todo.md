@@ -9,6 +9,7 @@ Sample command:
 - [ ] sort items (current need to add "item." prefix where appropriate)
       In View.view, build the "ORDER BY" string using the appropriate prefixes?
       Or maybe better to build the ORDER string in actionFromOptions?
+- [ ] allow for operators other than `=`, such as `<=` for `estimate<=2`
 - [ ] recurse into children
 - [ ] group items
 - [ ] print headings for item groups
