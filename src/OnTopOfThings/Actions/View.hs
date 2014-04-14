@@ -37,7 +37,7 @@ import Debug.Trace
 import System.Console.ANSI
 import System.Console.CmdArgs.Explicit
 import System.Environment
-import System.FilePath.Posix (joinPath, splitDirectories)
+import System.FilePath.Posix (joinPath, splitDirectories, takeDirectory)
 import System.IO
 import Text.RawString.QQ
 import Text.Read (readMaybe)
@@ -115,15 +115,23 @@ data ViewItem = ViewItem
 data ViewData = ViewData
   { viewDataItems :: [ViewItem]
   , viewDataSortFns :: [(ViewItem -> ViewItem -> Ordering)]
-  , viewDataHeaderFn :: (ViewItem -> ViewItem -> Maybe String)
+  , viewDataHeaderFn :: (Maybe ViewItem -> ViewItem -> SqlPersistT (NoLoggingT (ResourceT IO)) (Maybe String))
   , viewDataItemFn :: (ViewItem -> SqlPersistT (NoLoggingT (ResourceT IO)) (String))
   }
 
 view :: Env -> ActionView -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Env)
 view env0 (ActionView queries sorts) = do
-  let vd0 = (ViewData [] [] (\a b -> Nothing) showItem)
+  let vd0 = (ViewData [] [] showHeader showItem)
   viewsub env0 vd0 queries sorts
   where
+    showHeader :: Maybe ViewItem -> ViewItem -> SqlPersistT (NoLoggingT (ResourceT IO)) (Maybe String)
+    showHeader prevMaybe vi = do
+      case prevMaybe of
+        Nothing -> return $ Just (viewItemFolder vi)
+        Just prev -> do
+          if (viewItemFolder prev) == (viewItemFolder vi)
+            then return Nothing
+            else return $ Just (viewItemFolder vi)
     showItem :: ViewItem -> SqlPersistT (NoLoggingT (ResourceT IO)) (String)
     showItem vi = do
       s <- formatItem format item
@@ -175,21 +183,50 @@ viewsub env0 vd (queryString:rest) sorts = do
           items' <- rawSql (T.pack stmt) (queryValues qd)
           let items = map entityVal items'
           --let x = itemTitle $ head items
-          let vis = map (\item -> ViewItem item [] "") items
+          vis <- mapM itemToViewItem items
           let vd' = vd { viewDataItems = (viewDataItems vd) ++ vis }
           --liftIO $ mapM_ (putStrLn . show . itemTitle) tasks
           --liftIO $ putStrLn $ show $ length tasks
           --return (Right env0)
           viewsub env0 vd' rest sorts
 
+itemToViewItem :: Item -> SqlPersistT (NoLoggingT (ResourceT IO)) ViewItem
+itemToViewItem item = do
+  path <- getAbsPath item
+  let folder = takeDirectory path
+  return $ ViewItem item [] folder
+
+getAbsPath :: Item -> SqlPersistT (NoLoggingT (ResourceT IO)) FilePath
+getAbsPath item = do
+  parentPath <- case (itemParent item) of
+    Nothing -> return []
+    Just uuid -> do
+      parent_ <- getBy $ ItemUniqUuid uuid
+      case parent_ of
+        Nothing -> return []
+        Just parent -> do
+          parentPath <- getAbsPath (entityVal parent)
+          return [parentPath]
+  return $ joinPath (parentPath ++ [fromMaybe (itemUuid item) (itemName item)])
+
 viewPrint :: ViewData -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 viewPrint vd = do
   -- TODO: sort items
   -- TODO: fold over items, printings headers where appropriate
   let vis = viewDataItems vd
-  ss <- mapM (viewDataItemFn vd) vis
-  liftIO $ mapM_ putStrLn ss
+  foldM_ printHeaderAndItem Nothing vis
+  --ss <- mapM (viewDataItemFn vd) vis
+  --liftIO $ mapM_ putStrLn ss
   return ()
+  where
+    printHeaderAndItem prevMaybe item = do
+      headerMaybe <- (viewDataHeaderFn vd) prevMaybe item
+      s <- (viewDataItemFn vd) item
+      case headerMaybe of
+        Just header -> liftIO $ putStrLn header
+        Nothing -> return ()
+      liftIO $ putStrLn s
+      return (Just item)
 
 newtype QueryDataAnd = QueryDataAnd QueryData
 newtype QueryDataOr = QueryDataOr QueryData
