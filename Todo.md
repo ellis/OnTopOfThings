@@ -11,7 +11,8 @@ Sample command:
 - [x] print items
 - [x] print headings for item groups
 - [x] add blank lines before folder heading if it's not the first line
-- [ ] add indexes
+- [ ] add `indexNext` to `Env`
+- [ ] update indexes of displayed items
 - [ ] figure out how to list a folder
 - [ ] recurse into children
 - [ ] sort items (currently need to add "item." prefix where appropriate)
