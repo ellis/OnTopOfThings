@@ -12,11 +12,17 @@ Sample command:
 - [x] print headings for item groups
 - [x] add blank lines before folder heading if it's not the first line
 - [ ] add indexes
+- [ ] figure out how to list a folder
+- [ ] recurse into children
 - [ ] sort items (currently need to add "item." prefix where appropriate)
       In View.view, build the "ORDER BY" string using the appropriate prefixes?
       Or maybe better to build the ORDER string in actionFromOptions?
-- [ ] recurse into children
-- [ ] group items
+- [ ] let user specify how to group items
+- [ ] color the checkboxes according to stage
+
+- [ ] add Horizon/Stage table
+- [ ] automatically populate the Horizon table with Persistent
+- [ ] use the Horizon table to sort by horizon/stage
 
 ## Design 3
 
