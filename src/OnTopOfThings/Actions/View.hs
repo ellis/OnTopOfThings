@@ -131,7 +131,7 @@ view env0 (ActionView queries sorts) = do
         Just prev -> do
           if (viewItemFolder prev) == (viewItemFolder vi)
             then return Nothing
-            else return $ Just (viewItemFolder vi)
+            else return $ Just $ "\n" ++ (viewItemFolder vi)
     showItem :: ViewItem -> SqlPersistT (NoLoggingT (ResourceT IO)) (String)
     showItem vi = do
       s <- formatItem format item
