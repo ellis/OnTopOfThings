@@ -118,7 +118,7 @@ instance Action ActionMkdir where
       ]
 
 instance Action ActionNewTask where
-  runAction env action = newtask env action >>= \result -> return (env, result)
+  runAction env action = newtask env action
   --actionFromOptions :: Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ActionMkdir)
   actionFromOptions env opts = do
     tz <- liftIO $ getCurrentTimeZone
@@ -276,7 +276,7 @@ updNewTaskOption s opts = case s of
 
 cat :: Env -> ActionCat -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 cat env action | trace ("cat: "++(show action)) False = undefined
-cat (Env time user cwd stage) action@(ActionCat args0) = do
+cat (Env time user cwd stage indexNext) action@(ActionCat args0) = do
   results_ <- mapM catone args0
   return (mconcat results_)
   where
@@ -310,7 +310,7 @@ close env (ActionClose uuids delete) = do
 
 ls :: Env -> ActionLs -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 ls env action | trace ("ls: "++(show action)) False = undefined
-ls (Env time user cwd stage) action@(ActionLs args0 isRecursive) = do
+ls (Env time user cwd stage indexNext) action@(ActionLs args0 isRecursive) = do
   itemTop_ <- mapM absPathChainToItem chain_l
   let (goodR, badR) = foldl partitionArgs ([], []) (zip args' itemTop_)
   let bad = reverse badR
@@ -377,7 +377,7 @@ ls (Env time user cwd stage) action@(ActionLs args0 isRecursive) = do
 
 mkdir :: Env -> ActionMkdir -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
 mkdir env action | trace "mkdir" False = undefined
-mkdir env@(Env time user cwd stage) action = do
+mkdir env@(Env time user cwd stage indexNext) action = do
   if null (mkdirArgs action)
     then return (ActionResult [] False ["mkdir: missing operand", "Try 'mkdir --help' for more information."] [])
     else do
@@ -440,18 +440,18 @@ mkdir env@(Env time user cwd stage) action = do
       let chain = pathInfoChainAbs info
       mkdir' chain
 
-newtask :: Env -> ActionNewTask -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
-newtask env action | trace "newtask" False = undefined
-newtask (Env time user cwd stage) action0 = do
+newtask :: Env -> ActionNewTask -> SqlPersistT (NoLoggingT (ResourceT IO)) (Env, ActionResult)
+newtask env0 action | trace "newtask" False = undefined
+newtask env0@(Env time user cwd stage indexNext) action0 = do
   parent_ <- absPathChainToItem parentChain
   case parent_ of
-    Left msgs -> return (ActionResult [] False [] msgs)
+    Left msgs -> return (env0, ActionResult [] False [] msgs)
     Right parent -> do
       uuid <- liftIO (U4.nextRandom >>= return . U.toString)
       let hunk_ = createHunk uuid parent
       case hunk_ of
-        Left msgs -> return (ActionResult [] False [] msgs)
-        Right hunk -> return (ActionResult [hunk] False [] [])
+        Left msgs -> return (env0, ActionResult [] False [] msgs)
+        Right hunk -> return (env0 { envIndexNext = envIndexNext env0 + 1 }, ActionResult [hunk] False [] [])
   where
     parentChain = case newTaskParentRef action0 of
       Just s -> pathStringToPathChain cwd s
@@ -489,6 +489,7 @@ newtask (Env time user cwd stage) action0 = do
             , fmap (DiffEqual "start") start
             , fmap (DiffEqual "end") end
             , fmap (DiffEqual "due") due
+            , Just $ DiffEqual "index" (show $ envIndexNext env0)
             ]
             ++ tags
       return (PatchHunk [uuid] diffs)
@@ -503,6 +504,6 @@ newtask (Env time user cwd stage) action0 = do
           | otherwise -> Right (Just "inbox")
 
 show' :: Env -> Options -> SqlPersistT (NoLoggingT (ResourceT IO)) (ActionResult)
-show' (Env time user cwd stage) opts = do
+show' env opts = do
   liftIO $ optsRun_show opts
   return mempty

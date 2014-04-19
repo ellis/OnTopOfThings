@@ -105,7 +105,7 @@ main = do
         "repl" -> do
           runSqlite "repl.db" $ do
             runMigration migrateAll
-          runStateT (runInputT defaultSettings (repl ["/"])) []
+          runStateT (runInputT defaultSettings (repl ["/"] 1)) []
           return ()
         "import" -> do
           let mode = fst modeInfo_import
@@ -120,22 +120,22 @@ main = do
             Left msg -> putStrLn msg
             Right opts -> processOptions opts
 
-repl :: [FilePath] -> InputM ()
-repl cwd = do
+repl :: [FilePath] -> Int -> InputM ()
+repl cwd indexNext = do
   maybeLine <- getInputLine prompt
   case maybeLine of
     Nothing     -> return () -- EOF / control-d
     Just "exit" -> return ()
     Just line -> do
-      replEval cwd line
+      replEval cwd indexNext line
   where
     prompt = (setSGRCode [SetColor Foreground Vivid Green]) ++ (joinPath cwd) ++ " > " ++ (setSGRCode [])
 
-replEval :: [FilePath] -> String -> InputM ()
-replEval cwd line = do
+replEval :: [FilePath] -> Int -> String -> InputM ()
+replEval cwd indexNext line = do
   time <- liftIO $ getCurrentTime
   let args0 = splitArgs line
-  let env0 = Env time "default" cwd Nothing
+  let env0 = Env time "default" cwd Nothing indexNext
   env1 <- liftIO $ runSqlite "repl.db" $ do
     (env1, result_) <-
       case args0 of

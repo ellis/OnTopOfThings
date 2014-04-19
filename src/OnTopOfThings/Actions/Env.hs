@@ -42,4 +42,5 @@ data Env = Env
   , envUser :: String
   , envCwdChain :: [FilePath]
   , envStage :: Maybe String
+  , envIndexNext :: Int
   } deriving (Show)

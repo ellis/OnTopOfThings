@@ -53,9 +53,9 @@ import OnTopOfThings.Parsers.NumberList
 import OnTopOfThings.Data.Patch
 import OnTopOfThings.Data.Types
 
-patch :: Patch -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
-patch patch = do
-  result_ <- mapM (patchHunk patch) (patchHunks patch)
+patch :: Patch -> Bool -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+patch patch doSetIndex = do
+  result_ <- mapM (patchHunk patchdoSetIndex) (patchHunks patch)
   return $ fmap (const ()) (concatEithersN result_)
 
 patchFile1 :: File -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
@@ -63,12 +63,18 @@ patchFile1 (PatchFile1 time user _ hunks) = do
   let patch' = Patch time user hunks
   patch patch'
 
-patchHunk :: Patch -> PatchHunk -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
-patchHunk _ hunk | trace ("patchHunk: "++(show hunk)) False = undefined
-patchHunk header (PatchHunk uuids diffs) = do
+patchHunk :: Patch -> Int -> PatchHunk -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+patchHunk _ _ hunk | trace ("patchHunk: "++(show hunk)) False = undefined
+patchHunk header doSetIndex (PatchHunk uuids diffs) = do
+  index_ <- getNextIndex
   result_ <- mapM patchone uuids
   return $ concatEithersN result_ >>= const (Right ())
   where
+    getNextIndex :: SqlPersistT (NoLoggingT (ResourceT IO)) (Maybe Int)
+    getNextIndex = case doSetIndex of
+      False -> return Nothing
+      True -> do
+        
     patchone :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
     patchone uuid = do
       entity_ <- getBy $ ItemUniqUuid uuid
