@@ -35,7 +35,9 @@ import System.Console.CmdArgs.Explicit
 import System.Environment
 import System.FilePath.Posix (joinPath, splitDirectories)
 import System.IO
-import Database.Persist (insert)
+import Database.Persist --(insert)
+import Database.Persist.Class
+import Database.Persist.Sql
 import Database.Persist.Sqlite
 import Debug.Trace
 import qualified Data.ByteString as BS
@@ -72,17 +74,10 @@ patchHunk header doSetIndex (PatchHunk uuids diffs) = do
   result_ <- mapM patchone uuids
   return $ concatEithersN result_ >>= const (Right ())
   where
-    getNextIndex :: SqlPersistT (NoLoggingT (ResourceT IO)) (Maybe Int)
-    getNextIndex = case doSetIndex of
+    --getNextIndex' :: SqlPersistT (NoLoggingT (ResourceT IO)) (Maybe Int)
+    getNextIndex' = case doSetIndex of
       False -> return Nothing
-      True -> do
-        rawQuery "SELECT MAX(`index`) FROM item" [] $$ CL.mapM_ (liftIO . print)
-        --maxList' <- rawSql "SELECT MAX(`index`) FROM item" []
-        --liftIO $ mapM putStrLn maxList'
-        return Nothing
-        --case maxList' of
-          --[] -> return Nothing
-          --[Just n] -> return $ Just n
+      True -> getNextIndex
     patchone :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
     patchone uuid = do
       entity_ <- getBy $ ItemUniqUuid uuid
@@ -120,6 +115,18 @@ patchHunk header doSetIndex (PatchHunk uuids diffs) = do
                   mapM_ (\value -> insert (Property "item" uuid name value)) values
                 ) (M.toList (diffMapsAdd maps))
               return (Right ())
+
+getNextIndex = do
+  --rawQuery "SELECT MAX(`index`) FROM item" [] $$ CL.mapM_ (liftIO . print)
+  x <- rawSql "SELECT MAX(`index`) FROM item" [] -- :: SqlPersistT (NoLoggingT (ResourceT IO)) [PersistValue]
+  liftIO $ print (x :: [Single Int])
+  --x <- rawQuery "SELECT MAX(`index`) FROM item" []
+  --let x = rawQuery "SELECT MAX(`index`) FROM item" [] $$ CL.mapM (\y -> y)
+  --x $$ CL.mapM_ (liftIO . print)
+  --case x of
+    --[PersistInt64 n] -> return $ Just (fromIntegral n :: Int)
+    --_ -> return Nothing
+  return Nothing
 
 createItem :: Patch -> String -> [Diff] -> Validation ItemForJson
 createItem header uuid diffs = do
