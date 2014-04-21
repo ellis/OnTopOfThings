@@ -127,7 +127,10 @@ getNextIndex = do
     --[PersistInt64 n] -> return $ Just (fromIntegral n :: Int)
     --_ -> return Nothing
   case x of
-    [single] -> liftIO $ print (fromIntegral (unSingle single) :: Int)
+    [single] -> do
+      liftIO $ print (fromIntegral (unSingle single) :: Int)
+      return $ Just 1
+    _ -> return Nothing
   return Nothing
 
 createItem :: Patch -> String -> [Diff] -> Validation ItemForJson
