@@ -131,7 +131,6 @@ getNextIndex = do
       liftIO $ print (fromIntegral (unSingle single) :: Int)
       return $ Just 1
     _ -> return Nothing
-  return Nothing
 
 createItem :: Patch -> String -> [Diff] -> Validation ItemForJson
 createItem header uuid diffs = do
