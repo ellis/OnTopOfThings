@@ -489,7 +489,6 @@ newtask env0@(Env time user cwd stage indexNext) action0 = do
             , fmap (DiffEqual "start") start
             , fmap (DiffEqual "end") end
             , fmap (DiffEqual "due") due
-            , Just $ DiffEqual "index" (show $ envIndexNext env0)
             ]
             ++ tags
       return (PatchHunk [uuid] diffs)

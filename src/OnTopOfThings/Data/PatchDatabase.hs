@@ -84,7 +84,8 @@ patchHunk header doSetIndex (PatchHunk uuids diffs) = do
       case entity_ of
         -- Create a new item
         Nothing -> do
-          let item_ = createItem header uuid diffs
+          index_ <- getNextIndex'
+          let item_ = createItem header uuid diffs index_
           case item_ of
             Left msgs -> return (Left msgs)
             Right (ItemForJson item properties) -> do
@@ -128,12 +129,12 @@ getNextIndex = do
     --_ -> return Nothing
   case x :: [Single Int] of
     [single] -> do
-      liftIO $ print (fromIntegral (unSingle single) :: Int)
-      return $ Just $ (fromIntegral (unSingle single) :: Int)
+      --liftIO $ print (fromIntegral (unSingle single) :: Int)
+      return $ Just $ 1 + (fromIntegral (unSingle single) :: Int)
     _ -> return Nothing
 
-createItem :: Patch -> String -> [Diff] -> Validation ItemForJson
-createItem header uuid diffs = do
+createItem :: Patch -> String -> [Diff] -> Maybe Int -> Validation ItemForJson
+createItem header uuid diffs index_ = do
   type_ <- get "type"
   status <- get "status"
   parent <- getMaybe "parent"
@@ -147,7 +148,7 @@ createItem header uuid diffs = do
   due <- getMaybe "due"
   defer <- getMaybe "defer"
   estimate <- getMaybeInt "estimate"
-  let item = Item uuid created creator type_ status parent name title content stage closed start end due defer estimate Nothing
+  let item = Item uuid created creator type_ status parent name title content stage closed start end due defer estimate index_
   return (ItemForJson item properties)
   where
     maps = diffsToMaps diffs

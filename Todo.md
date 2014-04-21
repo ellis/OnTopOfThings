@@ -11,8 +11,9 @@ Sample command:
 - [x] print items
 - [x] print headings for item groups
 - [x] add blank lines before folder heading if it's not the first line
-- [ ] add `indexNext` to `Env`: modify PatchDatabase.patch to accept a (Maybe Int) for the indexNext, and increment that index for all new items; or find the max index in database and use that plus 1.
-- [ ] update indexes of displayed items
+- [x] PatchDatabase.patch: to accept a Bool for whether find the max index in database and use that plus 1 for new items.
+- [ ] remove indexNext from Env
+- [ ] update indexes of displayed items for 'view' command
 - [ ] figure out how to list a folder
 - [ ] recurse into children
 - [ ] sort items (currently need to add "item." prefix where appropriate)
