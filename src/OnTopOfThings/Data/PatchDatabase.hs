@@ -24,6 +24,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger (NoLoggingT)
 import Control.Monad.Trans.Control (MonadBaseControl)
 import Control.Monad.Trans.Resource (ResourceT)
+import Data.Conduit
 import Data.List (inits, intercalate, partition, sort, sortBy)
 import Data.Maybe
 import Data.Monoid
@@ -38,6 +39,7 @@ import Database.Persist (insert)
 import Database.Persist.Sqlite
 import Debug.Trace
 import qualified Data.ByteString as BS
+import qualified Data.Conduit.List as CL
 import qualified Data.Map as M
 import qualified Data.Set as Set
 import qualified Data.Text as T
@@ -55,15 +57,15 @@ import OnTopOfThings.Data.Types
 
 patch :: Patch -> Bool -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
 patch patch doSetIndex = do
-  result_ <- mapM (patchHunk patchdoSetIndex) (patchHunks patch)
+  result_ <- mapM (patchHunk patch doSetIndex) (patchHunks patch)
   return $ fmap (const ()) (concatEithersN result_)
 
 patchFile1 :: File -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
 patchFile1 (PatchFile1 time user _ hunks) = do
   let patch' = Patch time user hunks
-  patch patch'
+  patch patch' False
 
-patchHunk :: Patch -> Int -> PatchHunk -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
+patchHunk :: Patch -> Bool -> PatchHunk -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
 patchHunk _ _ hunk | trace ("patchHunk: "++(show hunk)) False = undefined
 patchHunk header doSetIndex (PatchHunk uuids diffs) = do
   index_ <- getNextIndex
@@ -74,7 +76,13 @@ patchHunk header doSetIndex (PatchHunk uuids diffs) = do
     getNextIndex = case doSetIndex of
       False -> return Nothing
       True -> do
-        
+        rawQuery "SELECT MAX(`index`) FROM item" [] $$ CL.mapM_ (liftIO . print)
+        --maxList' <- rawSql "SELECT MAX(`index`) FROM item" []
+        --liftIO $ mapM putStrLn maxList'
+        return Nothing
+        --case maxList' of
+          --[] -> return Nothing
+          --[Just n] -> return $ Just n
     patchone :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
     patchone uuid = do
       entity_ <- getBy $ ItemUniqUuid uuid

@@ -224,7 +224,7 @@ replEval cwd indexNext line = do
         liftIO $ mapM_ putStrLn warn
         fn time cards
     return env1
-  repl (envCwdChain env1)
+  repl (envCwdChain env1) (envIndexNext env1)
   where
     fn :: UTCTime -> [PatchHunk] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
     fn time hunks =
@@ -237,7 +237,7 @@ replEval cwd indexNext line = do
             liftIO $ saveFileAsJson file filename
             -- patch database
             let header = Patch time "default" hunks
-            result_ <- patch header
+            result_ <- patch header True
             case result_ of
               Left msgs -> liftIO $ mapM_ putStrLn msgs
               Right _ -> return ()

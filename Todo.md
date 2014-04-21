@@ -20,6 +20,7 @@ Sample command:
       Or maybe better to build the ORDER string in actionFromOptions?
 - [ ] let user specify how to group items
 - [ ] color the checkboxes according to stage
+- [ ] PatchDatabase.patch: should print the patched items
 
 - [ ] add Horizon/Stage table
 - [ ] automatically populate the Horizon table with Persistent
