@@ -126,7 +126,7 @@ getNextIndex = do
   --case x of
     --[PersistInt64 n] -> return $ Just (fromIntegral n :: Int)
     --_ -> return Nothing
-  case x of
+  case x :: [Single Int] of
     [single] -> do
       liftIO $ print (fromIntegral (unSingle single) :: Int)
       return $ Just 1
