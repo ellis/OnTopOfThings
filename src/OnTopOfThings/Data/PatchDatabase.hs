@@ -119,7 +119,7 @@ patchHunk header doSetIndex (PatchHunk uuids diffs) = do
 getNextIndex = do
   --rawQuery "SELECT MAX(`index`) FROM item" [] $$ CL.mapM_ (liftIO . print)
   x <- rawSql "SELECT MAX(`index`) FROM item" [] -- :: SqlPersistT (NoLoggingT (ResourceT IO)) [PersistValue]
-  liftIO $ print (x :: [Single Int])
+  --liftIO $ print (x :: [Single Int])
   --x <- rawQuery "SELECT MAX(`index`) FROM item" []
   --let x = rawQuery "SELECT MAX(`index`) FROM item" [] $$ CL.mapM (\y -> y)
   --x $$ CL.mapM_ (liftIO . print)
@@ -129,7 +129,7 @@ getNextIndex = do
   case x :: [Single Int] of
     [single] -> do
       liftIO $ print (fromIntegral (unSingle single) :: Int)
-      return $ Just 1
+      return $ Just $ (fromIntegral (unSingle single) :: Int)
     _ -> return Nothing
 
 createItem :: Patch -> String -> [Diff] -> Validation ItemForJson
