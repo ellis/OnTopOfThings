@@ -77,7 +77,9 @@ patchHunk header doSetIndex (PatchHunk uuids diffs) = do
     --getNextIndex' :: SqlPersistT (NoLoggingT (ResourceT IO)) (Maybe Int)
     getNextIndex' = case doSetIndex of
       False -> return Nothing
-      True -> getNextIndex
+      True -> do
+        index <- getNextIndex
+        return (Just index)
     patchone :: String -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
     patchone uuid = do
       entity_ <- getBy $ ItemUniqUuid uuid
@@ -127,11 +129,14 @@ getNextIndex = do
   --case x of
     --[PersistInt64 n] -> return $ Just (fromIntegral n :: Int)
     --_ -> return Nothing
-  case x :: [Single Int] of
-    [single] -> do
-      --liftIO $ print (fromIntegral (unSingle single) :: Int)
-      return $ Just $ 1 + (fromIntegral (unSingle single) :: Int)
-    _ -> return Nothing
+  let i = getLastIndex x
+  return (i + 1)
+  where
+    getLastIndex x = case x :: [Single Int] of
+      [single] ->
+        --liftIO $ print (fromIntegral (unSingle single) :: Int)
+        fromIntegral (unSingle single) :: Int
+      _ -> 0
 
 createItem :: Patch -> String -> [Diff] -> Maybe Int -> Validation ItemForJson
 createItem header uuid diffs index_ = do

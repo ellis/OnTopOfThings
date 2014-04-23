@@ -121,6 +121,9 @@ data ViewData = ViewData
 
 view :: Env -> ActionView -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation Env)
 view env0 (ActionView queries sorts) = do
+  -- Remove all previous indexes
+  updateWhere [ItemIndex !=. Nothing] [ItemIndex =. Nothing]
+  -- Handle query
   let vd0 = (ViewData [] [] showHeader showItem)
   viewsub env0 vd0 queries sorts
   where
@@ -211,15 +214,20 @@ getAbsPath item = do
 
 viewPrint :: ViewData -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
 viewPrint vd = do
-  -- TODO: sort items
-  -- TODO: fold over items, printings headers where appropriate
   let vis = viewDataItems vd
-  foldM_ printHeaderAndItem Nothing vis
+  -- TODO: sort items
+  -- TODO: set item indexes
+  -- Remove all previous indexes
+  indexNext <- getNextIndex
+  let viToIndex_l = zip vis [indexNext..]
+  -- TODO: fold over items, printings headers where appropriate
+  foldM_ printHeaderAndItem Nothing viToIndex_l
   --ss <- mapM (viewDataItemFn vd) vis
   --liftIO $ mapM_ putStrLn ss
   return ()
   where
-    printHeaderAndItem prevMaybe item = do
+    printHeaderAndItem prevMaybe (item, index) = do
+      updateIndex (viewItemItem item) index
       headerMaybe <- (viewDataHeaderFn vd) prevMaybe item
       s <- (viewDataItemFn vd) item
       case headerMaybe of
@@ -349,3 +357,7 @@ formatItemElem (ItemFormatElement_Call name missing prefix infix_ suffix) item =
             [] -> missing
             _ -> prefix ++ (intercalate infix_ ss) ++ suffix
   return s
+
+updateIndex :: Item -> Int -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
+updateIndex item index = do
+  updateWhere [ItemUuid ==. (itemUuid item)] [ItemIndex =. Just index]
