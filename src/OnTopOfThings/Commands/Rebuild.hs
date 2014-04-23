@@ -80,6 +80,7 @@ mode_rebuild = Mode
 --modeInfo = M.fromList $ map (\x@(mode, _) -> (head (modeNames mode), x)) modeInfo_l
 
 optsRun_rebuild :: Options -> IO (Validation ())
+--optsRun_rebuild opts | trace ("optsRun_rebuild: "++(show opts)) False = undefined
 optsRun_rebuild opts = do
   events_ <- loadFiles
   case events_ of

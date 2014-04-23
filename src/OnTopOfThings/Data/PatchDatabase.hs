@@ -70,7 +70,7 @@ patchFile1 (PatchFile1 time user _ hunks) = do
 patchHunk :: Patch -> Bool -> PatchHunk -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
 patchHunk _ _ hunk | trace ("patchHunk: "++(show hunk)) False = undefined
 patchHunk header doSetIndex (PatchHunk uuids diffs) = do
-  index_ <- getNextIndex
+  index_ <- getNextIndex'
   result_ <- mapM patchone uuids
   return $ concatEithersN result_ >>= const (Right ())
   where
