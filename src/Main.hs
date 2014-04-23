@@ -105,7 +105,7 @@ main = do
         "repl" -> do
           runSqlite "repl.db" $ do
             runMigration migrateAll
-          runStateT (runInputT defaultSettings (repl ["/"] 1)) []
+          runStateT (runInputT defaultSettings (repl ["/"])) []
           return ()
         "import" -> do
           let mode = fst modeInfo_import
@@ -120,22 +120,22 @@ main = do
             Left msg -> putStrLn msg
             Right opts -> processOptions opts
 
-repl :: [FilePath] -> Int -> InputM ()
-repl cwd indexNext = do
+repl :: [FilePath] -> InputM ()
+repl cwd = do
   maybeLine <- getInputLine prompt
   case maybeLine of
     Nothing     -> return () -- EOF / control-d
     Just "exit" -> return ()
     Just line -> do
-      replEval cwd indexNext line
+      replEval cwd line
   where
     prompt = (setSGRCode [SetColor Foreground Vivid Green]) ++ (joinPath cwd) ++ " > " ++ (setSGRCode [])
 
-replEval :: [FilePath] -> Int -> String -> InputM ()
-replEval cwd indexNext line = do
+replEval :: [FilePath] -> String -> InputM ()
+replEval cwd line = do
   time <- liftIO $ getCurrentTime
   let args0 = splitArgs line
-  let env0 = Env time "default" cwd Nothing indexNext
+  let env0 = Env time "default" cwd Nothing
   env1 <- liftIO $ runSqlite "repl.db" $ do
     (env1, result_) <-
       case args0 of
@@ -224,7 +224,7 @@ replEval cwd indexNext line = do
         liftIO $ mapM_ putStrLn warn
         fn time cards
     return env1
-  repl (envCwdChain env1) (envIndexNext env1)
+  repl (envCwdChain env1)
   where
     fn :: UTCTime -> [PatchHunk] -> SqlPersistT (NoLoggingT (ResourceT IO)) ()
     fn time hunks =
