@@ -70,7 +70,6 @@ patchFile1 (PatchFile1 time user _ hunks) = do
 patchHunk :: Patch -> Bool -> PatchHunk -> SqlPersistT (NoLoggingT (ResourceT IO)) (Validation ())
 patchHunk _ _ hunk | trace ("patchHunk: "++(show hunk)) False = undefined
 patchHunk header doSetIndex (PatchHunk uuids diffs) = do
-  index_ <- getNextIndex'
   result_ <- mapM patchone uuids
   return $ concatEithersN result_ >>= const (Right ())
   where
@@ -121,21 +120,19 @@ patchHunk header doSetIndex (PatchHunk uuids diffs) = do
 
 getNextIndex = do
   --rawQuery "SELECT MAX(`index`) FROM item" [] $$ CL.mapM_ (liftIO . print)
-  x <- rawSql "SELECT MAX(`index`) FROM item" [] -- :: SqlPersistT (NoLoggingT (ResourceT IO)) [PersistValue]
-  --liftIO $ print (x :: [Single Int])
-  --x <- rawQuery "SELECT MAX(`index`) FROM item" []
-  --let x = rawQuery "SELECT MAX(`index`) FROM item" [] $$ CL.mapM (\y -> y)
-  --x $$ CL.mapM_ (liftIO . print)
-  --case x of
-    --[PersistInt64 n] -> return $ Just (fromIntegral n :: Int)
-    --_ -> return Nothing
-  let i = getLastIndex x
+  liftIO $ print "A"
+  rows <- rawSql "SELECT MAX(`index`) FROM item" []
+  liftIO $ print "B"
+  let i = getLastIndex rows
+  liftIO $ print i
   return (i + 1)
   where
-    getLastIndex x = case x :: [Single Int] of
+    getLastIndex :: [Single PersistValue] -> Int
+    getLastIndex rows = case rows of
       [single] ->
-        --liftIO $ print (fromIntegral (unSingle single) :: Int)
-        fromIntegral (unSingle single) :: Int
+        case fromPersistValue (unSingle single) :: Either T.Text Int of
+          Right index -> index -- fromIntegral (unSingle single) :: Int
+          _ -> 0
       _ -> 0
 
 createItem :: Patch -> String -> [Diff] -> Maybe Int -> Validation ItemForJson
