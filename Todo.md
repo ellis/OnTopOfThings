@@ -13,7 +13,7 @@ Sample command:
 - [x] add blank lines before folder heading if it's not the first line
 - [x] PatchDatabase.patch: to accept a Bool for whether find the max index in database and use that plus 1 for new items.
 - [x] remove indexNext from Env
-- [ ] fix crash when running view query
+- [x] fix crash when running view query
 - [ ] update indexes of displayed items for 'view' command
 - [ ] figure out how to list a folder
 - [ ] recurse into children

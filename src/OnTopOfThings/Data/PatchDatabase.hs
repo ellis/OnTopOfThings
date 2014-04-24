@@ -120,11 +120,8 @@ patchHunk header doSetIndex (PatchHunk uuids diffs) = do
 
 getNextIndex = do
   --rawQuery "SELECT MAX(`index`) FROM item" [] $$ CL.mapM_ (liftIO . print)
-  liftIO $ print "A"
   rows <- rawSql "SELECT MAX(`index`) FROM item" []
-  liftIO $ print "B"
   let i = getLastIndex rows
-  liftIO $ print i
   return (i + 1)
   where
     getLastIndex :: [Single PersistValue] -> Int
