@@ -251,8 +251,8 @@ instance Monoid QueryDataAnd where
   mappend (QueryDataAnd (QueryData (Just where1) tables1 values1)) (QueryDataAnd (QueryData (Just where2) tables2 values2)) =
     QueryDataAnd (QueryData (Just $ where1 ++ " AND " ++ where2) (tables1 `mappend` tables2) (values1 ++ values2))
 
-constructViewQuery :: ViewElement -> Int -> (QueryData, Int)
-constructViewQuery (ViewElement_And elems) propertyIndex = (extractQueryDataAnd (mconcat queries), propertyIndex') where
+constructViewQuery :: ViewElement -> Int -> Either String (QueryData, Int)
+constructViewQuery (ViewElement_And elems) propertyIndex = Right (extractQueryDataAnd (mconcat queries), propertyIndex') where
   (queries_r, propertyIndex') = foldl step ([], propertyIndex) elems
   queries = reverse queries_r
   step :: ([QueryDataAnd], Int) -> ViewElement -> ([QueryDataAnd], Int)
@@ -260,11 +260,12 @@ constructViewQuery (ViewElement_And elems) propertyIndex = (extractQueryDataAnd 
     (qd, propertyIndex') = constructViewQuery elem propertyIndex
     r' = (QueryDataAnd qd) : r
 constructViewQuery (ViewElement_Value field values) propertyIndex
-  | Set.member field (Set.fromList ["stage", "status"]) = constructViewItemQuery field values propertyIndex
-  | Set.member field (Set.fromList ["tag"]) = constructViewPropertyQuery field values propertyIndex
+  | Set.member field (Set.fromList ["stage", "status"]) = Right $ constructViewItemQuery field values propertyIndex
+  | Set.member field (Set.fromList ["tag"]) = Right $ constructViewPropertyQuery field values propertyIndex
 constructViewQuery (ViewElement_BinOp field op value) propertyIndex
-  | Set.member field (Set.fromList ["estimate"]) = constructItemBinOpIntQuery "item" field op (read value :: Int) propertyIndex
-  | otherwise = constructItemBinOpStringQuery "item" field op value propertyIndex
+  | Set.member field (Set.fromList ["estimate"]) = Right $ constructItemBinOpIntQuery "item" field op (read value :: Int) propertyIndex
+  -- | field == "folder" = do
+  | otherwise = Right $ constructItemBinOpStringQuery "item" field op value propertyIndex
 
 constructViewItemQuery :: String -> [String] -> Int -> (QueryData, Int)
 constructViewItemQuery field values propertyIndex = (qd, propertyIndex) where

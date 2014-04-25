@@ -15,7 +15,7 @@ Sample command:
 - [x] remove indexNext from Env
 - [x] fix crash when running view query
 - [x] update indexes of displayed items for 'view' command
-- [ ] figure out how to list a folder
+- [ ] figure out how to list a folder (look at View.constructViewQuery)
 - [ ] recurse into children
 - [ ] sort items (currently need to add "item." prefix where appropriate)
       In View.view, build the "ORDER BY" string using the appropriate prefixes?
