@@ -14,7 +14,7 @@ Sample command:
 - [x] PatchDatabase.patch: to accept a Bool for whether find the max index in database and use that plus 1 for new items.
 - [x] remove indexNext from Env
 - [x] fix crash when running view query
-- [ ] update indexes of displayed items for 'view' command
+- [x] update indexes of displayed items for 'view' command
 - [ ] figure out how to list a folder
 - [ ] recurse into children
 - [ ] sort items (currently need to add "item." prefix where appropriate)

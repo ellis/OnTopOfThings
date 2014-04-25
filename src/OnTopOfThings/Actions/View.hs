@@ -141,7 +141,7 @@ view env0 (ActionView queries sorts) = do
       return $ prefix ++ s
       where
         item = viewItemItem vi
-        format = [r|${X} ${times "" " " "" " --"}${name "" " (" "" ")"}${title "" " "}${estimate "" " (" "" ")"}${tags "" " (" "," ")"}|]
+        format = [r|${index "" "" "" ")  "} ${X} ${times "" " " "" " --"}${name "" " (" "" ")"}${title "" " "}${estimate "" " (" "" ")"}${tags "" " (" "," ")"}|]
         index :: Maybe Int
         index = case lookup "index" (viewItemProperties vi) of
           Nothing -> Nothing
@@ -226,15 +226,18 @@ viewPrint vd = do
   --liftIO $ mapM_ putStrLn ss
   return ()
   where
-    printHeaderAndItem prevMaybe (item, index) = do
-      updateIndex (viewItemItem item) index
-      headerMaybe <- (viewDataHeaderFn vd) prevMaybe item
-      s <- (viewDataItemFn vd) item
+    printHeaderAndItem prevMaybe (vi, index) = do
+      let item = viewItemItem vi
+      updateIndex item index
+      let item' = item { itemIndex = Just index }
+      let vi' = vi { viewItemItem = item' }
+      headerMaybe <- (viewDataHeaderFn vd) prevMaybe vi
+      s <- (viewDataItemFn vd) vi'
       case headerMaybe of
         Just header -> liftIO $ putStrLn header
         Nothing -> return ()
       liftIO $ putStrLn s
-      return (Just item)
+      return (Just vi')
 
 newtype QueryDataAnd = QueryDataAnd QueryData
 newtype QueryDataOr = QueryDataOr QueryData
@@ -323,6 +326,7 @@ formatItemElem :: ItemFormatElement -> Item -> SqlPersistT (NoLoggingT (Resource
 formatItemElem (ItemFormatElement_String s) _ = return s
 formatItemElem (ItemFormatElement_Call name missing prefix infix_ suffix) item = do
   ss <- case name of
+    "index" -> return $ maybeToList $ fmap show (itemIndex item)
     "X" ->
       return $ case (itemType item, itemStatus item) of
         ("list", "open") -> []
