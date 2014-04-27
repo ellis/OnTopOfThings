@@ -77,6 +77,7 @@ mode_view = Mode
   , modeHelpSuffix = []
   , modeArgs = ([], Just (flagArg (updN "query") "QUERY"))
   , modeGroupFlags = toGroup
+    --[ flagReq ["folder"] (updN "folder") "FOLDER" "The folder under which to search"
     [ flagReq ["sort"] (updN "sort") "FIELD" "Field to sort by, fields may be comma separated"
     , flagNone ["help"] updHelp "display this help and exit"
     ]
@@ -91,13 +92,9 @@ instance Action ActionView where
       Right env1 -> return (env1, mempty)
   --actionFromOptions env opts | trace ("actionFromOptions "++(show opts)) False = undefined
   actionFromOptions env opts = do
-    let queries_ = M.lookup "query" (optionsParamsN opts)
-    case queries_ of
-      Nothing -> return (Left ["view: please supply a query"])
-      Just queries -> do
-        --let viewElems = map parseView queries
-        let sorts = fromMaybe [] $ M.lookup "sort" (optionsParamsN opts)
-        return (Right (ActionView queries sorts))
+    let queries = fromMaybe [] $ M.lookup "query" (optionsParamsN opts)
+    let sorts = fromMaybe [] $ M.lookup "sort" (optionsParamsN opts)
+    return (Right (ActionView queries sorts))
   actionToRecordArgs action = Nothing
 
 data QueryData = QueryData
@@ -163,23 +160,11 @@ viewsub env0 vd (queryString:rest) sorts = do
       viewsub env0 (vd { viewDataItems = [] }) rest sorts
     Right elem -> do
       liftIO $ putStrLn $ show elem
-      let (qd, _) = constructViewQuery elem 1
-      case queryWhere qd of
-        Nothing -> return (Left ["no query found"])
-        Just wheres -> do
+      case constructViewQuery elem 1 of
+        Left msg -> return (Left [msg])
+        Right (qd, _) -> do
           liftIO $ putStrLn wheres
           liftIO $ putStrLn $ show $ queryTables qd
-          let tables = filter (/= "item") $ Set.toList $ queryTables qd
-          let froms = intercalate ", " $ "item" : (map (\s -> "property " ++ s) tables)
-          let whereUuid = case tables of
-                            [] -> ""
-                            tables -> "(" ++ s ++ ") AND " where
-                              s = intercalate " AND " $ map (\table -> "item.uuid = " ++ table ++ ".uuid") tables
-          liftIO $ putStrLn whereUuid
-          let stmt0 = "SELECT ?? FROM " ++ froms ++ " WHERE " ++ whereUuid ++ "(" ++ wheres ++ ")"
-          let stmt = case sorts of
-                        [] -> stmt0
-                        _ -> stmt0 ++ " ORDER BY " ++ intercalate " " sorts
           liftIO $ putStrLn stmt
           liftIO $ putStrLn $ show $ queryValues qd
           --tasks' <- rawSql (T.pack stmt) [] -- [toPersistValue $ formatTime' fromTime, toPersistValue $ head l]
@@ -192,6 +177,21 @@ viewsub env0 vd (queryString:rest) sorts = do
           --liftIO $ putStrLn $ show $ length tasks
           --return (Right env0)
           viewsub env0 vd' rest sorts
+          where
+            wheres = fromMaybe "" (queryWhere qd)
+            tables = filter (/= "item") $ Set.toList $ queryTables qd
+            froms = intercalate ", " $ "item" : (map (\s -> "property " ++ s) tables)
+            whereUuid = case tables of
+                              [] -> ""
+                              tables -> "(" ++ s ++ ") AND " where
+                                s = intercalate " AND " $ map (\table -> "item.uuid = " ++ table ++ ".uuid") tables
+            whereExpr = case (whereUuid, wheres) of
+                              ("", "") -> ""
+                              _ -> " WHERE " ++ whereUuid ++ "(" ++ wheres ++ ")"
+            stmt0 = "SELECT ?? FROM " ++ froms ++ whereExpr
+            stmt = case sorts of
+                          [] -> stmt0
+                          _ -> stmt0 ++ " ORDER BY " ++ intercalate " " sorts
 
 itemToViewItem :: Item -> SqlPersistT (NoLoggingT (ResourceT IO)) ViewItem
 itemToViewItem item = do
@@ -252,13 +252,17 @@ instance Monoid QueryDataAnd where
     QueryDataAnd (QueryData (Just $ where1 ++ " AND " ++ where2) (tables1 `mappend` tables2) (values1 ++ values2))
 
 constructViewQuery :: ViewElement -> Int -> Either String (QueryData, Int)
-constructViewQuery (ViewElement_And elems) propertyIndex = Right (extractQueryDataAnd (mconcat queries), propertyIndex') where
-  (queries_r, propertyIndex') = foldl step ([], propertyIndex) elems
-  queries = reverse queries_r
-  step :: ([QueryDataAnd], Int) -> ViewElement -> ([QueryDataAnd], Int)
-  step (r, propertyIndex) elem = (r', propertyIndex') where
-    (qd, propertyIndex') = constructViewQuery elem propertyIndex
-    r' = (QueryDataAnd qd) : r
+constructViewQuery (ViewElement_And elems) propertyIndex = case foldl step (Right ([], propertyIndex)) elems of
+  Left msg -> Left msg
+  Right (queries_r, propertyIndex') -> Right (extractQueryDataAnd (mconcat queries), propertyIndex') where
+    queries = reverse queries_r
+  where
+    step :: Either String ([QueryDataAnd], Int) -> ViewElement -> Either String ([QueryDataAnd], Int)
+    step (Left msg) _ = Left msg
+    step (Right (r, propertyIndex)) elem = case constructViewQuery elem propertyIndex of
+      Left msg -> Left msg
+      Right (qd, propertyIndex') -> Right (r', propertyIndex') where
+        r' = (QueryDataAnd qd) : r
 constructViewQuery (ViewElement_Value field values) propertyIndex
   | Set.member field (Set.fromList ["stage", "status"]) = Right $ constructViewItemQuery field values propertyIndex
   | Set.member field (Set.fromList ["tag"]) = Right $ constructViewPropertyQuery field values propertyIndex
