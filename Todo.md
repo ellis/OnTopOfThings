@@ -15,6 +15,7 @@ Sample command:
 - [x] remove indexNext from Env
 - [x] fix crash when running view query
 - [x] update indexes of displayed items for 'view' command
+- [ ] view with no parameters should list everything
 - [ ] figure out how to list a folder
 - [ ] recurse into children
 - [ ] sort items (currently need to add "item." prefix where appropriate)

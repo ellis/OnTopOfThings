@@ -77,6 +77,7 @@ mode_view = Mode
   , modeHelpSuffix = []
   , modeArgs = ([], Just (flagArg (updN "query") "QUERY"))
   , modeGroupFlags = toGroup
+    --[ flagReq ["folder"] (updN "folder") "FOLDER" "The folder under which to search"
     [ flagReq ["sort"] (updN "sort") "FIELD" "Field to sort by, fields may be comma separated"
     , flagNone ["help"] updHelp "display this help and exit"
     ]
@@ -164,34 +165,35 @@ viewsub env0 vd (queryString:rest) sorts = do
     Right elem -> do
       liftIO $ putStrLn $ show elem
       let (qd, _) = constructViewQuery elem 1
-      case queryWhere qd of
-        Nothing -> return (Left ["no query found"])
-        Just wheres -> do
-          liftIO $ putStrLn wheres
-          liftIO $ putStrLn $ show $ queryTables qd
-          let tables = filter (/= "item") $ Set.toList $ queryTables qd
-          let froms = intercalate ", " $ "item" : (map (\s -> "property " ++ s) tables)
-          let whereUuid = case tables of
-                            [] -> ""
-                            tables -> "(" ++ s ++ ") AND " where
-                              s = intercalate " AND " $ map (\table -> "item.uuid = " ++ table ++ ".uuid") tables
-          liftIO $ putStrLn whereUuid
-          let stmt0 = "SELECT ?? FROM " ++ froms ++ " WHERE " ++ whereUuid ++ "(" ++ wheres ++ ")"
-          let stmt = case sorts of
-                        [] -> stmt0
-                        _ -> stmt0 ++ " ORDER BY " ++ intercalate " " sorts
-          liftIO $ putStrLn stmt
-          liftIO $ putStrLn $ show $ queryValues qd
-          --tasks' <- rawSql (T.pack stmt) [] -- [toPersistValue $ formatTime' fromTime, toPersistValue $ head l]
-          items' <- rawSql (T.pack stmt) (queryValues qd)
-          let items = map entityVal items'
-          --let x = itemTitle $ head items
-          vis <- mapM itemToViewItem items
-          let vd' = vd { viewDataItems = (viewDataItems vd) ++ vis }
-          --liftIO $ mapM_ (putStrLn . show . itemTitle) tasks
-          --liftIO $ putStrLn $ show $ length tasks
-          --return (Right env0)
-          viewsub env0 vd' rest sorts
+      let wheres = fromMaybe "" (queryWhere qd)
+      liftIO $ putStrLn wheres
+      liftIO $ putStrLn $ show $ queryTables qd
+      let tables = filter (/= "item") $ Set.toList $ queryTables qd
+      let froms = intercalate ", " $ "item" : (map (\s -> "property " ++ s) tables)
+      let whereUuid = case tables of
+                        [] -> ""
+                        tables -> "(" ++ s ++ ") AND " where
+                          s = intercalate " AND " $ map (\table -> "item.uuid = " ++ table ++ ".uuid") tables
+      let whereExpr = case (whereUuids, wheres) of
+                        ("", "") -> ""
+                        _ -> " WHERE " ++ whereUuid ++ "(" ++ wheres ++ ")"
+      liftIO $ putStrLn whereUuid
+      let stmt0 = "SELECT ?? FROM " ++ froms ++ whereExpr
+      let stmt = case sorts of
+                    [] -> stmt0
+                    _ -> stmt0 ++ " ORDER BY " ++ intercalate " " sorts
+      liftIO $ putStrLn stmt
+      liftIO $ putStrLn $ show $ queryValues qd
+      --tasks' <- rawSql (T.pack stmt) [] -- [toPersistValue $ formatTime' fromTime, toPersistValue $ head l]
+      items' <- rawSql (T.pack stmt) (queryValues qd)
+      let items = map entityVal items'
+      --let x = itemTitle $ head items
+      vis <- mapM itemToViewItem items
+      let vd' = vd { viewDataItems = (viewDataItems vd) ++ vis }
+      --liftIO $ mapM_ (putStrLn . show . itemTitle) tasks
+      --liftIO $ putStrLn $ show $ length tasks
+      --return (Right env0)
+      viewsub env0 vd' rest sorts
 
 itemToViewItem :: Item -> SqlPersistT (NoLoggingT (ResourceT IO)) ViewItem
 itemToViewItem item = do
