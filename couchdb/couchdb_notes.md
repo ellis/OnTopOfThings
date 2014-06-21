@@ -5,3 +5,22 @@ How to mark time spent on an item?
 How to assign a projected start time to an item?
 How to allocate pomodoros to an item?
 
+A list for each day
+
+Difficult features:
+- block together shorter tasks for a single pomodoro
+
+Schedule list item:
+    user
+    date
+    context
+    parentId (an ID, allows for sublists)
+    index (index in list/sublist)
+    hour
+    minute
+    text (optional text)
+    itemId (an optional ID to another item)
+    pomodoros (list of estimates, usually only one)
+    pomodoroStatus (list of completed, interrupted, whatever)
+    timeStart
+    timeStop
