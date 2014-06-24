@@ -41,12 +41,24 @@ Schedule list item:
         - [x] edu: algo: programming 6 due [x] [x]
         - [ ] OnTopOfThings [ ]
 
-    {'user': 'ellis', 'date': '2014-06-22', 'index': 1, 'time': [6, 0], 'itemId': '/work/planning', 'pomodoros': [1], 'pomodoroStatus': ['x']}
-    {'user': 'ellis', 'date': '2014-06-22', 'index': 2, 'time': [6, 25], 'itemId': '/work/lrn/research', 'pomodoros': [1], 'pomodoroStatus': ['x']}
-    {'user': 'ellis', 'date': '2014-06-22', 'parentId': '...', 'index': 1, 'itemId': '(TASK ID)'}
-    {'user': 'ellis', 'date': '2014-06-22', 'parentId': '...', 'index': 2, 'itemId': '(TASK ID)'}
-    {'user': 'ellis', 'date': '2014-06-22', 'index': 3, 'time': [7, 15], 'itemId': '(TASK ID)', 'pomodoros': [1]}
-    {'user': 'ellis', 'date': '2014-06-22', 'index': 4, 'time': [6, 25], 'text': '@Train'}
+    {"id": "01", "type": "activity", "user": "ellis", "folder": ["eth"], "name": "planning", "status": "open"} 
+    {"id": "02", "type": "project", "user": "ellis", "folder": ["eth", "lrn"], "name": "research", "status": "open"} 
+    {"id": "03", "type": "task", "user": "ellis", "folder": ["eth", "lrn", "research"], "title": "load peoples summaries of logic", "status": "closed"}
+    {"id": "04", "type": "task", "user": "ellis", "folder": ["eth", "lrn", "research"], "title": "copy my logic notes into an text file", "status": "closed"}
+    {"id": "05", "type": "project", "user": "ellis", "folder": ["per", "lrn"], "name": "android", "status": "open"} 
+    {"id": "06", "type": "task", "user": "ellis", "folder": ["per", "lrn", "android"], "title": "evaluate week 4", "status": "closed"}
+    {"id": "07", "type": "project", "user": "ellis", "folder": ["eth", "lrn"], "name": "algo", "status": "open"} 
+    {"id": "08", "type": "task", "user": "ellis", "folder": ["eth", "lrn", "algo"], "title": "programming 6 due", "status": "closed"}
+    {"id": "09", "type": "project", "user": "ellis", "folder": ["per"], "name": "otot", "status": "open"} 
+
+    {"id": "10", "type": "scheduleItem", "user": "ellis", "date": "2014-06-22", "index": 1, "time": [6, 0], "itemId": "01", "pomodoros": [1], "pomodoroStatus": ["x"]}
+    {"id": "11", "type": "scheduleItem", "user": "ellis", "date": "2014-06-22", "index": 2, "time": [6, 25], "itemId": "02", "pomodoros": [1], "pomodoroStatus": ["x"]}
+    {"type": "scheduleItem", "user": "ellis", "date": "2014-06-22", "parentId": "11", "index": 1, "itemId": "03"}
+    {"type": "scheduleItem", "user": "ellis", "date": "2014-06-22", "parentId": "11", "index": 2, "itemId": "04"}
+    {"type": "scheduleItem", "user": "ellis", "date": "2014-06-22", "index": 3, "time": [7, 15], "itemId": "06", "pomodoros": [1], "pomodoroStatus": ["x"]}
+    {"type": "scheduleItem", "user": "ellis", "date": "2014-06-22", "index": 4, "text": "@Train"}
+    {"type": "scheduleItem", "user": "ellis", "date": "2014-06-22", "index": 5, "itemId": "08", "pomodoros": [2], "pomodoroStatus": ["x", "x"]}
+    {"type": "scheduleItem", "user": "ellis", "date": "2014-06-22", "index": 6, "itemId": "09", "pomodoros": [1]}
 
 
 Figures I haven't thought about yet:
