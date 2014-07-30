@@ -27,20 +27,43 @@
 
 	<script>
 		Polymer('otot-item-list-item', {
+			generateUUID: function() {
+				var d = new Date().getTime();
+				var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+					var r = (d + Math.random()*16)%16 | 0;
+					d = Math.floor(d/16);
+					return (c=='x' ? r : (r&0x7|0x8)).toString(16);
+				});
+				return uuid;
+			},
 			itemChanged: function() {
 				this.done = this.item.done;
 			},
 			doneChanged: function() {
-				if (this.item && this.item.done !== this.done) {
+				var done = this.done;
+				if (this.item && this.item.done !== done) {
 					var patch = {
 						id: this.item.id,
 						mtime: new Date().toISOString(),
 						type: "patch",
 						diffs: [
-							["=", "done", this.done]
+							["=", "done", done]
 						]
 					};
 					console.log(patch);
+					var xhr = new XMLHttpRequest();
+					xhr.open("PUT", "http://127.0.0.1:5984/otot/"+this.generateUUID());
+					xhr.responseType = "json";
+					xhr.onload = function() {
+						var status = xhr.status;
+						console.log(status);
+						if (status == 200) {
+							console.log(xhr.response);
+							this.item.done = done;
+						} else {
+						}
+					};
+					xhr.send(JSON.stringify(patch));
 				}
 			}
 		});
