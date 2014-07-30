@@ -1,0 +1,49 @@
+<link rel="import" href="bower_components/polymer/polymer.html">
+<link rel="import" href="bower_components/core-ajax/core-ajax.html">
+<link rel="import" href="bower_components/paper-checkbox/paper-checkbox.html">
+
+<polymer-element name="otot-item-list-item" attributes="item">
+
+	<template>
+		<style>
+			:host {
+			position: absolute;
+			width: 100%;
+			height: 100%;
+			box-sizing: border-box;
+			}
+
+			paper-checkbox {
+				padding-left: 1em;
+				padding-right: 1em;
+			}
+		</style>
+
+		<div horizontal layout>
+			<paper-checkbox id="done" checked="{{done}}"></paper-checkbox>
+			{{item.name}}
+		</div>
+	</template>
+
+	<script>
+		Polymer('otot-item-list-item', {
+			itemChanged: function() {
+				this.done = this.item.done;
+			},
+			doneChanged: function() {
+				if (this.item && this.item.done !== this.done) {
+					var patch = {
+						id: this.item.id,
+						mtime: new Date().toISOString(),
+						type: "patch",
+						diffs: [
+							["=", "done", this.done]
+						]
+					};
+					console.log(patch);
+				}
+			}
+		});
+	</script>
+
+</polymer-element>
