@@ -1,5 +1,6 @@
 <link rel="import" href="bower_components/polymer/polymer.html">
 <link rel="import" href="bower_components/core-ajax/core-ajax.html">
+<link rel="import" href="bower_components/paper-checkbox/paper-checkbox.html">
 
 <polymer-element name="otot-item-list">
 
@@ -11,10 +12,16 @@
 			height: 100%;
 			box-sizing: border-box;
 			}
+
+			paper-checkbox {
+				padding-left: 1em;
+				padding-right: 1em;
+			}
 		</style>
 
 		<template repeat="{{row in ajaxResponse.rows}}">
-			<div>{{row.value.name}}</div>
+		<div>{{row.value.status}}</div>
+		<div horizontal layout><paper-checkbox checked="{{getItemChecked(row.value)}}"></paper-checkbox>{{row.value.name}}</div>
 			<!--div>{{row.value.name}} {{getItemText(row.value)}}</div-->
 		</template>
 
@@ -45,6 +52,9 @@
 				console.log(item);
 				/*if (item.status == "closed") return "X";
 				else */return "";
+			},
+			getItemChecked: function(item) {
+				return item.status === "closed";
 			}
 		});
 
