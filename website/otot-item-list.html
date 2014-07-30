@@ -1,0 +1,53 @@
+<link rel="import" href="bower_components/polymer/polymer.html">
+<link rel="import" href="bower_components/core-ajax/core-ajax.html">
+
+<polymer-element name="otot-item-list">
+
+	<template>
+		<style>
+			:host {
+			position: absolute;
+			width: 100%;
+			height: 100%;
+			box-sizing: border-box;
+			}
+		</style>
+
+		<template repeat="{{row in ajaxResponse.rows}}">
+			<div>{{row.value.name}}</div>
+			<!--div>{{row.value.name}} {{getItemText(row.value)}}</div-->
+		</template>
+
+		<core-ajax url="http://127.0.0.1:5984/otot/_design/main/_view/items?group_level=1" auto handleAs="json" response="{{ajaxResponse}}"></core-ajax>
+	</template>
+
+	<script>
+
+		Polymer('otot-item-list', {
+			/*items: [
+				{"type":"task","user":"ellis","folder":["eth"],"name":"get something done","status":"open","horizon":"week"},
+				{"type":"task","user":"ellis","folder":["eth"],"name":"get nothing done","status":"closed","closed":"2014-07-29T15:42Z","horizon":"week"}
+			],
+			created: function() {
+				this.rows = ["start"];
+				this.ajaxResponse = {};
+			},*/
+			/*ajaxResponseChanged: function(oldValue) {
+				console.log("A");
+				console.log(this.ajaxResponse);
+				console.log("B");
+				console.log(this.ajaxResponse.rows);
+				console.log("C");
+				//this.rows = this.ajaxResponse.rows;
+			},*/
+			getItemText: function(item) {
+				console.log("item:");
+				console.log(item);
+				/*if (item.status == "closed") return "X";
+				else */return "";
+			}
+		});
+
+	</script>
+
+</polymer-element>

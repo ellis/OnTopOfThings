@@ -74,4 +74,4 @@ Figures I haven't thought about yet:
 # Queries
 
     curl http://127.0.0.1:5984/otot/_design/main/_view/schedule
-    curl http://127.0.0.1:5984/otot/_design/main/_view/items
+    curl http://127.0.0.1:5984/otot/_design/main/_view/items\?group_level\=1
