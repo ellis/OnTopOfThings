@@ -21,6 +21,7 @@
 		</style>
 
 		<template repeat="{{row in ajaxResponse.rows}}">
+			<template if="{{row.value.folder !== ['hi']}}">{{row.value.folder}}</template><br>
 			<otot-item-list-item item={{row.value}}></otot-item-list-item>
 		</template>
 
