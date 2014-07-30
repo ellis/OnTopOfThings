@@ -1,0 +1,9 @@
+{"id": "aa", "mtime": 0, "type": "patch", "diffs": [
+["=", "type", "task"],
+["=", "user", "ellis"],
+["=", "folder", ["eth"]],
+["=", "name", "get something done"],
+["=", "status", "open"],
+["=", "horizon", "month"]
+]} 
+
