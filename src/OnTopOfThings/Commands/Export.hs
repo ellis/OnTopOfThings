@@ -101,6 +101,8 @@ optsRun_export opts = do
         let filters = [ItemType ==. "task", ItemStatus !=. "deleted"]
         tasks' <- selectList filters []
         let tasks = map entityVal tasks'
+        let itemForJson_l = map (\item -> ItemForJson item mempty) tasks
         liftIO $ putStrLn "tasks:"
-        liftIO $ mapM_ print tasks
+        --liftIO $ mapM_ (\item -> print (toJSON (ItemForJson item mempty))) tasks
+        liftIO $ print (encode itemForJson_l)
         return (Right ())
