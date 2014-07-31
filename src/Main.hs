@@ -58,6 +58,7 @@ import qualified OnTopOfThings.Actions.Mod as Mod
 import OnTopOfThings.Actions.Mv
 import OnTopOfThings.Actions.Run
 import OnTopOfThings.Actions.View
+import OnTopOfThings.Commands.Export
 import OnTopOfThings.Commands.Import
 import OnTopOfThings.Commands.Show
 import OnTopOfThings.Commands.Rebuild
@@ -76,7 +77,8 @@ type InputM = InputT StateM
 
 modeInfo_l :: [ModeInfo]
 modeInfo_l =
-  [ modeInfo_import
+  [ modeInfo_export
+  , modeInfo_import
   , modeInfo_rebuild
   ]
 modeInfo :: M.Map String ModeInfo
@@ -107,6 +109,12 @@ main = do
             runMigration migrateAll
           runStateT (runInputT defaultSettings (repl ["/"])) []
           return ()
+        "export" -> do
+          let mode = fst modeInfo_export
+          let opts_ = process mode args
+          case opts_ of
+            Left msg -> putStrLn msg
+            Right opts -> processOptions opts
         "import" -> do
           let mode = fst modeInfo_import
           let opts_ = process mode args
