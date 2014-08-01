@@ -122,8 +122,11 @@ view env0 (ActionView queries sorts) = do
   updateWhere [ItemIndex !=. Nothing] [ItemIndex =. Nothing]
   -- Handle query
   let vd0 = (ViewData [] [] showHeader showItem)
-  viewsub env0 vd0 queries sorts
+  viewsub env0 vd0 queries' sorts
   where
+    queries' = case queries of
+      [] -> ["(and )"]
+      _ -> queries
     showHeader :: Maybe ViewItem -> ViewItem -> SqlPersistT (NoLoggingT (ResourceT IO)) (Maybe String)
     showHeader prevMaybe vi = do
       case prevMaybe of
