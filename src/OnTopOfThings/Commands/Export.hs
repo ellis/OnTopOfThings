@@ -104,5 +104,6 @@ optsRun_export opts = do
         let itemForJson_l = map (\item -> ItemForJson item mempty) tasks
         liftIO $ putStrLn "tasks:"
         --liftIO $ mapM_ (\item -> print (toJSON (ItemForJson item mempty))) tasks
-        liftIO $ print (encode itemForJson_l)
+        h <- liftIO $ return stdout
+        liftIO $ BL.hPutStr h (encode itemForJson_l)
         return (Right ())
