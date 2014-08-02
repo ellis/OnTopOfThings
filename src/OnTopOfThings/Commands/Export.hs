@@ -25,7 +25,7 @@ import Control.Applicative ((<$>), (<*>), empty)
 import Control.Monad
 import Control.Monad.IO.Class (liftIO, MonadIO)
 import Data.Aeson
-import Data.Aeson.Types (Parser)
+import Data.Aeson.Types (Pair, Parser)
 import Data.Char (isAlphaNum)
 import Data.Generics.Aliases (orElse)
 import Data.List (inits, intercalate, sortBy)
@@ -68,6 +68,45 @@ import OnTopOfThings.Data.Patch
 import OnTopOfThings.Data.Time
 import OnTopOfThings.Data.Types
 
+data ItemExport = ItemExport Item PropertyMap
+
+instance ToJSON ItemExport where
+  toJSON (ItemExport item properties) = object l where
+    l = catMaybes
+      [ get "id" itemUuid
+      , getDate "created" itemCreated
+      , get "creator" itemCreator
+      , get "type" itemType
+      --, get "status" itemStatus
+      , if (itemStatus item) == "deleted" then (Just ("deleted" .= (T.pack "true"))) else Nothing
+      , getMaybe "parent" itemParent
+      , getMaybe "name" itemName
+      , getMaybe "title" itemTitle
+      , getMaybe "content" itemContent
+      , getMaybe "horizon" itemStage
+      , getMaybe "closed" itemClosed
+      , getMaybe "start" itemStart
+      , getMaybe "end" itemEnd
+      , getMaybe "due" itemDue
+      , getMaybe "defer" itemDefer
+      , getMaybeInt "estimate" itemEstimate
+      , M.lookup "tag" properties >>= \tags -> Just ("tag" .= Array (V.fromList (map (String . T.pack) tags)))
+      ]
+    get :: T.Text -> (Item -> String) -> Maybe Pair
+    get name fn = Just (name .= (T.pack $ fn item))
+
+    getDate :: T.Text -> (Item -> UTCTime) -> Maybe Pair
+    getDate name fn = Just (name .= (T.pack $ formatISO8601 (fn item)))
+
+    getMaybe :: T.Text -> (Item -> Maybe String) -> Maybe Pair
+    getMaybe name fn = fmap (\x -> name .= String (T.pack x)) (fn item)
+
+    getMaybeInt :: T.Text -> (Item -> Maybe Int) -> Maybe Pair
+    getMaybeInt name fn = fmap (\x -> name .= (T.pack $ show x)) (fn item)
+
+    getMaybeDate :: T.Text -> (Item -> Maybe UTCTime) -> Maybe Pair
+    getMaybeDate name fn = fmap (\x -> name .= (T.pack $ formatISO8601 x)) (fn item)
+
 modeInfo_export :: ModeInfo
 modeInfo_export = (mode_export, ModeRunIO optsRun_export)
 
@@ -101,7 +140,7 @@ optsRun_export opts = do
         let filters = [ItemType ==. "task", ItemStatus !=. "deleted"]
         tasks' <- selectList filters []
         let tasks = map entityVal tasks'
-        let itemForJson_l = map (\item -> ItemForJson item mempty) tasks
+        let itemForJson_l = map (\item -> ItemExport item mempty) tasks
         liftIO $ putStrLn "tasks:"
         --liftIO $ mapM_ (\item -> print (toJSON (ItemForJson item mempty))) tasks
         h <- liftIO $ return stdout

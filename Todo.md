@@ -1,5 +1,14 @@
 # Todos
 
+## Export
+
+- [x] change 'uuid' to 'id'
+- [x] change 'stage' to 'horizon'
+- [?] change 'status=deleted' to 'deleted=true'
+- [x] remove 'status'
+- [ ] load and export tags
+- [ ] change 'parent' to 'folder', with appropriate transformation
+
 ## View command
 
 Sample command:
