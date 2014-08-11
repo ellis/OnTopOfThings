@@ -24,6 +24,8 @@ module OnTopOfThings.Commands.Export
 import Control.Applicative ((<$>), (<*>), empty)
 import Control.Monad
 import Control.Monad.IO.Class (liftIO, MonadIO)
+import Control.Monad.Logger (NoLoggingT)
+import Control.Monad.Trans.Resource (ResourceT)
 import Data.Aeson
 import Data.Aeson.Types (Pair, Parser)
 import Data.Char (isAlphaNum)
@@ -140,9 +142,16 @@ optsRun_export opts = do
         let filters = [ItemType ==. "task", ItemStatus !=. "deleted"]
         tasks' <- selectList filters []
         let tasks = map entityVal tasks'
-        let itemForJson_l = map (\item -> ItemExport item mempty) tasks
+        itemForJson_l <- mapM (getItemExport) tasks
         liftIO $ putStrLn "tasks:"
         --liftIO $ mapM_ (\item -> print (toJSON (ItemForJson item mempty))) tasks
         h <- liftIO $ return stdout
         liftIO $ BL.hPutStr h (encode itemForJson_l)
         return (Right ())
+
+getItemExport :: Item -> SqlPersistT (NoLoggingT (ResourceT IO)) ItemExport
+getItemExport item = do
+  entity_l <- selectList [PropertyUuid ==. itemUuid item, PropertyName ==. "tag"] []
+  let tag_l = map (\x -> propertyValue $ entityVal x) entity_l
+  let tag_m = if null tag_l then mempty else M.fromList [("tag", tag_l)]
+  return (ItemExport item tag_m)
