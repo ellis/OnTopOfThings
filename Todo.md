@@ -7,7 +7,7 @@
 - [?] change 'status=deleted' to 'deleted=true'
 - [x] remove 'status'
 - [x] load and export tags
-- [ ] change 'parent' to 'folder', with appropriate transformation
+- [x] change 'parent' to 'folder', with appropriate transformation
 
 ## View command
 

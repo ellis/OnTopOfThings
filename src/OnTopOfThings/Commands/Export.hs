@@ -70,10 +70,10 @@ import OnTopOfThings.Data.Patch
 import OnTopOfThings.Data.Time
 import OnTopOfThings.Data.Types
 
-data ItemExport = ItemExport Item PropertyMap
+data ItemExport = ItemExport Item [String] PropertyMap
 
 instance ToJSON ItemExport where
-  toJSON (ItemExport item properties) = object l where
+  toJSON (ItemExport item folder properties) = object l where
     l = catMaybes
       [ get "id" itemUuid
       , getDate "created" itemCreated
@@ -81,7 +81,7 @@ instance ToJSON ItemExport where
       , get "type" itemType
       --, get "status" itemStatus
       , if (itemStatus item) == "deleted" then (Just ("deleted" .= (T.pack "true"))) else Nothing
-      , getMaybe "parent" itemParent
+      , Just ("folder" .= Array (V.fromList (map (String . T.pack) folder)))
       , getMaybe "name" itemName
       , getMaybe "title" itemTitle
       , getMaybe "content" itemContent
@@ -154,4 +154,25 @@ getItemExport item = do
   entity_l <- selectList [PropertyUuid ==. itemUuid item, PropertyName ==. "tag"] []
   let tag_l = map (\x -> propertyValue $ entityVal x) entity_l
   let tag_m = if null tag_l then mempty else M.fromList [("tag", tag_l)]
-  return (ItemExport item tag_m)
+  folder <- getFolder item
+  return (ItemExport item folder tag_m)
+
+getFolder :: Item -> SqlPersistT (NoLoggingT (ResourceT IO)) [String]
+getFolder item = do
+  path0 <- getAbsPath item
+  return (tail path0)
+
+getAbsPath :: Item -> SqlPersistT (NoLoggingT (ResourceT IO)) [String]
+getAbsPath item = do
+  parentPath <- case (itemParent item) of
+    Nothing -> return []
+    Just uuid -> do
+      parent_ <- getBy $ ItemUniqUuid uuid
+      case parent_ of
+        Nothing -> return []
+        Just parent -> do
+          getAbsPath (entityVal parent)
+  return $
+    if itemType item == "folder"
+      then parentPath ++ [fromMaybe (itemUuid item) (itemName item)]
+      else parentPath
