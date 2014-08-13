@@ -1,3 +1,15 @@
+# Todo
+
+- [ ] the ID for a patch should be: itemId/utc/randomNumber
+- [ ] Use ``curl -X GET http://127.0.0.1:5984/otot/_changes\?feed\=continuous\&since\=978\&style\=all_docs`` to get a list of recent patches
+- [ ] Parse the patch id and request a list of the item IDs from the appropriate view
+- [ ] Create a list function that generates bulk update JSON for creating documents with the itemIds. (The view will need to include revision number if a document already exists)
+- [ ] Create a script to run all of the above
+- [ ] Create a program that subscribes to the changelog and updates the item documents when patches come in
+- [ ] Create views based on item documents
+
+# Notes
+
 Want to figure out way to handle Schedule.wiki-like interaction
 Maybe have a list, and separate list items so that if different clients update items, they can be more easily merged
 How to mark an item as done?
@@ -96,39 +108,40 @@ function(doc) {
   }
 }
 function(keys, values) {
-  //var n = values.length;
-  var x = { rectype: "none" };
+  var x = { rectype: "none", data: {} };
   for (var i in values) {
     var value = values[i];
     if (value.rectype === "patch") {
-      if (x['rectype'] === "snapshot") {
+      if (x.rectype === "snapshot") {
         for (var j in value.data.diffs) {
           var diff = value.data.diffs[j];
           if (diff[0] === "=") {
             var name = diff[1];
-            x[name] = diff[2];
+            x.data[name] = diff[2];
           }
         }
       }
-      else if (x['rectype'] === "patch") {
-        x['data'].diffs = x['data'].diffs.concat(value.data.diffs);
+      else if (x.rectype === "patch") {
+        x.data.diffs = x.data.diffs.concat(value.data.diffs);
       }
       else if (x['rectype'] === "none") {
-        x['rectype'] = "patch";
-        x['data'] = value.data;
+        x.rectype = "patch";
+        x.data = value.data;
       }
     }
     else if (value.rectype === "snapshot") {
-      x['rectype'] = "snapshot";
-      x['data'] = value.data;
+      x.rectype = "snapshot";
+      x.data = value.data;
     }
   }
   return x;
 }
 ```
+
 # Queries
 
     curl http://127.0.0.1:5984/otot/_design/main/_view/schedule
     curl http://127.0.0.1:5984/otot/_design/main/_view/items\?group_level\=1\&limit\=10
     curl -X PUT http://127.0.0.1:5984/otot/snapshot--20140813 --data-binary @snapshot--20140813.json
+    curl http://127.0.0.1:5984/otot/_design/main/_list/openTasks/items\?group_level\=1\&limit\=10
 
