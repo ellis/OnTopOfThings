@@ -11,17 +11,21 @@
 			width: 100%;
 			height: 100%;
 			box-sizing: border-box;
+			display: block;
 			}
 
 			paper-checkbox {
 				padding-left: 1em;
 				padding-right: 1em;
 			}
+
+			span.folder { color: blue; padding-right: .5em }
 		</style>
 
 		<div horizontal layout>
 			<paper-checkbox id="done" checked="{{done}}"></paper-checkbox>
-			{{item.name}}
+			<span class="folder">{{folder}}</span>
+			{{item.title}}
 		</div>
 	</template>
 
@@ -38,6 +42,8 @@
 			},
 			itemChanged: function() {
 				this.done = this.item.done;
+				this.done = this.item.closed != null;
+				this.folder = "/" + this.item.folder.join("/");
 			},
 			doneChanged: function() {
 				var done = this.done;
