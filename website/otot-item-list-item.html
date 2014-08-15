@@ -31,7 +31,16 @@
 
 	<script>
 		Polymer('otot-item-list-item', {
-			generateUUID: function() {
+			generateIdSuffix: function() {
+				var d = new Date().getTime();
+				var uuid = 'xxxxxxxx'.replace(/[xy]/g, function(c) {
+					var r = (d + Math.random()*16)%16 | 0;
+					d = Math.floor(d/16);
+					return r.toString(16);
+				});
+				return uuid;
+			},
+			/*generateUUID: function() {
 				var d = new Date().getTime();
 				var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
 					var r = (d + Math.random()*16)%16 | 0;
@@ -39,7 +48,7 @@
 					return (c=='x' ? r : (r&0x7|0x8)).toString(16);
 				});
 				return uuid;
-			},
+			},*/
 			itemChanged: function() {
 				this.done = this.item.done;
 				this.done = this.item.closed != null;
@@ -47,10 +56,11 @@
 			},
 			doneChanged: function() {
 				var done = this.done;
+				var mtime = new Date().toISOString();
 				if (this.item && this.item.done !== done) {
 					var patch = {
 						id: this.item.id,
-						mtime: new Date().toISOString(),
+						mtime: mtime,
 						type: "patch",
 						diffs: [
 							["=", "done", done]
@@ -58,7 +68,7 @@
 					};
 					console.log(patch);
 					var xhr = new XMLHttpRequest();
-					xhr.open("PUT", "http://127.0.0.1:5984/otot/"+this.generateUUID());
+					xhr.open("PUT", "http://127.0.0.1:5984/otot/"+this.item.id+"|"+mtime+"|"+this.generateIdSuffix());
 					xhr.responseType = "json";
 					xhr.onload = function() {
 						var status = xhr.status;

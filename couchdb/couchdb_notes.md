@@ -1,7 +1,7 @@
 # Todo
 
-- [ ] the ID for a patch should be: itemId/utc/randomNumber
-- [ ] Use ``curl -X GET http://127.0.0.1:5984/otot/_changes\?feed\=continuous\&since\=978\&style\=all_docs`` to get a list of recent patches
+- [x] Use ``curl -X GET http://127.0.0.1:5984/otot/_changes\?feed\=continuous\&since\=978\&style\=all_docs`` to get a list of recent patches
+- [x] the ID for a patch should be: itemId|utc|randomNumber
 - [ ] Parse the patch id and request a list of the item IDs from the appropriate view
 - [ ] Create a list function that generates bulk update JSON for creating documents with the itemIds. (The view will need to include revision number if a document already exists)
 - [ ] Create a script to run all of the above
