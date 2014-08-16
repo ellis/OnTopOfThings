@@ -3,11 +3,20 @@
 - [x] Use ``curl -X GET http://127.0.0.1:5984/otot/_changes\?feed\=continuous\&since\=978\&style\=all_docs`` to get a list of recent patches
 - [x] the ID for a patch should be: itemId|utc|randomNumber
 - [x] Parse the patch id and request a list of the item IDs from the appropriate view
-- [ ] client.js: generates bulk update pack for creating documents with the itemIds. (The view will need to include revision number if a document already exists)
-- [ ] _view/items: need to output the rev if present
-- [ ] Create a script to run all of the above
+- [x] client.js: generates update request for creating documents with the itemIds. (The view will need to include revision number if a document already exists)
+- [x] _view/items: need to output the rev if present
+- [x] Create a script to run all of the above
+- [ ] couchdb: Rename 'item' view to 'patch' view
+- [ ] couchdb: Create views based on item documents
+- [ ] website: adapt for new views
+- [ ] website: view by horizon
+- [ ] website: view of projects
+- [ ] website: view by project
+- [ ] website: let user mark items as done
+- [ ] website: let user mark change item's horizon
+- [ ] client.js: move aggregation of snapshots and patches from couchdb view to client.js
+- [ ] modularize client.js to create a script that updates everything and one that updates just based on _changes
 - [ ] Create a program that subscribes to the changelog and updates the item documents when patches come in
-- [ ] Create views based on item documents
 
 # Notes
 
