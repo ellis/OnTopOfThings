@@ -39,7 +39,7 @@ function loadFromChanges(since) {
 			if (!(id in idSeen_l)) {
 				idSeen_l[id] = true;
 				console.log("ID: "+id);
-				loadFromView('http://127.0.0.1:5984/otot/_design/main/_view/items?startkey=["'+id+'"]&endkey=["'+id+'",{}]');
+				loadFromView('http://127.0.0.1:5984/otot/_design/main/_view/patches?startkey=["'+id+'"]&endkey=["'+id+'",{}]');
 			}
 		}
 	});
@@ -59,5 +59,5 @@ function loadFromChanges(since) {
 	  .pipe(stream);
 }
 
-loadFromView('http://127.0.0.1:5984/otot/_design/main/_view/items?group_level=1');
+loadFromView('http://127.0.0.1:5984/otot/_design/main/_view/patches?group_level=1');
 //loadFromChanges(1099);

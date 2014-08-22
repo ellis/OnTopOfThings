@@ -6,7 +6,7 @@
 - [x] client.js: generates update request for creating documents with the itemIds. (The view will need to include revision number if a document already exists)
 - [x] _view/items: need to output the rev if present
 - [x] Create a script to run all of the above
-- [ ] couchdb: Rename 'item' view to 'patch' view
+- [x] couchdb: Rename 'item' view to 'patch' view
 - [ ] couchdb: Create views based on item documents
 - [ ] website: adapt for new views
 - [ ] website: view by horizon
