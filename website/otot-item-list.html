@@ -21,13 +21,10 @@
 		</style>
 
 		<template repeat="{{row in ajaxResponse.rows}}">
-			<!--template if="{{row.value.closed == null}}">
-			<otot-item-list-item item={{row.value}}></otot-item-list-item>
-			<br></template-->
-			<otot-item-list-item item={{row.value.data}}></otot-item-list-item><br><br>
+			<otot-item-list-item item={{row.value}}></otot-item-list-item><br><br>
 		</template>
 
-		<core-ajax url="http://127.0.0.1:5984/otot/_design/main/_view/items?group_level=1&limit=10" auto handleAs="json" response="{{ajaxResponse}}"></core-ajax>
+		<core-ajax url="http://127.0.0.1:5984/otot/_design/main/_view/tasksByHorizonFolderCreated?limit=25" auto handleAs="json" response="{{ajaxResponse}}"></core-ajax>
 	</template>
 
 	<script>
