@@ -9,3 +9,4 @@ repl.db
 old-testdata
 today
 node_modules
+snapshot*.json
