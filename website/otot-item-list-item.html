@@ -54,7 +54,7 @@
 				this.done = this.item.closed != null;
 				this.folder = "/" + this.item.folder.join("/");
 			},
-			doneChanged: function() {
+			doneNotChanged: function() {
 				var done = this.done;
 				var mtime = new Date().toISOString();
 				if (this.item && this.item.done !== done) {
@@ -79,7 +79,7 @@
 						} else {
 						}
 					};
-					xhr.send(JSON.stringify(patch));
+					//xhr.send(JSON.stringify(patch));
 				}
 			}
 		});

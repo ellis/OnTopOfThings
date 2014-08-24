@@ -13,10 +13,28 @@
 - [ ] website: view of projects
 - [ ] website: view by project
 - [ ] website: let user mark items as done
-- [ ] website: let user mark change item's horizon
+- [ ] website: let user change item's horizon
+- [ ] website: let user archive closed items
 - [ ] client.js: move aggregation of snapshots and patches from couchdb view to client.js
 - [ ] modularize client.js to create a script that updates everything and one that updates just based on _changes
 - [ ] Create a program that subscribes to the changelog and updates the item documents when patches come in
+
+function (keys, values) {
+  var archived = 0;
+  var closed = 0;
+  var open = 0;
+  var mtime = "";
+  
+  for (var i = 0; i < values.length; i++) {
+     archived += values[i][0];
+     closed += values[i][1];
+     open += values[i][2];
+     if (!mtime || values[i][3] > mtime) {
+        mtime = values[i][3];
+     }
+  }
+  return [archived, closed, open, mtime];
+}
 
 # Notes
 

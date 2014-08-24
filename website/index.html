@@ -63,12 +63,12 @@ core-toolbar {
 	<core-header-panel mode="waterfall" id="core_header_panel" navigation flex>
 		<core-toolbar id="core_toolbar">OnTopOfThings</core-toolbar>
 		<core-menu selected="Items" valueattr="label" selectedindex="0" id="core_menu" theme="core-light-theme">
-			<core-item label="Items" icon="settings" size="24" id="core_item" horizontal center layout active></core-item>
-			<core-item label="Today" icon="settings" size="24" id="core_item" horizontal center layout active></core-item>
-			<core-item label="Next" icon="settings" size="24" id="core_item" horizontal center layout active></core-item>
-			<core-item label="Week" icon="settings" size="24" id="core_item" horizontal center layout active></core-item>
-			<core-item label="Quarter" icon="settings" size="24" id="core_item" horizontal center layout active></core-item>
-			<core-item label="Year" icon="settings" size="24" id="core_item" horizontal center layout active></core-item>
+			<core-item label="Items" icon="settings" size="24" horizontal center layout active></core-item>
+			<core-item label="Today" icon="settings" size="24" horizontal center layout active></core-item>
+			<core-item label="Next" icon="settings" size="24" horizontal center layout active></core-item>
+			<core-item label="Week" icon="settings" size="24" horizontal center layout active></core-item>
+			<core-item label="Quarter" icon="settings" size="24" horizontal center layout active></core-item>
+			<core-item label="Year" icon="settings" size="24" horizontal center layout active></core-item>
 		</core-menu>
 	</core-header-panel>
 	<div id="div" tool>Items</div>
@@ -79,6 +79,16 @@ core-toolbar {
 </core-scaffold>
 
 <script>
+	var menu = document.querySelector('core-menu');
+	var list = document.querySelector('otot-item-list');
+
+	menu.addEventListener('core-select', function() {
+		if (menu.selected == "Today")
+			list.url = "http://127.0.0.1:5984/otot/_design/main/_view/tasksByHorizonFolderCreated?limit=25&startkey=[0]&endkey=[0,{}]";
+		else if (menu.selected == "Next")
+			list.url = "http://127.0.0.1:5984/otot/_design/main/_view/tasksByHorizonFolderCreated?limit=25&startkey=[1]&endkey=[1,{}]";
+		console.log("hello");
+	});
 </script>
 
 </body>

@@ -3,7 +3,7 @@
 <link rel="import" href="bower_components/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="otot-item-list-item.html">
 
-<polymer-element name="otot-item-list">
+<polymer-element name="otot-item-list" attributes="url">
 
 	<template>
 		<style>
@@ -24,7 +24,8 @@
 			<otot-item-list-item item={{row.value}}></otot-item-list-item><br><br>
 		</template>
 
-		<core-ajax url="http://127.0.0.1:5984/otot/_design/main/_view/tasksByHorizonFolderCreated?limit=25" auto handleAs="json" response="{{ajaxResponse}}"></core-ajax>
+		<!--core-ajax url="http://127.0.0.1:5984/otot/_design/main/_view/tasksByHorizonFolderCreated?limit=25" auto handleAs="json" response="{{ajaxResponse}}"></core-ajax-->
+		<core-ajax auto url="{{url}}" auto handleAs="json" response="{{ajaxResponse}}"></core-ajax>
 	</template>
 
 	<script>
