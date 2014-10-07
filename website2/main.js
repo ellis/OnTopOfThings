@@ -88,9 +88,13 @@ function filterItemIsOpen(item) {
 	return !item.closed;
 }
 
+function filterItemIsOpenMustdo(item) {
+	return !item.closed && item.tag && (item.tag.indexOf("mustdo") > -1);
+}
+
 $.getJSON("snapshot--20140813.json", function(snapshot) {
 	var item_l = snapshot.items;
-	item_l = item_l.filter(filterItemIsOpen);
+	item_l = item_l.filter(filterItemIsOpenMustdo);
 	item_l.sort(compareItemsByCreate);
 	var listElem = $("#list");
 	for (i in item_l) {
