@@ -10,3 +10,4 @@ old-testdata
 today
 node_modules
 snapshot*.json
+bower_components
