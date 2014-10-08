@@ -2,14 +2,28 @@
 <head>
   <meta charset='utf-8'>
   <script src="bower_components/jquery/dist/jquery.js"></script>
+  <script src="bower_components/underscore/underscore.js"></script>
 </head>
 <body unresolved>
 	<div id="main">
+		Order by: <input id="order" type="text" value="folder,created">
+		Folders (OR): <input id="folders" type="text" value="">
+		Tags (AND): <input id="tags" type="text" value="">
+		<input id = "btnList" type="submit" value="List"/>
+		<br>
 		<ul id="list"></ul>
 	</div>
 
-  <script src="main.js"></script>
+	<script src="main.js"></script>
 
-  <script type="text/javascript">
-  </script>
+	<script type="text/javascript">
+		$(document).ready(function(){
+			/*$("#order").keyup(function(){
+				alert($(this).val());
+			});*/
+			$("#btnList").click(function(){
+				doList();
+			});
+		})
+	</script>
 </body>
