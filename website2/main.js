@@ -80,9 +80,37 @@ function aggregate(keys, values) {
 }
 */
 
-function createComparor(criterion_l) {
-	var fn = function(a, b) { return 0; }
+var horizon_l = ["new", "today", "next", "week", "month", "quarter", "year"];
 
+function createComparor(criterion_l) {
+	return function(a, b) {
+		//console.log("criterion_l: "+criterion_l);
+		for (var i = 0; i < criterion_l.length; i++) {
+			var criterion = criterion_l[i];
+			//console.log("criterion: "+criterion);
+			if (criterion == "created") {
+				var n = a.created.localeCompare(b.created);
+				if (n != 0) {
+					return n;
+				}
+			}
+			else if (criterion == "folder") {
+				if (!_.isEqual(a.folder, b.folder)) {
+					return (a.folder < b.folder) ? -1 : 1;
+				}
+			}
+			else if (criterion == "horizon") {
+				var ia = horizon_l.indexOf(a.horizon);
+				var ib = horizon_l.indexOf(b.horizon);
+				//console.log(a.horizon+"="+ia+", "+b.horizon+"="+ib);
+				if (ia != ib) {
+					return (ia < ib) ? -1 : 1;
+				}
+			}
+		}
+		return 0;
+	}
+/*
 	for (var i = criterion_l.length - 1; i >= 0; i--) {
 		var criterion = criterion_l[i];
 		if (criterion == "created") {
@@ -93,12 +121,19 @@ function createComparor(criterion_l) {
 		}
 		else if (criterion == "folder") {
 			fn = function(a, b) {
-				var n = a.created.localeCompare(b.created);
 				return (a.folder == b.folder) ? fn(a, b) : (a.folder < b.folder) ? -1 : 1;
+			}
+		}
+		else if (criterion == "horizon") {
+			fn = function(a, b) {
+				var ia = horizon_l.indexOf(a.horizon);
+				var ib = horizon_l.indexOf(b.horizon);
+				return (ia == ib) ? fn(a, b) : (ia < ib) ? -1 : 1;
 			}
 		}
 	}
 	return fn;
+*/
 }
 
 function createFilter() {
@@ -159,8 +194,9 @@ function doList() {
 		for (i in item_l) {
 			var item = item_l[i];
 			var n = parseInt(i) + 1;
+			var horizon = "@" + item.horizon + " ";
 			var tags = item.tag ? " (" + item.tag.join(",") + ")" : "";
-			listElem.append("<li>"+n+" "+item.folder.join("/")+": "+item.title+tags+"</li>");
+			listElem.append("<li>"+n+" "+item.folder.join("/")+": "+horizon+item.title+tags+"</li>");
 		}
 	});
 }
