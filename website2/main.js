@@ -185,18 +185,35 @@ function doList() {
 	$("#list").empty();
 	$.getJSON("snapshot--20140813.json", function(snapshot) {
 		var item_l = snapshot.items;
-		var criterion_l = $("#order").val().split(",");
+
+		// TODO: need to validate the header and order fields
+		var header_l = $("#headers").val().split(",").filter(function(s) s);
+		var criterion_l = header_l.concat($("#order").val().split(",")).filter(function(s) s);
 		var comparor = createComparor(criterion_l);
 		var filter = createFilter();
 		item_l = item_l.filter(filter);
 		item_l.sort(comparor);
 		var listElem = $("#list");
+		var header0 = {};
 		for (i in item_l) {
 			var item = item_l[i];
 			var n = parseInt(i) + 1;
-			var horizon = "@" + item.horizon + " ";
 			var tags = item.tag ? " (" + item.tag.join(",") + ")" : "";
-			listElem.append("<li>"+n+" "+item.folder.join("/")+": "+horizon+item.title+tags+"</li>");
+			var header = {};
+			for (var j = 0; j < header_l.length; j++) {
+				var name = header_l[j];
+				header[name] = item[name];
+				//console.log("j = "+j+", name = "+name+", header[name] = "+header[name]+", header0[name] = "+header0[name]);
+				if (!_.isEqual(header[name], header0[name])) {
+					listElem.append("<h"+(j+1)+" class='field-"+name+"'>"+encodeURI(header[name])+"</h"+(j+1)+">");
+					header0[name] = header[name];
+				}
+			}
+
+			var textHorizon = (header_l.indexOf("horizon") >= 0) ? "" : "?" + item.horizon + " ";
+			var textFolder = (header_l.indexOf("folder") >= 0) ? "" : item.folder.join("/")+": ";
+
+			listElem.append("<li>"+n+" "+textFolder+textHorizon+item.title+tags+"</li>");
 		}
 	});
 }

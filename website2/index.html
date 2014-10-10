@@ -6,10 +6,15 @@
 </head>
 <body unresolved>
 	<div id="main">
-		Order by: <input id="order" type="text" value="folder,created">
+		Headers: <input id="headers" type="text" value="folder">
+		Order by: <input id="order" type="text" value="created">
 		Folders (OR): <input id="folders" type="text" value="">
 		Tags (AND): <input id="tags" type="text" value="">
 		<input id = "btnList" type="submit" value="List"/>
+		<br>
+		Pages:
+		<input id = "btnPageProjects" type="submit" value="Projects"/>
+		<input id = "btnPageMustdos" type="submit" value="Mustdos"/>
 		<br>
 		<ul id="list"></ul>
 	</div>
@@ -17,6 +22,16 @@
 	<script src="main.js"></script>
 
 	<script type="text/javascript">
+		function runList(h, o, f, t) {
+			return function () {
+				$("#headers").val(h);
+				$("#order").val(o);
+				$("#folders").val(f);
+				$("#tags").val(t);
+				console.log("ooo");
+				doList();
+			};
+		}
 		$(document).ready(function(){
 			/*$("#order").keyup(function(){
 				alert($(this).val());
@@ -24,6 +39,8 @@
 			$("#btnList").click(function(){
 				doList();
 			});
+			$("#btnPageProjects").click(runList("folder", "horizon,created", "", ""));
+			$("#btnPageMustdos").click(runList("horizon,folder", "created", "", "mustdo"));
 		})
 	</script>
 </body>
