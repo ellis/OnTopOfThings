@@ -136,6 +136,7 @@ function createComparor(criterion_l) {
 */
 }
 
+/*
 function createFilter() {
 	var fn0 = function(item) { return !item.closed; }
 	//var fn = function(item) { return true; }
@@ -172,6 +173,60 @@ function createFilter() {
 
 	return fn2;
 }
+*/
+
+function createFilterFromQuery(query) {
+	var ast = (query) ? JSON.parse(query) : [];
+	return function(item) {
+		if (item.closed) return false;
+		return filterFromAst(ast, item);
+	}
+}
+
+function filterFromAst(ast, item) {
+	for (var i in ast) {
+		var elem = ast[i];
+		var op = elem[0];
+
+		if (op === "AND") {
+		}
+		else if (op === "OR") {
+		}
+		// Non-recursive folder query
+		else if (op === "folder=") {
+			var queryValue = elem[1];
+			var itemValue = item.folder.join("/");
+			if (!_.isEqual(itemValue, queryValue))
+				return false;
+		}
+		// Folder query (item is in folder or one of it's children)
+		else if (op === "folder") {
+			var queryValue = elem[1];
+			var itemValue = item.folder.join("/");
+			//console.log("itemValue: "+itemValue+", "+_.isEqual(itemValue, queryValue)+", "+queryValue.startsWith(itemValue + "/"));
+			if (!(_.isEqual(itemValue, queryValue) || itemValue.startsWith(queryValue + "/")))
+				return false;
+		}
+		else {
+			var queryName = elem[1];
+			if (!item.hasOwnProperty(queryName)) return false;
+			var itemValue = item[queryName];
+
+			if (op === "=") {
+				var queryValue = elem[2];
+				if (!_.isEqual(itemValue, queryValue))
+					return false;
+			}
+			// Contains
+			else if (op === "->") {
+				var value = elem[2];
+				if (!(item.hasOwnProperty(queryName) && item[queryName].indexOf(value) >= 0))
+					return false;
+			}
+		}
+	}
+	return true;
+}
 
 /*function filterItemIsOpen(item) {
 	return !item.closed;
@@ -190,7 +245,8 @@ function doList() {
 		var header_l = $("#headers").val().split(",").filter(function(s) s);
 		var criterion_l = header_l.concat($("#order").val().split(",")).filter(function(s) s);
 		var comparor = createComparor(criterion_l);
-		var filter = createFilter();
+		//var filter = createFilter();
+		var filter = createFilterFromQuery($("#query").val());
 		item_l = item_l.filter(filter);
 		item_l.sort(comparor);
 		var listElem = $("#list");
@@ -199,18 +255,20 @@ function doList() {
 			var item = item_l[i];
 			var n = parseInt(i) + 1;
 			var tags = item.tag ? " (" + item.tag.join(",") + ")" : "";
-			var header = {};
 			for (var j = 0; j < header_l.length; j++) {
-				var name = header_l[j];
-				header[name] = item[name];
-				//console.log("j = "+j+", name = "+name+", header[name] = "+header[name]+", header0[name] = "+header0[name]);
-				if (!_.isEqual(header[name], header0[name])) {
-					listElem.append("<h"+(j+1)+" class='field-"+name+"'>"+encodeURI(header[name])+"</h"+(j+1)+">");
-					header0[name] = header[name];
+				var fieldName = header_l[j];
+				var fieldValue = item[fieldName];
+				if (fieldName === "folder") {
+					fieldValue = "/"+fieldValue.join("/");
+				}
+				//console.log("j = "+j+", fieldName = "+fieldName+", header[fieldName] = "+header[fieldName]+", header0[fieldName] = "+header0[fieldName]);
+				if (!_.isEqual(fieldValue, header0[fieldName])) {
+					listElem.append("<h"+(j+1)+" class='field-"+fieldName+"'>"+encodeURI(fieldValue)+"</h"+(j+1)+">");
+					header0[fieldName] = fieldValue;
 				}
 			}
 
-			var textHorizon = (header_l.indexOf("horizon") >= 0) ? "" : "?" + item.horizon + " ";
+			var textHorizon = (header_l.indexOf("horizon") >= 0) ? "" : "<span class='field-horizon'>?" + item.horizon + "</span> ";
 			var textFolder = (header_l.indexOf("folder") >= 0) ? "" : item.folder.join("/")+": ";
 
 			listElem.append("<li>"+n+" "+textFolder+textHorizon+item.title+tags+"</li>");
