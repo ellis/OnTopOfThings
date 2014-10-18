@@ -238,7 +238,7 @@ function filterItemIsOpenMustdo(item) {
 
 function doList() {
 	$("#list").empty();
-	$.getJSON("snapshot--20140813.json", function(snapshot) {
+	$.getJSON("/items?wrapper=items", function(snapshot) {
 		var item_l = snapshot.items;
 
 		// TODO: need to validate the header and order fields

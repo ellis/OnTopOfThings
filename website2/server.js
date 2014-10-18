@@ -1,3 +1,4 @@
+var express = require('express');
 var fs = require('fs');
 var http = require('http');
 var jf = require('jsonfile');
@@ -7,6 +8,25 @@ var util = require('util');
 var _ = require('underscore');
 
 var port = process.argv[2];
+
+var app = express();
+
+app.use(express.static('ui'));
+app.get('/items', function(request, response) {
+	response.writeHead(200, { 'content-type': 'application/json' });
+
+	var urlData = url.parse(request.url, true);
+	var item_l = getAllItems();
+	if (urlData.query.hasOwnProperty('wrapper')) {
+		data = {};
+		data[urlData.query.wrapper] = item_l;
+	}
+	else {
+		data = item_l;
+	}
+	response.write(JSON.stringify(data));
+	response.end();
+});
 
 function getAllItems() {
 	// Load all json files into a map to a list of 
@@ -40,25 +60,10 @@ function getAllItems() {
 	return _.toArray(item_m);
 }
 
-var server = http.createServer(function(request, response) {
-	response.writeHead(200, { 'content-type': 'application/json' });
+var server = app.listen(port, function() {
+	var host = server.address().address
+	var port = server.address().port
 
-	var urlData = url.parse(request.url, true);
-	//var date = new Date(urlData.query.iso);
-
-	if (urlData.pathname == "/items") {
-		var item_l = getAllItems();
-		if (urlData.query.hasOwnProperty('wrapper')) {
-			data = {};
-			data[urlData.query.wrapper] = item_l;
-		}
-		else {
-			data = item_l;
-		}
-		response.write(JSON.stringify(data));
-	}
-
-	response.end();
+	console.log('Example app listening at http://%s:%s', host, port)
 });
 
-server.listen(port);
