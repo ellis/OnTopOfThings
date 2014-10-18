@@ -48,7 +48,14 @@ var server = http.createServer(function(request, response) {
 
 	if (urlData.pathname == "/items") {
 		var item_l = getAllItems();
-		response.write(JSON.stringify(item_l));
+		if (urlData.query.hasOwnProperty('wrapper')) {
+			data = {};
+			data[urlData.query.wrapper] = item_l;
+		}
+		else {
+			data = item_l;
+		}
+		response.write(JSON.stringify(data));
 	}
 
 	response.end();
