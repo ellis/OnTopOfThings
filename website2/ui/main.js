@@ -178,7 +178,7 @@ function createFilter() {
 function createFilterFromQuery(query) {
 	var ast = (query) ? JSON.parse(query) : [];
 	return function(item) {
-		if (item.closed) return false;
+		if (item.archived) return false;
 		return filterFromAst(ast, item);
 	}
 }
@@ -236,13 +236,15 @@ function filterItemIsOpenMustdo(item) {
 	return !item.closed && item.tag && (item.tag.indexOf("mustdo") > -1);
 }*/
 
+var item_m = {};
+
 function doList() {
 	$("#list").empty();
 	$.getJSON("/items?wrapper=items", function(snapshot) {
 		var item_l = snapshot.items;
 
 		// TODO: need to validate the header and order fields
-		var header_l = $("#headers").val().split(",").filter(function(s) s);
+		var header_l = $("#headers").val().split(",").filter(function(s) { return s; });
 		var criterion_l = header_l.concat($("#order").val().split(",")).filter(function(s) s);
 		var comparor = createComparor(criterion_l);
 		//var filter = createFilter();
@@ -270,9 +272,25 @@ function doList() {
 
 			var textHorizon = (header_l.indexOf("horizon") >= 0) ? "" : "<span class='field-horizon'>?" + item.horizon + "</span> ";
 			var textFolder = (header_l.indexOf("folder") >= 0) ? "" : item.folder.join("/")+": ";
+			var checkbox = (item.closed) ? "<input type='checkbox' checked> " : "<input type='checkbox'> "
 
-			listElem.append("<li>"+n+" "+textFolder+textHorizon+item.title+tags+"</li>");
+			listElem.append("<li>"+n+" "+checkbox+textFolder+textHorizon+item.title+tags+"</li>");
+			item_m[n] = item;
 		}
 	});
 }
 
+function doClose() {
+	var l = $("#closeList").val().split(" ");
+	$("#closeList").val("");
+	console.log(l);
+	
+	_.each(l, function(s) {
+		var index = parseInt(s);
+		if (item_m.hasOwnProperty(index)) {
+			var item = item_m[index];
+			$.post("/items/"+item.id+"/close", function(data, status) {
+			});
+		}
+	});
+}

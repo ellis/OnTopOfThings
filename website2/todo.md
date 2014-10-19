@@ -1,0 +1,15 @@
+- [x] use 'sed' to make all closed items archived
+- [x] don't show archived items by default
+- [x] visual indication of closed
+- [x] move data directory to testdata/ folder, and re-sed to make closed items archived
+- [ ] figure out how to have server accept list of item ids to close
+- [ ] figure out how to have client send list of item ids to close
+- [ ] update item on webpage when closed
+- [ ] create close form/dialog
+- [ ] checkboxes for filtering on open/closed/archived status
+- [ ] display items by open/closed/archived status
+- [ ] when closed checkbox is clicked, request to close item
+- [ ] let user uncheck closed button on an item
+- [ ] in close dialog, parse input to allow for number ranges such as 1-5
+- [ ] create dialog for new item
+- [ ] create dialog for editing an item

@@ -9,6 +9,8 @@ var url = require('url');
 var util = require('util');
 var _ = require('underscore');
 
+var dataDir = "../testdata/data02/";
+
 var port = process.argv[2];
 
 var app = express();
@@ -78,7 +80,7 @@ app.post('/items/:id/close', function(request, response) {
 		};
 		var content = JSON.stringify(patch)
 		var hash = calcHash(content);
-		var filename = "./data/"+date.format("YYYYMMDD_HHmmssSSS")+"-"+hash+".json";
+		var filename = dataDir+date.format("YYYYMMDD_HHmmssSSS")+"-"+hash+".json";
 		fs.writeFileSync(filename, content);
 	}
 	response.end();
@@ -90,7 +92,7 @@ app.post('/items/:id/close', function(request, response) {
 
 function getItemMap() {
 	// Load all json files into a map to a list of 
-	var filename_l = fs.readdirSync("./data/");
+	var filename_l = fs.readdirSync(dataDir);
 	// The files should be named in order of processing,
 	// so sort the array so that we can directly update the item list
 	var filename_l = _.filter(filename_l, function(filename) { return path.extname(filename) === ".json" });
@@ -98,7 +100,7 @@ function getItemMap() {
 
 	var item_m = {};
 	_.each(filename_l, function(filename) {
-		var contents = JSON.parse(fs.readFileSync("./data/"+filename, "utf8"));
+		var contents = JSON.parse(fs.readFileSync(dataDir+filename, "utf8"));
 		if (contents.type === "snapshot") {
 			_.each(contents.items, function(item) {
 				item_m[item.id] = item;
