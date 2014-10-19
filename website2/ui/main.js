@@ -280,17 +280,36 @@ function doList() {
 	});
 }
 
-function doClose() {
-	var l = $("#closeList").val().split(" ");
-	$("#closeList").val("");
-	console.log(l);
-	
+/*
+function doClose1(index) {
 	_.each(l, function(s) {
-		var index = parseInt(s);
+		var index = parseInt(index);
 		if (item_m.hasOwnProperty(index)) {
 			var item = item_m[index];
-			$.post("/items/"+item.id+"/close", function(data, status) {
-			});
+			$.post("/items/"+item.id+"/close", function(data, status) { });
 		}
+	});
+}
+*/
+
+function doCloseN() {
+	var l = $("#closeList").val().split(" ");
+	var ids = _.map(l, function(s) {
+		var index = parseInt(s);
+		return (item_m.hasOwnProperty(index)) ? item_m[index].id : null;
+	}).filter(function(id) { return id; })
+
+	$("#closeList").val("");
+	
+	$.ajax({
+	    type: "POST",
+	    url: "/close",
+	    data: JSON.stringify({ ids: ids }),
+	    contentType: "application/json; charset=utf-8",
+	    dataType: "json",
+	    success: function(data){},
+	    failure: function(errMsg) {
+		alert(errMsg);
+	    }
 	});
 }

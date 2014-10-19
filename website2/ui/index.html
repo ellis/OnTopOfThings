@@ -55,12 +55,7 @@
 			};
 		}
 		$(document).ready(function(){
-			/*$("#order").keyup(function(){
-				alert($(this).val());
-			});*/
-			$("#btnList").click(function(){
-				doList();
-			});
+			$("#btnList").click(function(){ doList(); });
 			$("#btnPageProjects").click(runList("folder", "horizon,created", ""));
 			$("#btnPageMustdos").click(runList("horizon,folder", "created", '[["->", "tag", "mustdo"]]'));
 			$("#btnPageInbox").click(runList("horizon,folder", "created", '[["=", "horizon", "new"]]'));
@@ -70,10 +65,9 @@
 			$("#btnPageMonth").click(runList("horizon,folder", "created", '[["=", "horizon", "month"]]'));
 			$("#btnPageQuarter").click(runList("horizon,folder", "created", '[["=", "horizon", "quarter"]]'));
 			$("#btnPageYear").click(runList("horizon,folder", "created", '[["=", "horizon", "year"]]'));
-			$("#btnClose").click(doClose);
+			$("#btnClose").click(doCloseN);
 		})
 		$(document).bind('keydown.c', function() {
-			console.log("2")
 			$( "#dialog" ).dialog();
 			return false;
 		});

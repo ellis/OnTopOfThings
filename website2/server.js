@@ -1,3 +1,4 @@
+var bodyParser = require('body-parser');
 var crypto = require('crypto');
 var express = require('express');
 var fs = require('fs');
@@ -22,8 +23,11 @@ function calcHash(str) {
         .digest('hex')
 }
 
-// Server static files from the ui/ directory
+// Serve static files from the ui/ directory
 app.use(express.static('ui'));
+
+// For parsing application/json body contents
+app.use(bodyParser.json());
 
 app.get('/items', function(request, response) {
 	response.writeHead(200, { 'content-type': 'application/json' });
@@ -59,6 +63,44 @@ app.get('/items/:id', function(request, response) {
 		}
 		response.write(JSON.stringify(data));
 	}
+	response.end();
+});
+
+app.post('/close', function(request, response) {
+	response.writeHead(200, { 'content-type': 'application/json' });
+	
+	var item_m = getItemMap();
+	var date = moment().utc();
+	var closed = date.format();
+
+	var patch = {
+		type: "patchN",
+		version: 1,
+		time: closed,
+		user: "default",
+		hunks: [{ids: [], diffs: [["=", "closed", closed]]}]
+	};
+
+	/*var hunk = {
+		ids: [],
+		diffs: [["=", "closed", closed]]
+	};*/
+
+	var ids = [];
+	_.each(request.body.ids, function(id) {
+		if (item_m.hasOwnProperty(id)) {
+			ids.push(id.toString());
+		}
+	});
+	patch.hunks[0].ids = ids;
+0
+	if (ids.length > 0) {
+		var content = JSON.stringify(patch);
+		var hash = calcHash(content);
+		var filename = dataDir+date.format("YYYYMMDD_HHmmssSSS")+"-"+hash+".json";
+		fs.writeFileSync(filename, content);
+	}
+
 	response.end();
 });
 
