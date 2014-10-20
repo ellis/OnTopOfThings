@@ -2,8 +2,8 @@
 - [x] don't show archived items by default
 - [x] visual indication of closed
 - [x] move data directory to testdata/ folder, and re-sed to make closed items archived
-- [ ] figure out how to have server accept list of item ids to close
-- [ ] figure out how to have client send list of item ids to close
+- [x] figure out how to have server accept list of item ids to close
+- [x] figure out how to have client send list of item ids to close
 - [ ] update item on webpage when closed
 - [ ] create close form/dialog
 - [ ] checkboxes for filtering on open/closed/archived status
@@ -13,3 +13,16 @@
 - [ ] in close dialog, parse input to allow for number ranges such as 1-5
 - [ ] create dialog for new item
 - [ ] create dialog for editing an item
+
+Daily schedule setup:
+
+Consists of a tree of "entries".
+Each entry is either a section name or reference to an item.
+Each entry has a parent entry and a sub-index within that entry.
+Each entry can optionally have a time associated with it.
+Each entry can optionally have pomodoros associated with it.
+Each pomodoro can optionally have a time associated with it, as well as some other flags.
+
+How can this be updated and synchronized between multiple computers?
+
+Day
