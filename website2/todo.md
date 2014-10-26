@@ -4,7 +4,9 @@
 - [x] move data directory to testdata/ folder, and re-sed to make closed items archived
 - [x] figure out how to have server accept list of item ids to close
 - [x] figure out how to have client send list of item ids to close
-- [ ] update item on webpage when closed
+- [x] update item on webpage when closed
+- [ ] figure out how to access checkbox without giving it its own id
+- [ ] for LI item id field, use item's id instead of index
 - [ ] create close form/dialog
 - [ ] checkboxes for filtering on open/closed/archived status
 - [ ] display items by open/closed/archived status

@@ -101,6 +101,7 @@ app.post('/close', function(request, response) {
 		fs.writeFileSync(filename, content);
 	}
 
+	response.write(JSON.stringify({result: "OK"}));
 	response.end();
 });
 

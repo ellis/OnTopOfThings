@@ -129,9 +129,9 @@ function doList() {
 
 			var textHorizon = (header_l.indexOf("horizon") >= 0) ? "" : "<span class='field-horizon'>?" + item.horizon + "</span> ";
 			var textFolder = (header_l.indexOf("folder") >= 0) ? "" : item.folder.join("/")+": ";
-			var checkbox = (item.closed) ? "<input type='checkbox' checked> " : "<input type='checkbox'> "
+			var checkbox = (item.closed) ? "<input id='item"+n+"_closed' type='checkbox' checked> " : "<input type='checkbox'> "
 
-			listElem.append("<li>"+n+" "+checkbox+textFolder+textHorizon+item.title+tags+"</li>");
+			listElem.append("<li id='item"+n+"'>"+n+" "+checkbox+textFolder+textHorizon+item.title+tags+"</li>");
 			item_m[n] = item;
 		}
 	});
@@ -139,22 +139,26 @@ function doList() {
 
 function doCloseN() {
 	var l = $("#closeList").val().split(" ");
-	var ids = _.map(l, function(s) {
-		var index = parseInt(s);
+	var indexes = _.map(l, function(s) { return parseInt(s); })
+	var ids = _.map(indexes, function(index) {
 		return (item_m.hasOwnProperty(index)) ? item_m[index].id : null;
 	}).filter(function(id) { return id; })
 
 	$("#closeList").val("");
 	
 	$.ajax({
-	    type: "POST",
-	    url: "/close",
-	    data: JSON.stringify({ ids: ids }),
-	    contentType: "application/json; charset=utf-8",
-	    dataType: "json",
-	    success: function(data){},
-	    failure: function(errMsg) {
-		alert(errMsg);
-	    }
+		type: "POST",
+		url: "/close",
+		data: JSON.stringify({ ids: ids }),
+		contentType: "application/json; charset=utf-8",
+		dataType: "json",
+		success: function(data) {
+			_.each(indexes, function(index) {
+				$("#item"+index+"_closed").prop("checked", true);
+			});
+		},
+		failure: function(errMsg) {
+			alert(errMsg);
+		}
 	});
 }
