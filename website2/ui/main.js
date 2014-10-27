@@ -129,9 +129,9 @@ function doList() {
 
 			var textHorizon = (header_l.indexOf("horizon") >= 0) ? "" : "<span class='field-horizon'>?" + item.horizon + "</span> ";
 			var textFolder = (header_l.indexOf("folder") >= 0) ? "" : item.folder.join("/")+": ";
-			var checkbox = (item.closed) ? "<input id='item"+n+"_closed' type='checkbox' checked> " : "<input type='checkbox'> "
+			var checkbox = (item.closed) ? "<input type='checkbox' class='checkbox-closed' checked> " : "<input type='checkbox' class='checkbox-closed'> "
 
-			listElem.append("<li id='item"+n+"'>"+n+" "+checkbox+textFolder+textHorizon+item.title+tags+"</li>");
+			listElem.append("<li id='item"+item.id+"'>"+n+" "+checkbox+textFolder+textHorizon+item.title+tags+"</li>");
 			item_m[n] = item;
 		}
 	});
@@ -153,8 +153,9 @@ function doCloseN() {
 		contentType: "application/json; charset=utf-8",
 		dataType: "json",
 		success: function(data) {
-			_.each(indexes, function(index) {
-				$("#item"+index+"_closed").prop("checked", true);
+			// Iterate through the ids we closed, and make sure the closed checkbox is ticked.
+			_.each(ids, function(id) {
+				$("#item"+id).find('.checkbox-closed').prop("checked", true);
 			});
 		},
 		failure: function(errMsg) {

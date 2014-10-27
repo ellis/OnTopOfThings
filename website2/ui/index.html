@@ -37,15 +37,22 @@
 		<ul id="list"></ul>
 	</div>
 
-	<div id="dialog" title="Basic dialog" style="display: none">
-		<p>This is the default dialog which is useful for displaying information. The dialog window can be moved, resized and closed with the 'x' icon.</p>
-		Items: <input id="closeList" type="text" value="">
-		<input id = "btnClose" type="submit" value="Close"/>
+	<div id="dialog-form" title="Mark items as closed" style="display: none">
+		<p>Enter the item IDs you would like to close.</p>
+		<form>
+			<fieldset>
+				<label for="closeList">Items:</label>
+				<input name=closeList" id="closeList" type="text" value="">
+				<input type="submit" tabindex="-1" value="Close" style="position: absolute; top: -1000px"/>
+			</fieldset>
+		</form>
 	</div>
 
 	<script src="main.js"></script>
 
 	<script type="text/javascript">
+		var dialog, form;
+
 		function runList(h, o, q) {
 			return function () {
 				$("#headers").val(h);
@@ -65,10 +72,36 @@
 			$("#btnPageMonth").click(runList("horizon,folder", "created", '[["=", "horizon", "month"]]'));
 			$("#btnPageQuarter").click(runList("horizon,folder", "created", '[["=", "horizon", "quarter"]]'));
 			$("#btnPageYear").click(runList("horizon,folder", "created", '[["=", "horizon", "year"]]'));
-			$("#btnClose").click(doCloseN);
 		})
+
+		dialog = $("#dialog-form").dialog({
+			autoOpen: false,
+			closeOnEscape: true,
+			height: "250",
+			modal: true,
+			buttons: {
+				"Close Items": function() {
+					doCloseN();
+					dialog.dialog("close");
+				},
+				Cancel: function() {
+					dialog.dialog("close");
+				}
+			},
+			close: function() {
+				form[0].reset();
+			}
+		});
+
+		form = dialog.find("form").on("submit", function(e) {
+			e.preventDefault();
+			doCloseN();
+			dialog.dialog("close");
+		});
+
 		$(document).bind('keydown.c', function() {
-			$( "#dialog" ).dialog();
+			$("#closeList").val("");
+			dialog.dialog("open");
 			return false;
 		});
 	</script>

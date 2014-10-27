@@ -5,16 +5,17 @@
 - [x] figure out how to have server accept list of item ids to close
 - [x] figure out how to have client send list of item ids to close
 - [x] update item on webpage when closed
-- [ ] figure out how to access checkbox without giving it its own id
-- [ ] for LI item id field, use item's id instead of index
-- [ ] create close form/dialog
-- [ ] checkboxes for filtering on open/closed/archived status
+- [x] figure out how to access checkbox without giving it its own id
+- [x] for LI item id field, use item's id instead of index
+- [x] create close form/dialog
+- [ ] create dialog for new item
+- [ ] create dialog for editing an item
+- [ ] figure out why Escape doesn't close the dialog
+- [ ] add checkboxes to top of page for filtering on open/closed/archived status
 - [ ] display items by open/closed/archived status
 - [ ] when closed checkbox is clicked, request to close item
 - [ ] let user uncheck closed button on an item
 - [ ] in close dialog, parse input to allow for number ranges such as 1-5
-- [ ] create dialog for new item
-- [ ] create dialog for editing an item
 
 Daily schedule setup:
 
