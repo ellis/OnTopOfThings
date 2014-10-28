@@ -37,12 +37,28 @@
 		<ul id="list"></ul>
 	</div>
 
+	<div id="dialog-new-form" title="Create a new todo" style="display: none">
+		<form>
+			<fieldset>
+				<label for="newItemTitle">Items:</label>
+				<input name="newItemTitle" id="newItemTitle" type="text" value="">
+				<label for="newItemFolder">Folder:</label>
+				<input name="newItemFolder" id="newItemFolder" type="text" value="">
+				<label for="newItemHorizon">Horizon:</label>
+				<input name="newItemHorizon" id="newItemHorizon" type="text" value="">
+				<label for="newItemTags">Tags:</label>
+				<input name="newItemTags" id="newItemTags" type="text" value="">
+				<input type="submit" tabindex="-1" value="Close" style="position: absolute; top: -1000px"/>
+			</fieldset>
+		</form>
+	</div>
+
 	<div id="dialog-form" title="Mark items as closed" style="display: none">
 		<p>Enter the item IDs you would like to close.</p>
 		<form>
 			<fieldset>
 				<label for="closeList">Items:</label>
-				<input name=closeList" id="closeList" type="text" value="">
+				<input name="closeList" id="closeList" type="text" value="">
 				<input type="submit" tabindex="-1" value="Close" style="position: absolute; top: -1000px"/>
 			</fieldset>
 		</form>
