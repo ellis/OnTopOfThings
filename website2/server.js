@@ -66,6 +66,44 @@ app.get('/items/:id', function(request, response) {
 	response.end();
 });
 
+function generateUUID() {
+	var d = new Date().getTime();
+	var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+		var r = (d + Math.random()*16)%16 | 0;
+		d = Math.floor(d/16);
+		return (c=='x' ? r : (r&0x7|0x8)).toString(16);
+	});
+	return uuid;
+}
+
+app.put('/items', function(request, response) {
+	response.writeHead(200, { 'content-type': 'application/json' });
+	
+	var date = moment().utc();
+
+	var item = request.body;
+	item.id = generateUUID();
+	item.created = date.format();
+	item.creator = "default";
+
+	var patch = {
+		type: "snapshot",
+		version: 1,
+		time: date.format(),
+		user: "default",
+		items: [item]
+	};
+
+	var content = JSON.stringify(patch)
+	var hash = calcHash(content);
+	var filename = dataDir+date.format("YYYYMMDD_HHmmssSSS")+"-"+hash+".json";
+	fs.writeFileSync(filename, content);
+
+	response.write(JSON.stringify({item: item}));
+	response.end();
+});
+
+
 app.post('/close', function(request, response) {
 	response.writeHead(200, { 'content-type': 'application/json' });
 	
@@ -130,7 +168,7 @@ app.post('/items/:id/close', function(request, response) {
 });
 
 // patchN example
-// {"time":"2014-08-03T15:11:21.086302Z","hunks":[{"diffs":["=status closed","=closed 2014-08-03T15:11:21.086302Z"],"uuids":["3258a7fa-e3b4-4d76-ac4a-c3bd18eb979d"]}],"user":"default","version":1,"type":"patch1"}
+// {"time":"2014-08-03T15:11:21.086302Z","hunks":[{"diffs":["=status closed","=closed 2014-08-03T15:11:21.086302Z"],"uuids":["3258a7fa-e3b4-4d76-ac4a-c3bd18eb979d"]}],"user":"default","version":1,"type":"patchN"}
 
 
 function getItemMap() {

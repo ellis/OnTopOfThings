@@ -40,25 +40,42 @@
 	<div id="dialog-new-form" title="Create a new todo" style="display: none">
 		<form>
 			<fieldset>
-				<label for="newItemTitle">Items:</label>
+				<label for="newItemTitle">Title:</label>
 				<input name="newItemTitle" id="newItemTitle" type="text" value="">
+				<br>
+
 				<label for="newItemFolder">Folder:</label>
 				<input name="newItemFolder" id="newItemFolder" type="text" value="">
+				<br>
+
 				<label for="newItemHorizon">Horizon:</label>
-				<input name="newItemHorizon" id="newItemHorizon" type="text" value="">
+				<select name="newItemHorizon" id="newItemHorizon">
+					<option value="inbox">inbox</option>
+					<option value="today">today</option>
+					<option value="next">next</option>
+					<option value="week">week</option>
+					<option value="month">month</option>
+					<option value="quarter">quarter</option>
+					<option value="year">year</option>
+				</select>
+				<br>
+
 				<label for="newItemTags">Tags:</label>
 				<input name="newItemTags" id="newItemTags" type="text" value="">
+
 				<input type="submit" tabindex="-1" value="Close" style="position: absolute; top: -1000px"/>
 			</fieldset>
 		</form>
 	</div>
 
-	<div id="dialog-form" title="Mark items as closed" style="display: none">
+	<div id="dialog-close-form" title="Mark items as closed" style="display: none">
 		<p>Enter the item IDs you would like to close.</p>
 		<form>
 			<fieldset>
 				<label for="closeList">Items:</label>
 				<input name="closeList" id="closeList" type="text" value="">
+				<br>
+
 				<input type="submit" tabindex="-1" value="Close" style="position: absolute; top: -1000px"/>
 			</fieldset>
 		</form>
@@ -90,34 +107,47 @@
 			$("#btnPageYear").click(runList("horizon,folder", "created", '[["=", "horizon", "year"]]'));
 		})
 
-		dialog = $("#dialog-form").dialog({
-			autoOpen: false,
-			closeOnEscape: true,
-			height: "250",
-			modal: true,
-			buttons: {
-				"Close Items": function() {
-					doCloseN();
-					dialog.dialog("close");
-				},
-				Cancel: function() {
-					dialog.dialog("close");
+		function prepareDialog(id, buttonLabel, fnSubmit) {
+			var buttons, dialog, form;
+			buttons = {};
+			buttons[buttonLabel] = function() {
+				fnSubmit();
+				dialog.dialog("close");
+			};
+			buttons["Cancel"] = function() {
+				dialog.dialog("close");
+			};
+			dialog = $(id).dialog({
+				autoOpen: false,
+				closeOnEscape: true,
+				height: "250",
+				modal: true,
+				buttons: buttons,
+				close: function() {
+					form[0].reset();
 				}
-			},
-			close: function() {
-				form[0].reset();
-			}
-		});
+			});
 
-		form = dialog.find("form").on("submit", function(e) {
-			e.preventDefault();
-			doCloseN();
-			dialog.dialog("close");
+			form = dialog.find("form").on("submit", function(e) {
+				e.preventDefault();
+				fnSubmit();
+				dialog.dialog("close");
+			});
+
+			return dialog;
+		}
+
+		dialogNew = prepareDialog("#dialog-new-form", "Create", doCreateNew);
+		dialogClose = prepareDialog("#dialog-close-form", "Close Items", doCloseN);
+
+		$(document).bind('keydown.n', function() {
+			dialogNew.dialog("open");
+			return false;
 		});
 
 		$(document).bind('keydown.c', function() {
 			$("#closeList").val("");
-			dialog.dialog("open");
+			dialogClose.dialog("open");
 			return false;
 		});
 	</script>

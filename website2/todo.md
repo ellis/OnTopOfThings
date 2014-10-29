@@ -8,14 +8,16 @@
 - [x] figure out how to access checkbox without giving it its own id
 - [x] for LI item id field, use item's id instead of index
 - [x] create close form/dialog
-- [ ] create dialog for new item
+- [x] create dialog for new item
 - [ ] create dialog for editing an item
+- [ ] style the dialog box better, especially the size
 - [ ] figure out why Escape doesn't close the dialog
 - [ ] add checkboxes to top of page for filtering on open/closed/archived status
 - [ ] display items by open/closed/archived status
 - [ ] when closed checkbox is clicked, request to close item
 - [ ] let user uncheck closed button on an item
 - [ ] in close dialog, parse input to allow for number ranges such as 1-5
+- [ ] after adding an new item, insert it into current display?
 
 Daily schedule setup:
 

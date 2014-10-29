@@ -137,6 +137,42 @@ function doList() {
 	});
 }
 
+function doCreateNew() {
+	var data = {
+		type: "task"
+	};
+	// Title
+	if ($("#newItemTitle").val()) {
+		data.title = $("#newItemTitle").val();
+	}
+	// Folder
+	if ($("#newItemFolder").val()) {
+		data.folder = $("#newItemFolder").val().split("/").filter(function(s) s);
+	}
+	// Horizon
+	if ($("#newItemHorizon").val()) {
+		data.horizon = $("#newItemHorizon").val();
+	}
+	// Tags
+	if ($("#newItemTags").val()) {
+		data["tags"] = $("#newItemTags").val().split(",").filter(function(s) s);
+	}
+	
+	$.ajax({
+		type: "PUT",
+		url: "/items",
+		data: JSON.stringify(data),
+		contentType: "application/json; charset=utf-8",
+		dataType: "json",
+		success: function(data) {
+			alert(data);
+		},
+		failure: function(errMsg) {
+			alert(errMsg);
+		}
+	});
+}
+
 function doCloseN() {
 	var l = $("#closeList").val().split(" ");
 	var indexes = _.map(l, function(s) { return parseInt(s); })
