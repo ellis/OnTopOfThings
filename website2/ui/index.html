@@ -68,6 +68,39 @@
 		</form>
 	</div>
 
+	<div id="dialog-edit-form" title="Enter index of item to edit" style="display: none">
+		<label for="editItemIndex">Item Index:</label>
+		<input name="editItemIndex" id="editItemIndex" type="text" value="">
+		<input id = "btnEditIndex" type="submit" value="Load"/>
+		<form>
+			<fieldset>
+				<label for="editItemTitle">Title:</label>
+				<input name="editItemTitle" id="editItemTitle" type="text" value="">
+				<br>
+
+				<label for="editItemFolder">Folder:</label>
+				<input name="editItemFolder" id="editItemFolder" type="text" value="">
+				<br>
+
+				<label for="editItemHorizon">Horizon:</label>
+				<select name="editItemHorizon" id="editItemHorizon">
+					<option value="inbox">inbox</option>
+					<option value="today">today</option>
+					<option value="next">next</option>
+					<option value="week">week</option>
+					<option value="month">month</option>
+					<option value="quarter">quarter</option>
+					<option value="year">year</option>
+				</select>
+				<br>
+
+				<label for="editItemTags">Tags:</label>
+				<input name="editItemTags" id="editItemTags" type="text" value="">
+				<input type="submit" tabindex="-1" value="Close" style="position: absolute; top: -1000px"/>
+			</fieldset>
+		</form>
+	</div>
+
 	<div id="dialog-close-form" title="Mark items as closed" style="display: none">
 		<p>Enter the item IDs you would like to close.</p>
 		<form>
@@ -105,50 +138,72 @@
 			$("#btnPageMonth").click(runList("horizon,folder", "created", '[["=", "horizon", "month"]]'));
 			$("#btnPageQuarter").click(runList("horizon,folder", "created", '[["=", "horizon", "quarter"]]'));
 			$("#btnPageYear").click(runList("horizon,folder", "created", '[["=", "horizon", "year"]]'));
-		})
-
-		function prepareDialog(id, buttonLabel, fnSubmit) {
-			var buttons, dialog, form;
-			buttons = {};
-			buttons[buttonLabel] = function() {
-				fnSubmit();
-				dialog.dialog("close");
-			};
-			buttons["Cancel"] = function() {
-				dialog.dialog("close");
-			};
-			dialog = $(id).dialog({
-				autoOpen: false,
-				closeOnEscape: true,
-				height: "250",
-				modal: true,
-				buttons: buttons,
-				close: function() {
-					form[0].reset();
+			$("#btnEditIndex").click(function() {
+				var s = $("#editItemIndex").val();
+				var index = parseInt(s);
+				var item = item_m[index];
+				if (item) {
+					$("#editItemTitle").val(item.title);
+					$("#editItemHorizon").val(item.horizon);
+					if (item.folder) $("#editItemFolder").val(item.folder.join("/"));
+					if (item.tags) $("#editItemTags").val(item.tags.join(" "));
+				}
+				else {
+					alert("Invalid index: "+index);
 				}
 			});
 
-			form = dialog.find("form").on("submit", function(e) {
-				e.preventDefault();
-				fnSubmit();
-				dialog.dialog("close");
+			function prepareDialog(id, buttonLabel, fnSubmit) {
+				var buttons, dialog, form;
+				buttons = {};
+				buttons[buttonLabel] = function() {
+					fnSubmit();
+					dialog.dialog("close");
+				};
+				buttons["Cancel"] = function() {
+					dialog.dialog("close");
+				};
+				dialog = $(id).dialog({
+					autoOpen: false,
+					closeOnEscape: true,
+					height: "250",
+					modal: true,
+					buttons: buttons,
+					close: function() {
+						form[0].reset();
+					}
+				});
+
+				form = dialog.find("form").on("submit", function(e) {
+					e.preventDefault();
+					fnSubmit();
+					dialog.dialog("close");
+				});
+
+				return dialog;
+			}
+
+			dialogNew = prepareDialog("#dialog-new-form", "Create", doCreateNew);
+			dialogClose = prepareDialog("#dialog-close-form", "Close Items", doCloseN);
+			dialogEdit = prepareDialog("#dialog-edit-form", "Edit", function() {
 			});
 
-			return dialog;
-		}
+			$(document).bind('keydown.c', function() {
+				$("#closeList").val("");
+				dialogClose.dialog("open");
+				return false;
+			});
 
-		dialogNew = prepareDialog("#dialog-new-form", "Create", doCreateNew);
-		dialogClose = prepareDialog("#dialog-close-form", "Close Items", doCloseN);
+			$(document).bind('keydown.e', function() {
+				dialogEdit.dialog("open");
+				return false;
+			});
 
-		$(document).bind('keydown.n', function() {
-			dialogNew.dialog("open");
-			return false;
-		});
+			$(document).bind('keydown.n', function() {
+				dialogNew.dialog("open");
+				return false;
+			});
+		})
 
-		$(document).bind('keydown.c', function() {
-			$("#closeList").val("");
-			dialogClose.dialog("open");
-			return false;
-		});
 	</script>
 </body>
