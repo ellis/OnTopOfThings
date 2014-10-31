@@ -10,8 +10,8 @@
 - [x] create close form/dialog
 - [x] create dialog for new item
 - [x] create dialog for editing an item
-- [?] server: API for receiving item modifications
-- [?] ui: find what has changed when user edits and item, and send those changes to the server
+- [x] server: API for receiving item modifications
+- [x] ui: find what has changed when user edits and item, and send those changes to the server
 - [ ] style the dialog box better, especially the size
 - [ ] figure out why Escape doesn't close the dialog
 - [ ] add checkboxes to top of page for filtering on open/closed/archived status
@@ -23,6 +23,7 @@
 - [ ] in close dialog, parse input to allow for number ranges such as 1-5
 - [ ] after adding an new item, insert it into current display?
 - [ ] get bower to work on mac
+- [ ] update displayed item after edit, but how to handle changes that impact the headers and filter?
 
 Daily schedule setup:
 

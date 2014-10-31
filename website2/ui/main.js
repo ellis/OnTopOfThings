@@ -206,7 +206,7 @@ function indexToId(index) {
 
 function doEdit() {
 	var index = parseInt($("#editItemIndex").val());
-	var id = indexToItem(index);
+	var id = indexToId(index);
 
 	var diffs = [];
 	// Title
@@ -220,15 +220,18 @@ function doEdit() {
 		diffs.push(["=", "folder", folder]);
 	}
 	// Horizon
-	if ($("#editItemHorizon").val()) {
+	if (editItem.horizon !== $("#editItemHorizon").val()) {
 		diffs.push(["=", "horizon", $("#editItemHorizon").val()]);
 	}
 	// Tags
 	var tags = $("#editItemTags").val().split(",").filter(function(s) { return s; });
-	if (!_.isEqual(item.tags, tags)) {
+	alert(editItem.tags);
+	alert(tags);
+	if (!_.isEqual(editItem.tags, tags) && (!_.isEmpty(editItem.tags) || !_.isEmpty(tags))) {
 		diffs.push(["=", "tags", tags]);
 	}
 	
+	var data = { diffs: diffs };
 	$.ajax({
 		type: "POST",
 		url: "/items/"+id,

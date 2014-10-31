@@ -71,11 +71,11 @@ app.post('/items/:id', function(request, response) {
 	var id = request.params.id;
 	var item_m = getItemMap();
 	var time = moment().utc();
-	if (item_m.hasOwnProperty(id) && request.body && request.body.diffs) {
+	if (item_m.hasOwnProperty(id) && request.body && !_.isEmpty(request.body.diffs)) {
 		var patch = {
 			type: "patch1",
 			version: 1,
-			time: closed,
+			time: time.format(),
 			user: "default",
 			id: id,
 			diffs: request.body.diffs
