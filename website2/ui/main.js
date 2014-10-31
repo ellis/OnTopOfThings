@@ -199,3 +199,47 @@ function doCloseN() {
 		}
 	});
 }
+
+function indexToId(index) {
+	return (item_m.hasOwnProperty(index)) ? item_m[index].id : null;
+}
+
+function doEdit() {
+	var index = parseInt($("#editItemIndex").val());
+	var id = indexToItem(index);
+
+	var data = {
+		type: "task"
+	};
+	// Title
+	if ($("#editItemTitle").val()) {
+		data.title = $("#editItemTitle").val();
+	}
+	// Folder
+	if ($("#editItemFolder").val()) {
+		data.folder = $("#editItemFolder").val().split("/").filter(function(s) s);
+	}
+	// Horizon
+	if ($("#editItemHorizon").val()) {
+		data.horizon = $("#editItemHorizon").val();
+	}
+	// Tags
+	if ($("#editItemTags").val()) {
+		data["tags"] = $("#editItemTags").val().split(",").filter(function(s) s);
+	}
+	
+	$.ajax({
+		type: "POST",
+		url: "/items/"+id,
+		data: JSON.stringify(data),
+		contentType: "application/json; charset=utf-8",
+		dataType: "json",
+		success: function(data) {
+			alert(data);
+		},
+		failure: function(errMsg) {
+			alert(errMsg);
+		}
+	});
+}
+
