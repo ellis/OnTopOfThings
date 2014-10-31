@@ -102,7 +102,7 @@ function doList() {
 
 		// TODO: need to validate the header and order fields
 		var header_l = $("#headers").val().split(",").filter(function(s) { return s; });
-		var criterion_l = header_l.concat($("#order").val().split(",")).filter(function(s) s);
+		var criterion_l = header_l.concat($("#order").val().split(",")).filter(function(s) { return s; });
 		var comparor = createComparor(criterion_l);
 		//var filter = createFilter();
 		var filter = createFilterFromQuery($("#query").val());
@@ -147,7 +147,7 @@ function doCreateNew() {
 	}
 	// Folder
 	if ($("#newItemFolder").val()) {
-		data.folder = $("#newItemFolder").val().split("/").filter(function(s) s);
+		data.folder = $("#newItemFolder").val().split("/").filter(function(s) { return s; });
 	}
 	// Horizon
 	if ($("#newItemHorizon").val()) {
@@ -155,7 +155,7 @@ function doCreateNew() {
 	}
 	// Tags
 	if ($("#newItemTags").val()) {
-		data["tags"] = $("#newItemTags").val().split(",").filter(function(s) s);
+		data["tags"] = $("#newItemTags").val().split(",").filter(function(s) { return s; });
 	}
 	
 	$.ajax({
@@ -208,24 +208,25 @@ function doEdit() {
 	var index = parseInt($("#editItemIndex").val());
 	var id = indexToItem(index);
 
-	var data = {
-		type: "task"
-	};
+	var diffs = [];
 	// Title
-	if ($("#editItemTitle").val()) {
-		data.title = $("#editItemTitle").val();
+	if (editItem.title !== $("#editItemTitle").val()) {
+		diffs.push(["=", "title", $("#editItemTitle").val()]);
 	}
 	// Folder
-	if ($("#editItemFolder").val()) {
-		data.folder = $("#editItemFolder").val().split("/").filter(function(s) s);
+	var folder = $("#editItemFolder").val().split("/").filter(function(s) { return s; });
+	if (!_.isEqual(editItem.folder, folder)) {
+		var folder = $("#editItemFolder").val().split("/").filter(function(s) { return s; });
+		diffs.push(["=", "folder", folder]);
 	}
 	// Horizon
 	if ($("#editItemHorizon").val()) {
-		data.horizon = $("#editItemHorizon").val();
+		diffs.push(["=", "horizon", $("#editItemHorizon").val()]);
 	}
 	// Tags
-	if ($("#editItemTags").val()) {
-		data["tags"] = $("#editItemTags").val().split(",").filter(function(s) s);
+	var tags = $("#editItemTags").val().split(",").filter(function(s) { return s; });
+	if (!_.isEqual(item.tags, tags)) {
+		diffs.push(["=", "tags", tags]);
 	}
 	
 	$.ajax({
@@ -235,7 +236,9 @@ function doEdit() {
 		contentType: "application/json; charset=utf-8",
 		dataType: "json",
 		success: function(data) {
-			alert(data);
+			alert(JSON.stringify(data));
+			if (data.result === "OK" && data.item)
+				item_m[index] = data.item;
 		},
 		failure: function(errMsg) {
 			alert(errMsg);

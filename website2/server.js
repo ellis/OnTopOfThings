@@ -66,6 +66,31 @@ app.get('/items/:id', function(request, response) {
 	response.end();
 });
 
+app.post('/items/:id', function(request, response) {
+	response.writeHead(200, { 'content-type': 'application/json' });
+	var id = request.params.id;
+	var item_m = getItemMap();
+	var time = moment().utc();
+	if (item_m.hasOwnProperty(id) && request.body && request.body.diffs) {
+		var patch = {
+			type: "patch1",
+			version: 1,
+			time: closed,
+			user: "default",
+			id: id,
+			diffs: request.body.diffs
+		};
+		var content = JSON.stringify(patch)
+		var hash = calcHash(content);
+		var filename = dataDir+time.format("YYYYMMDD_HHmmssSSS")+"-"+hash+".json";
+		fs.writeFileSync(filename, content);
+		applyPatch(item_m, patch);
+		var item = item_m[id];
+		response.write(JSON.stringify({result: "OK", item: item}));
+	}
+	response.end();
+});
+
 function generateUUID() {
 	var d = new Date().getTime();
 	var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -151,18 +176,21 @@ app.post('/items/:id/close', function(request, response) {
 	var closed = date.format();
 	if (item_m.hasOwnProperty(id)) {
 		var item = item_m[id];
-		var patch = {
-			type: "patch1",
-			version: 1,
-			time: closed,
-			user: "default",
-			id: id,
-			diffs: [["=", "closed", closed]]
-		};
-		var content = JSON.stringify(patch)
-		var hash = calcHash(content);
-		var filename = dataDir+date.format("YYYYMMDD_HHmmssSSS")+"-"+hash+".json";
-		fs.writeFileSync(filename, content);
+		if (!item.closed) {
+			var patch = {
+				type: "patch1",
+				version: 1,
+				time: closed,
+				user: "default",
+				id: id,
+				diffs: [["=", "closed", closed]]
+			};
+			var content = JSON.stringify(patch)
+			var hash = calcHash(content);
+			var filename = dataDir+date.format("YYYYMMDD_HHmmssSSS")+"-"+hash+".json";
+			fs.writeFileSync(filename, content);
+		}
+		response.write(JSON.stringify({result: "OK"}));
 	}
 	response.end();
 });
@@ -182,36 +210,40 @@ function getItemMap() {
 	var item_m = {};
 	_.each(filename_l, function(filename) {
 		var contents = JSON.parse(fs.readFileSync(dataDir+filename, "utf8"));
-		if (contents.type === "snapshot") {
-			_.each(contents.items, function(item) {
-				item_m[item.id] = item;
-			});
-		}
-		// Patch with multiple ids, each receiving the same diffs
-		else if (contents.type === "patch1") {
-			var id = contents.id;
-			_.each(contents.diffs, function(diff) {
-				if (diff[0] === "=") {
-					var name = diff[1];
-					item_m[id][name] = diff[2];
-				}
-			});
-		}
-		else if (contents.type === "patchN") {
-			_.each(contents.hunks, function(hunk) {
-				_.each(hunk.ids, function(id) {
-					_.each(hunk.diffs, function(diff) {
-						if (diff[0] === "=") {
-							var name = diff[1];
-							item_m[id][name] = diff[2];
-						}
-					});
-				});
-			});
-		}
+		applyPatch(item_m, contents);
 	});
 
 	return item_m;
+}
+
+function applyPatch(item_m, contents) {
+	if (contents.type === "snapshot") {
+		_.each(contents.items, function(item) {
+			item_m[item.id] = item;
+		});
+	}
+	// Patch with multiple ids, each receiving the same diffs
+	else if (contents.type === "patch1") {
+		var id = contents.id;
+		_.each(contents.diffs, function(diff) {
+			if (diff[0] === "=") {
+				var name = diff[1];
+				item_m[id][name] = diff[2];
+			}
+		});
+	}
+	else if (contents.type === "patchN") {
+		_.each(contents.hunks, function(hunk) {
+			_.each(hunk.ids, function(id) {
+				_.each(hunk.diffs, function(diff) {
+					if (diff[0] === "=") {
+						var name = diff[1];
+						item_m[id][name] = diff[2];
+					}
+				});
+			});
+		});
+	}
 }
 
 var server = app.listen(port, function() {

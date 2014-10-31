@@ -117,7 +117,7 @@
 	<script src="main.js"></script>
 
 	<script type="text/javascript">
-		var dialog, form;
+		var dialog, form, editItem;
 
 		function runList(h, o, q) {
 			return function () {
@@ -142,6 +142,7 @@
 				var s = $("#editItemIndex").val();
 				var index = parseInt(s);
 				var item = item_m[index];
+				editItem = item;
 				if (item) {
 					$("#editItemTitle").val(item.title);
 					$("#editItemHorizon").val(item.horizon);
@@ -185,8 +186,7 @@
 
 			dialogNew = prepareDialog("#dialog-new-form", "Create", doCreateNew);
 			dialogClose = prepareDialog("#dialog-close-form", "Close Items", doCloseN);
-			dialogEdit = prepareDialog("#dialog-edit-form", "Edit", function() {
-			});
+			dialogEdit = prepareDialog("#dialog-edit-form", "Edit", doEdit);
 
 			$(document).bind('keydown.c', function() {
 				$("#closeList").val("");
