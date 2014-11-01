@@ -12,16 +12,16 @@
 - [x] create dialog for editing an item
 - [x] server: API for receiving item modifications
 - [x] ui: find what has changed when user edits and item, and send those changes to the server
+- [x] add checkboxes to top of page for filtering on open/archived status
+- [x] display items by open/archived status
 - [ ] style the dialog box better, especially the size
 - [ ] figure out why Escape doesn't close the dialog
-- [ ] add checkboxes to top of page for filtering on open/closed/archived status
 - [ ] get css and other resources locally so that website works in train
 - [ ] setup with bower
-- [ ] display items by open/closed/archived status
 - [ ] when closed checkbox is clicked, request to close item
 - [ ] let user uncheck closed button on an item
 - [ ] in close dialog, parse input to allow for number ranges such as 1-5
-- [ ] after adding an new item, insert it into current display?
+- [ ] after adding a new item, insert it into current display?
 - [ ] get bower to work on mac
 - [ ] update displayed item after edit, but how to handle changes that impact the headers and filter?
 

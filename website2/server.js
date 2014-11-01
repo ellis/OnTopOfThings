@@ -35,6 +35,19 @@ app.get('/items', function(request, response) {
 	var urlData = url.parse(request.url, true);
 	var item_m = getItemMap();
 	var item_l = _.toArray(item_m);
+	// If there is an 'archived' filter:
+	switch (urlData.query.archived) {
+		// If we only want the archived items, filter out everything else
+		case "only":
+			item_l = item_l.filter(function(item) { return item.archived; });
+			break;
+		// Send both archived and non-archived items
+		case "true":
+			break;
+		// Otherwise, by default, don't send archived items
+		default:
+			item_l = item_l.filter(function(item) { return !item.archived; });
+	}
 	if (urlData.query.hasOwnProperty('wrapper')) {
 		data = {};
 		data[urlData.query.wrapper] = item_l;

@@ -43,7 +43,6 @@ function createComparor(criterion_l) {
 function createFilterFromQuery(query) {
 	var ast = (query) ? JSON.parse(query) : [];
 	return function(item) {
-		if (item.archived) return false;
 		return filterFromAst(ast, item);
 	}
 }
@@ -97,7 +96,12 @@ var item_m = {};
 
 function doList() {
 	$("#list").empty();
-	$.getJSON("/items?wrapper=items", function(snapshot) {
+	var archived = "";
+	if ($("#rdoArchived").prop("checked"))
+		archived = "&archived=true";
+	else if ($("#rdoArchivedOnly").prop("checked"))
+		archived = "&archived=only";
+	$.getJSON("/items?wrapper=items"+archived, function(snapshot) {
 		var item_l = snapshot.items;
 
 		// TODO: need to validate the header and order fields
