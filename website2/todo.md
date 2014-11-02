@@ -14,6 +14,10 @@
 - [x] ui: find what has changed when user edits and item, and send those changes to the server
 - [x] add checkboxes to top of page for filtering on open/archived status
 - [x] display items by open/archived status
+- [x] ui: dialog for deleting items
+- [x] ui: doDelete()
+- [x] server: API for /delete
+- [ ] update displayed item after delete (not working right now...)
 - [ ] style the dialog box better, especially the size
 - [ ] figure out why Escape doesn't close the dialog
 - [ ] get css and other resources locally so that website works in train

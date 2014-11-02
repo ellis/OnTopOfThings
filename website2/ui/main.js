@@ -93,6 +93,29 @@ function filterFromAst(ast, item) {
 }
 
 var item_m = {};
+var header_l = [];
+
+function getItemInnerHtml(item, index) {
+	var textHorizon = (header_l.indexOf("horizon") >= 0) ? "" : "<span class='field-horizon'>?" + item.horizon + "</span> ";
+	var textFolder = (header_l.indexOf("folder") >= 0) ? "" : item.folder.join("/")+": ";
+	var checkbox = (item.closed) ? "<input type='checkbox' class='checkbox-closed' checked> " : "<input type='checkbox' class='checkbox-closed'> "
+	var tags = item.tag ? " (" + item.tag.join(",") + ")" : "";
+	var text = index+" "+checkbox+textFolder+textHorizon+item.title+tags;
+	if (item.deleted) {
+		text = "<span style='font-style: strike-through; color: #808080'>"+text+"</span>";
+	}
+	return text;
+}
+
+function updateItemAtIndex(index) {
+	if (item_m.hasOwnProperty(index)) {
+		var item = item_m[index];
+		var text = getItemInnerHtml(item, index);
+		var li = $("#item"+item.id);
+		li.empty();
+		li.append(text);
+	}
+}
 
 function doList() {
 	$("#list").empty();
@@ -105,7 +128,7 @@ function doList() {
 		var item_l = snapshot.items;
 
 		// TODO: need to validate the header and order fields
-		var header_l = $("#headers").val().split(",").filter(function(s) { return s; });
+		header_l = $("#headers").val().split(",").filter(function(s) { return s; });
 		var criterion_l = header_l.concat($("#order").val().split(",")).filter(function(s) { return s; });
 		var comparor = createComparor(criterion_l);
 		//var filter = createFilter();
@@ -117,7 +140,6 @@ function doList() {
 		for (i in item_l) {
 			var item = item_l[i];
 			var n = parseInt(i) + 1;
-			var tags = item.tag ? " (" + item.tag.join(",") + ")" : "";
 			for (var j = 0; j < header_l.length; j++) {
 				var fieldName = header_l[j];
 				var fieldValue = item[fieldName];
@@ -130,12 +152,8 @@ function doList() {
 					header0[fieldName] = fieldValue;
 				}
 			}
-
-			var textHorizon = (header_l.indexOf("horizon") >= 0) ? "" : "<span class='field-horizon'>?" + item.horizon + "</span> ";
-			var textFolder = (header_l.indexOf("folder") >= 0) ? "" : item.folder.join("/")+": ";
-			var checkbox = (item.closed) ? "<input type='checkbox' class='checkbox-closed' checked> " : "<input type='checkbox' class='checkbox-closed'> "
-
-			listElem.append("<li id='item"+item.id+"'>"+n+" "+checkbox+textFolder+textHorizon+item.title+tags+"</li>");
+			var text = getItemInnerHtml(item, n);
+			listElem.append("<li id='item"+item.id+"'>"+text+"</li>");
 			item_m[n] = item;
 		}
 	});
@@ -169,7 +187,7 @@ function doCreateNew() {
 		contentType: "application/json; charset=utf-8",
 		dataType: "json",
 		success: function(data) {
-			alert(data);
+			doList();
 		},
 		failure: function(errMsg) {
 			alert(errMsg);
@@ -194,8 +212,35 @@ function doCloseN() {
 		dataType: "json",
 		success: function(data) {
 			// Iterate through the ids we closed, and make sure the closed checkbox is ticked.
-			_.each(ids, function(id) {
-				$("#item"+id).find('.checkbox-closed').prop("checked", true);
+			_.each(indexes, function(index) {
+				updateItemAtIndex(index);
+			});
+		},
+		failure: function(errMsg) {
+			alert(errMsg);
+		}
+	});
+}
+
+function doDeleteN() {
+	var l = $("#deleteList").val().split(" ");
+	var indexes = _.map(l, function(s) { return parseInt(s); })
+	var ids = _.map(indexes, function(index) {
+		return (item_m.hasOwnProperty(index)) ? item_m[index].id : null;
+	}).filter(function(id) { return id; })
+
+	$("#deleteList").val("");
+	
+	$.ajax({
+		type: "POST",
+		url: "/delete",
+		data: JSON.stringify({ ids: ids }),
+		contentType: "application/json; charset=utf-8",
+		dataType: "json",
+		success: function(data) {
+			// Iterate through the ids we deleted, and make sure the item's font is crossed through.
+			_.each(indexes, function(index) {
+				updateItemAtIndex(index);
 			});
 		},
 		failure: function(errMsg) {
@@ -244,8 +289,10 @@ function doEdit() {
 		dataType: "json",
 		success: function(data) {
 			alert(JSON.stringify(data));
-			if (data.result === "OK" && data.item)
+			if (data.result === "OK" && data.item) {
 				item_m[index] = data.item;
+				updateItemAtIndex(index);
+			}
 		},
 		failure: function(errMsg) {
 			alert(errMsg);

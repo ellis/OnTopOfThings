@@ -118,6 +118,19 @@
 		</form>
 	</div>
 
+	<div id="dialog-delete-form" title="Mark items as deleted" style="display: none">
+		<p>Enter the item IDs you would like to delete.</p>
+		<form>
+			<fieldset>
+				<label for="deleteList">Items:</label>
+				<input name="deleteList" id="deleteList" type="text" value="">
+				<br>
+
+				<input type="submit" tabindex="-1" value="Delete" style="position: absolute; top: -1000px"/>
+			</fieldset>
+		</form>
+	</div>
+
 	<script src="main.js"></script>
 
 	<script type="text/javascript">
@@ -190,11 +203,18 @@
 
 			dialogNew = prepareDialog("#dialog-new-form", "Create", doCreateNew);
 			dialogClose = prepareDialog("#dialog-close-form", "Close Items", doCloseN);
+			dialogDelete = prepareDialog("#dialog-delete-form", "Delete Items", doDeleteN);
 			dialogEdit = prepareDialog("#dialog-edit-form", "Edit", doEdit);
 
 			$(document).bind('keydown.c', function() {
 				$("#closeList").val("");
 				dialogClose.dialog("open");
+				return false;
+			});
+
+			$(document).bind('keydown.d', function() {
+				$("#deleteList").val("");
+				dialogDelete.dialog("open");
 				return false;
 			});
 

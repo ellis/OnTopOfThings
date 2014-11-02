@@ -10,7 +10,7 @@ var url = require('url');
 var util = require('util');
 var _ = require('underscore');
 
-var dataDir = "../testdata/data02/";
+var dataDir = "../../testdata/data02/";
 
 var port = process.argv[2];
 
@@ -24,7 +24,7 @@ function calcHash(str) {
 }
 
 // Serve static files from the ui/ directory
-app.use(express.static('ui'));
+app.use(express.static('../ui'));
 
 // For parsing application/json body contents
 app.use(bodyParser.json());
@@ -141,7 +141,6 @@ app.put('/items', function(request, response) {
 	response.end();
 });
 
-
 app.post('/close', function(request, response) {
 	response.writeHead(200, { 'content-type': 'application/json' });
 	
@@ -157,10 +156,39 @@ app.post('/close', function(request, response) {
 		hunks: [{ids: [], diffs: [["=", "closed", closed]]}]
 	};
 
-	/*var hunk = {
-		ids: [],
-		diffs: [["=", "closed", closed]]
-	};*/
+	var ids = [];
+	_.each(request.body.ids, function(id) {
+		if (item_m.hasOwnProperty(id)) {
+			ids.push(id.toString());
+		}
+	});
+	patch.hunks[0].ids = ids;
+0
+	if (ids.length > 0) {
+		var content = JSON.stringify(patch);
+		var hash = calcHash(content);
+		var filename = dataDir+date.format("YYYYMMDD_HHmmssSSS")+"-"+hash+".json";
+		fs.writeFileSync(filename, content);
+	}
+
+	response.write(JSON.stringify({result: "OK"}));
+	response.end();
+});
+
+app.post('/delete', function(request, response) {
+	response.writeHead(200, { 'content-type': 'application/json' });
+	
+	var item_m = getItemMap();
+	var date = moment().utc();
+	var timeString = date.format();
+
+	var patch = {
+		type: "patchN",
+		version: 1,
+		time: timeString,
+		user: "default",
+		hunks: [{ids: [], diffs: [["=", "deleted", timeString]]}]
+	};
 
 	var ids = [];
 	_.each(request.body.ids, function(id) {
