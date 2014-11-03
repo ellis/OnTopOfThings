@@ -17,11 +17,14 @@
 - [x] ui: dialog for deleting items
 - [x] ui: doDelete()
 - [x] server: API for /delete
-- [ ] update displayed item after delete (not working right now...)
+- [x] update displayed item after delete
+- [x] setup with bower
+- [ ] BUG: Why does 'mustdo' tag not appear for item "?next register for exams in Zurich (pay 50CHF)"?
+- [ ] ui: create button to archive closed and deleted items
+- [ ] start creating console interface?
+- [ ] get css and other resources locally so that website works in train
 - [ ] style the dialog box better, especially the size
 - [ ] figure out why Escape doesn't close the dialog
-- [ ] get css and other resources locally so that website works in train
-- [ ] setup with bower
 - [ ] when closed checkbox is clicked, request to close item
 - [ ] let user uncheck closed button on an item
 - [ ] in close dialog, parse input to allow for number ranges such as 1-5

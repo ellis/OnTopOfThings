@@ -146,14 +146,14 @@ app.post('/close', function(request, response) {
 	
 	var item_m = getItemMap();
 	var date = moment().utc();
-	var closed = date.format();
+	var timeString = date.format();
 
 	var patch = {
 		type: "patchN",
 		version: 1,
-		time: closed,
+		time: timeString,
 		user: "default",
-		hunks: [{ids: [], diffs: [["=", "closed", closed]]}]
+		hunks: [{ids: [], diffs: [["=", "closed", timeString]]}]
 	};
 
 	var ids = [];
@@ -171,7 +171,7 @@ app.post('/close', function(request, response) {
 		fs.writeFileSync(filename, content);
 	}
 
-	response.write(JSON.stringify({result: "OK"}));
+	response.write(JSON.stringify({result: "OK", closed: timeString}));
 	response.end();
 });
 
@@ -205,7 +205,7 @@ app.post('/delete', function(request, response) {
 		fs.writeFileSync(filename, content);
 	}
 
-	response.write(JSON.stringify({result: "OK"}));
+	response.write(JSON.stringify({result: "OK", deleted: timeString}));
 	response.end();
 });
 

@@ -102,7 +102,7 @@ function getItemInnerHtml(item, index) {
 	var tags = item.tag ? " (" + item.tag.join(",") + ")" : "";
 	var text = index+" "+checkbox+textFolder+textHorizon+item.title+tags;
 	if (item.deleted) {
-		text = "<span style='font-style: strike-through; color: #808080'>"+text+"</span>";
+		text = "<span style='text-decoration: line-through; color: #808080'>"+text+"</span>";
 	}
 	return text;
 }
@@ -213,6 +213,7 @@ function doCloseN() {
 		success: function(data) {
 			// Iterate through the ids we closed, and make sure the closed checkbox is ticked.
 			_.each(indexes, function(index) {
+				item_m[index].closed = data.closed;
 				updateItemAtIndex(index);
 			});
 		},
@@ -240,6 +241,7 @@ function doDeleteN() {
 		success: function(data) {
 			// Iterate through the ids we deleted, and make sure the item's font is crossed through.
 			_.each(indexes, function(index) {
+				item_m[index].deleted = data.deleted;
 				updateItemAtIndex(index);
 			});
 		},
