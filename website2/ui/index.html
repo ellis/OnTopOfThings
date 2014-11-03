@@ -34,9 +34,11 @@
 		<input id = "btnPageQuarter" type="submit" value="Quarter"/>
 		<input id = "btnPageYear" type="submit" value="Year"/>
 		<br>
-		<input id="rdoCurrent" name="rdoArchived" type="radio" checked> Current
-		<input id="rdoArchived" name="rdoArchived" type="radio"> Current+Archived
-		<input id="rdoArchivedOnly" name="rdoArchived" type="radio"> Archived
+		<input id="rdoCurrent" name="rdoArchived" type="radio" checked> Current</input>
+		<input id="rdoArchived" name="rdoArchived" type="radio"> Current+Archived</input>
+		<input id="rdoArchivedOnly" name="rdoArchived" type="radio"> Archived</input>
+		|
+		<input id="btnArchive" type="submit" value="Archive"/>
 		<br>
 		<ul id="list"></ul>
 	</div>
@@ -170,6 +172,7 @@
 					alert("Invalid index: "+index);
 				}
 			});
+			$("#btnArchive").click(doArchive);
 
 			function prepareDialog(id, buttonLabel, fnSubmit) {
 				var buttons, dialog, form;

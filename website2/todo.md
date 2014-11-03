@@ -19,11 +19,13 @@
 - [x] server: API for /delete
 - [x] update displayed item after delete
 - [x] setup with bower
-- [ ] BUG: Why does 'mustdo' tag not appear for item "?next register for exams in Zurich (pay 50CHF)"?
-- [ ] ui: create button to archive closed and deleted items
+- [x] BUG: Why does 'mustdo' tag not appear for item "?next register for exams in Zurich (pay 50CHF)"?
+- [x] ui: create button to archive closed and deleted items
+- [ ] start working on Schedule interface
 - [ ] start creating console interface?
 - [ ] get css and other resources locally so that website works in train
 - [ ] style the dialog box better, especially the size
+- [ ] expand edit capabilities to include closed, deleted, archive
 - [ ] figure out why Escape doesn't close the dialog
 - [ ] when closed checkbox is clicked, request to close item
 - [ ] let user uncheck closed button on an item

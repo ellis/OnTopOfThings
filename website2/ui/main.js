@@ -177,7 +177,7 @@ function doCreateNew() {
 	}
 	// Tags
 	if ($("#newItemTags").val()) {
-		data["tags"] = $("#newItemTags").val().split(",").filter(function(s) { return s; });
+		data.tag = $("#newItemTags").val().split(",").filter(function(s) { return s; });
 	}
 	
 	$.ajax({
@@ -276,10 +276,8 @@ function doEdit() {
 	}
 	// Tags
 	var tags = $("#editItemTags").val().split(",").filter(function(s) { return s; });
-	alert(editItem.tags);
-	alert(tags);
-	if (!_.isEqual(editItem.tags, tags) && (!_.isEmpty(editItem.tags) || !_.isEmpty(tags))) {
-		diffs.push(["=", "tags", tags]);
+	if (!_.isEqual(editItem.tag, tags) && (!_.isEmpty(editItem.tag) || !_.isEmpty(tags))) {
+		diffs.push(["=", "tag", tags]);
 	}
 	
 	var data = { diffs: diffs };
@@ -302,3 +300,26 @@ function doEdit() {
 	});
 }
 
+function doArchive() {
+	// REFACTOR: replace this with underscore call to filter on item_m values
+	var ids = [];
+	for (var key in item_m) {
+		var item = item_m[key];
+		if (item.closed || item.deleted)
+			ids.push(item.id);
+	}
+
+	$.ajax({
+		type: "POST",
+		url: "/archive",
+		data: JSON.stringify({ ids: ids }),
+		contentType: "application/json; charset=utf-8",
+		dataType: "json",
+		success: function(data) {
+			doList();
+		},
+		failure: function(errMsg) {
+			alert(errMsg);
+		}
+	});
+}

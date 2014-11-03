@@ -12,7 +12,7 @@ var _ = require('underscore');
 
 var dataDir = "../../testdata/data02/";
 
-var port = process.argv[2];
+var port = (process.argv[2]) ? process.argv[2] : 10000;
 
 var app = express();
 
@@ -140,6 +140,41 @@ app.put('/items', function(request, response) {
 	response.write(JSON.stringify({item: item}));
 	response.end();
 });
+
+app.post('/archive', function(request, response) {
+	response.writeHead(200, { 'content-type': 'application/json' });
+	
+	var item_m = getItemMap();
+	var date = moment().utc();
+	var timeString = date.format();
+
+	var patch = {
+		type: "patchN",
+		version: 1,
+		time: timeString,
+		user: "default",
+		hunks: [{ids: [], diffs: [["=", "archived", true]]}]
+	};
+
+	var ids = [];
+	_.each(request.body.ids, function(id) {
+		if (item_m.hasOwnProperty(id)) {
+			ids.push(id.toString());
+		}
+	});
+	patch.hunks[0].ids = ids;
+0
+	if (ids.length > 0) {
+		var content = JSON.stringify(patch);
+		var hash = calcHash(content);
+		var filename = dataDir+date.format("YYYYMMDD_HHmmssSSS")+"-"+hash+".json";
+		fs.writeFileSync(filename, content);
+	}
+
+	response.write(JSON.stringify({result: "OK", deleted: timeString}));
+	response.end();
+});
+
 
 app.post('/close', function(request, response) {
 	response.writeHead(200, { 'content-type': 'application/json' });
