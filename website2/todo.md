@@ -20,6 +20,7 @@
 - [x] update displayed item after delete
 - [x] setup with bower
 - [x] BUG: Why does 'mustdo' tag not appear for item "?next register for exams in Zurich (pay 50CHF)"?
+- [x] get bower to work on mac
 - [x] ui: create button to archive closed and deleted items
 - [ ] start working on Schedule interface
 - [ ] start creating console interface?
@@ -29,9 +30,7 @@
 - [ ] figure out why Escape doesn't close the dialog
 - [ ] when closed checkbox is clicked, request to close item
 - [ ] let user uncheck closed button on an item
-- [ ] in close dialog, parse input to allow for number ranges such as 1-5
-- [ ] after adding a new item, insert it into current display?
-- [ ] get bower to work on mac
+- [ ] in close dialog, parse input to allow for number ranges such as "1-5"
 - [ ] update displayed item after edit, but how to handle changes that impact the headers and filter?
 
 Daily schedule setup:
