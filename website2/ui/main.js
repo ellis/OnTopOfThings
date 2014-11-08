@@ -1,5 +1,3 @@
-$("#main").append("Hello");
-
 $.ajaxSetup({beforeSend: function(xhr){
   if (xhr.overrideMimeType)
   {
@@ -323,3 +321,37 @@ function doArchive() {
 		}
 	});
 }
+
+function doListSchedule() {
+	$("#list").empty();
+	var archived = "";
+	if ($("#rdoArchived").prop("checked"))
+		archived = "&archived=true";
+	else if ($("#rdoArchivedOnly").prop("checked"))
+		archived = "&archived=only";
+	$.getJSON("/items?wrapper=items"+archived, function(snapshot) {
+		var item_l = snapshot.items;
+
+		// Populate map from id to item
+		var idToItem_m = {};
+		_.each(item_l, function(item) { idToItem_m[item.id] = item; });
+
+		schedule_l = item_l.filter(function(item) { return item.type == "schedule" });
+		var listElem = $("#list");
+		var node_m = {"0": {}};
+		_.each(schedule_l, function(schedule) {
+			listElem.append("<h2>"+schedule.date+"</h2>");
+			listElem.append(JSON.stringify(schedule, '\t'));
+			for (var key in schedule.nodes) {
+				var node = schedule.nodes[key];
+				console.write(key);
+				console.write(node);
+				if (!node_m.hasOwnProperty(node.id))
+					node_m[node.id] = {};
+				node_m[node.parentId][node.index] = node;
+			}
+			listElem.append("<li>"+JSON.stringify(node_m)+"</li>");
+		});
+	});
+}
+

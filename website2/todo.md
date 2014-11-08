@@ -44,4 +44,13 @@ Each pomodoro can optionally have a time associated with it, as well as some oth
 
 How can this be updated and synchronized between multiple computers?
 
-Day
+schedule: {
+  nodes: {
+    "91823450": {type: "section", text: "Home", parentId: 0, index: 0},
+    "01592384": {type: "reference", refId: "sdfl2j30asl", parentId: 91823450, index: 0, time: ?, pomodoros: [{status: ""}, {}]}
+  }
+}
+
+[".", "nodes", "key", "91823450", "=", "text", "@Home"]
+[".", "nodes", "put", "91823450", {type: ..}]
+
