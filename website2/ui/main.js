@@ -338,20 +338,38 @@ function doListSchedule() {
 
 		schedule_l = item_l.filter(function(item) { return item.type == "schedule" });
 		var listElem = $("#list");
-		var node_m = {"0": {}};
+		var parentIdToChildren_m = {};
 		_.each(schedule_l, function(schedule) {
 			listElem.append("<h2>"+schedule.date+"</h2>");
 			listElem.append(JSON.stringify(schedule, '\t'));
-			for (var key in schedule.nodes) {
-				var node = schedule.nodes[key];
-				console.write(key);
-				console.write(node);
-				if (!node_m.hasOwnProperty(node.id))
-					node_m[node.id] = {};
-				node_m[node.parentId][node.index] = node;
-			}
-			listElem.append("<li>"+JSON.stringify(node_m)+"</li>");
+			_(schedule.nodes).each(function(node) {
+				if (!parentIdToChildren_m.hasOwnProperty(node.parentId))
+					parentIdToChildren_m[node.parentId] = [];
+				parentIdToChildren_m[node.parentId].push(node);
+			});
+
+			listElem.append("<pre>"+JSON.stringify(parentIdToChildren_m, '  ')+"</pre>");
+			handleScheduleItem(parentIdToChildren_m, parentIdToChildren_m[0], listElem, 0);
 		});
 	});
 }
 
+function handleScheduleItem(parentIdToChildren_m, node_l, elem, indent) {
+	_(node_l).sortBy(function(node) { return node.index });
+	_(node_l).each(function(node) {
+		var text;
+		switch (node.type) {
+			case "section":
+				text = node.text;
+				break;
+			case "reference":
+				text = node.refId;
+				break;
+		}
+		elem.append("<div style='margin-left: "+(indent*2)+"em'>"+text+"</div>");
+		if (parentIdToChildren_m.hasOwnProperty(node.id)) {
+			var child_l = parentIdToChildren_m[node.id];
+			handleScheduleItem(parentIdToChildren_m, child_l, elem, indent+1);
+		}
+	});
+}
