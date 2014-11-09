@@ -41,7 +41,7 @@ function createComparor(criterion_l) {
 function createFilterFromQuery(query) {
 	var ast = (query) ? JSON.parse(query) : [];
 	return function(item) {
-		return filterFromAst(ast, item);
+		return item.type == "task" && filterFromAst(ast, item);
 	}
 }
 
@@ -91,6 +91,7 @@ function filterFromAst(ast, item) {
 }
 
 var item_m = {};
+var idToItem_m = {};
 var header_l = [];
 
 function getItemInnerHtml(item, index) {
@@ -257,6 +258,8 @@ function doEdit() {
 	var index = parseInt($("#editItemIndex").val());
 	var id = indexToId(index);
 
+	//console.log(JSON.stringify(editItem));
+
 	var diffs = [];
 	// Title
 	if (editItem.title !== $("#editItemTitle").val()) {
@@ -333,7 +336,7 @@ function doListSchedule() {
 		var item_l = snapshot.items;
 
 		// Populate map from id to item
-		var idToItem_m = {};
+		idToItem_m = {};
 		_.each(item_l, function(item) { idToItem_m[item.id] = item; });
 
 		schedule_l = item_l.filter(function(item) { return item.type == "schedule" });
@@ -363,7 +366,11 @@ function handleScheduleItem(parentIdToChildren_m, node_l, elem, indent) {
 				text = node.text;
 				break;
 			case "reference":
-				text = node.refId;
+				if (idToItem_m.hasOwnProperty(node.refId)) {
+					var item = idToItem_m[node.refId];
+					//text = JSON.stringify(item);
+					text = getItemInnerHtml(item, 0);
+				}
 				break;
 		}
 		elem.append("<div style='margin-left: "+(indent*2)+"em'>"+text+"</div>");

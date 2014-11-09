@@ -163,11 +163,12 @@
 				var index = parseInt(s);
 				var item = item_m[index];
 				editItem = item;
+				//console.log(JSON.stringify(item));
 				if (item) {
 					$("#editItemTitle").val(item.title);
 					$("#editItemHorizon").val(item.horizon);
 					if (item.folder) $("#editItemFolder").val(item.folder.join("/"));
-					if (item.tags) $("#editItemTags").val(item.tags.join(" "));
+					if (item.tag) $("#editItemTags").val(item.tag.join(" "));
 				}
 				else {
 					alert("Invalid index: "+index);

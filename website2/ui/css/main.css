@@ -3,7 +3,13 @@
 	-webkit-box-sizing: border-box;
 	-ms-box-sizing: border-box;
 	box-sizing: border-box;
-	boder: 1px solid red;
+	/*border: 1px solid red !important;*/
+}
+
+@media only screen and (max-width: 300px) {
+	p {
+		background-color: blue;
+	}
 }
 
 .row {
