@@ -24,6 +24,7 @@
 - [x] ui: create button to archive closed and deleted items
 - [ ] start working on Schedule interface
 - [ ] start creating console interface?
+- [ ] check out https://github.com/tastejs/todomvc/tree/gh-pages/examples/react
 - [ ] get css and other resources locally so that website works in train
 - [ ] style the dialog box better, especially the size
 - [ ] expand edit capabilities to include closed, deleted, archive
