@@ -20,21 +20,25 @@ var TaskItem = React.createClass({
 		return {item: {}};
 	},
 	componentDidMount: function() {
+		var state1 = {};
 		if (this.props.item)
-			this.setState({item: this.props.item});
+			state1.item = this.props.item;
+		if (this.props.index)
+			state1.index = this.props.index;
+		this.setState(state1);
 	},
 	render: function() {
 		var item = this.state.item;
 		var folderElem = (!item.folder || this.props['hide-folder']) ? <span/> : <span> /{item.folder.join("/")}: </span>;
 		var horizonElem = (!item.horizon || this.props['hide-horizon'])
 			? <span/>
-			: <span class='field-horizon'> ?{item.horizon} </span>;
+			: <span className='field-horizon'> ?{item.horizon} </span>;
 		var indexElem = (this.state.index)
 			? <span>{this.state.index}</span>
 			: <span/>
 		var checkboxElem = (item.closed)
-			? <input type='checkbox' class='checkbox-closed' checked/>
-			: <input type='checkbox' class='checkbox-closed'/>
+			? <input type='checkbox' className='checkbox-closed' checked/>
+			: <input type='checkbox' className='checkbox-closed'/>
 		var tagElem = (!_.isEmpty(item.tag))
 			? <span> (+{item.tag.join(",+")}) </span>
 			: <span/>;
@@ -56,7 +60,7 @@ var TaskItem = React.createClass({
 
 var TaskList = React.createClass({
 	getInitialState: function() {
-		return {items: []};
+		return {items: [], headers: []};
 	},
 	componentDidMount: function() {
 		var items = [
@@ -64,12 +68,45 @@ var TaskList = React.createClass({
 			{ "folder": ['one', 'two'], horizon: 'month', tag: [], title: 'rocking the casbar' },
 			{ "folder": ['three'], horizon: 'inbox', tag: [], title: 'rock will never die' }
 		];
-		this.setState({items: items});
+		var headers = ["folder"];
+		this.setState({items: items, headers: headers});
 	},
 	render: function() {
 		var itemElems = this.state.items.map(function(item) {
 			return <TaskItem item={item}/>;
 		});
+		var header_l = this.state.headers;
+		var header0 = {};
+		var itemElems = [];
+		var index = 1;
+		var hideFolder = (header_l.indexOf("folder") >= 0);
+		var hideHorizon = (header_l.indexOf("horizon") >= 0);
+		for (var i in this.state.items) {
+			var item = this.state.items[i];
+			for (var j = 0; j < header_l.length; j++) {
+				var fieldName = header_l[j];
+				var fieldValue = item[fieldName];
+				if (fieldName === "folder") {
+					fieldValue = "/"+fieldValue.join("/");
+				}
+				//console.log("j = "+j+", fieldName = "+fieldName+", header[fieldName] = "+header[fieldName]
+				// +", header0[fieldName] = "+header0[fieldName]);
+				if (!_.isEqual(fieldValue, header0[fieldName])) {
+					var className1 = "task-header-"+(j+1);
+					var className2 = "field-"+fieldName;
+					var className = className1+" "+className2;
+					itemElems.push(
+						<li className={className}>
+							<label>{fieldValue}</label>
+						</li>
+					);
+					header0[fieldName] = fieldValue;
+				}
+			}
+			itemElems.push(<TaskItem item={item} index={index} hide-folder={hideFolder} hide-horizon={hideHorizon}/>);
+			index++;
+		}
+
 		return (
 			<ul className="task-list">
 			{itemElems}
