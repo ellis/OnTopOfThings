@@ -1,4 +1,4 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="utf-8">
@@ -7,13 +7,15 @@
 	<script src="bower_components/react/react-with-addons.js"></script>
 	<script src="bower_components/react/JSXTransformer.js"></script>
 	<script src="bower_components/director/build/director.js"></script>
+	<script src="bower_components/underscore/underscore.js"></script>
+	<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <section id="app"></section>
 <div id="test"></div>
 
 <script type="text/jsx">
-var TodoItem = React.createClass({
+var TaskItem = React.createClass({
 	getInitialState: function() {
 		return {item: {}};
 	},
@@ -23,33 +25,68 @@ var TodoItem = React.createClass({
 	},
 	render: function() {
 		var item = this.state.item;
-		var folderElem = (!item.folder || this.props['hide-folder']) ? <span/> : <span>{item.folder.join("/")+": "}</span>;
+		var folderElem = (!item.folder || this.props['hide-folder']) ? <span/> : <span> /{item.folder.join("/")}: </span>;
 		var horizonElem = (!item.horizon || this.props['hide-horizon'])
 			? <span/>
-			: <span class='field-horizon'>?{item.horizon}</span>;
-		var indexElem = (this.state.index) ? <span>{this.state.index}</span> : <span/>
+			: <span class='field-horizon'> ?{item.horizon} </span>;
+		var indexElem = (this.state.index)
+			? <span>{this.state.index}</span>
+			: <span/>
 		var checkboxElem = (item.closed)
 			? <input type='checkbox' class='checkbox-closed' checked/>
 			: <input type='checkbox' class='checkbox-closed'/>
-		var tags = item.tag ? " (" + item.tag.join(",") + ")" : "";
-		var text = item.title+tags;
+		var tagElem = (!_.isEmpty(item.tag))
+			? <span> (+{item.tag.join(",+")}) </span>
+			: <span/>;
 		var itemStyle = (item.deleted) ? {'text-decoration': 'line-through', "color": "#808080"} : {};
 		return (
-			<span style={itemStyle}>
-				{indexElem}
-				{checkboxElem}
-				{folderElem}
-				{horizonElem}
-				{text}
-			</span>
+			<li>
+				<span style={itemStyle}>
+					{indexElem}
+					{checkboxElem}
+					{folderElem}
+					{horizonElem}
+					{item.title}
+					{tagElem}
+				</span>
+			</li>
 		);
 	}
 });
 
-var item0 = { "folder": ['one', 'two'], horizon: 'week', tag: ['mustdo'], title: 'rock around the clock' };
+var TaskList = React.createClass({
+	getInitialState: function() {
+		return {items: []};
+	},
+	componentDidMount: function() {
+		var items = [
+			{ "folder": ['one', 'two'], horizon: 'week', tag: ['mustdo'], title: 'rock around the clock' },
+			{ "folder": ['one', 'two'], horizon: 'month', tag: [], title: 'rocking the casbar' },
+			{ "folder": ['three'], horizon: 'inbox', tag: [], title: 'rock will never die' }
+		];
+		this.setState({items: items});
+	},
+	render: function() {
+		var itemElems = this.state.items.map(function(item) {
+			return <TaskItem item={item}/>;
+		});
+		return (
+			<ul className="task-list">
+			{itemElems}
+			</ul>
+		);
+	}
+});
+
+/*var item0 = { "folder": ['one', 'two'], horizon: 'week', tag: ['mustdo'], title: 'rock around the clock' };
 
 React.render(
-	<TodoItem item={item0}/>,
+	<TaskItem item={item0}/>,
+	document.getElementById("test")
+);
+*/
+React.render(
+	<TaskList/>,
 	document.getElementById("test")
 );
 </script>
