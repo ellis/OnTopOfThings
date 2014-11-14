@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>On Top Of Things</title>
+	<link rel="stylesheet" href="base.css">
+	<script src="bower_components/react/react-with-addons.js"></script>
+	<script src="bower_components/react/JSXTransformer.js"></script>
+	<script src="bower_components/director/build/director.js"></script>
+</head>
+<body>
+<section id="app"></section>
+<div id="test"></div>
+
+<script type="text/jsx">
+var TodoItem = React.createClass({
+	getInitialState: function() {
+		return {item: {}};
+	},
+	componentDidMount: function() {
+		if (this.props.item)
+			this.setState({item: this.props.item});
+	},
+	render: function() {
+		var item = this.state.item;
+		var folderElem = (!item.folder || this.props['hide-folder']) ? <span/> : <span>{item.folder.join("/")+": "}</span>;
+		var horizonElem = (!item.horizon || this.props['hide-horizon'])
+			? <span/>
+			: <span class='field-horizon'>?{item.horizon}</span>;
+		var indexElem = (this.state.index) ? <span>{this.state.index}</span> : <span/>
+		var checkboxElem = (item.closed)
+			? <input type='checkbox' class='checkbox-closed' checked/>
+			: <input type='checkbox' class='checkbox-closed'/>
+		var tags = item.tag ? " (" + item.tag.join(",") + ")" : "";
+		var text = item.title+tags;
+		var itemStyle = (item.deleted) ? {'text-decoration': 'line-through', "color": "#808080"} : {};
+		return (
+			<span style={itemStyle}>
+				{indexElem}
+				{checkboxElem}
+				{folderElem}
+				{horizonElem}
+				{text}
+			</span>
+		);
+	}
+});
+
+var item0 = { "folder": ['one', 'two'], horizon: 'week', tag: ['mustdo'], title: 'rock around the clock' };
+
+React.render(
+	<TodoItem item={item0}/>,
+	document.getElementById("test")
+);
+</script>
+</body>
+</html>
+
