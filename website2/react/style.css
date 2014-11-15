@@ -2,3 +2,16 @@ ul.task-list {
 	list-style: none outside none;
 	background-color: white;
 }
+
+li.task-header-1 { padding-top: 1em; font-size: 120%; font-weight: bold }
+
+li.task span.index { width: 3em; float: left; text-align: right; }
+li.task input { width: 3em; margin: auto 0; }
+
+.field-folder {
+	color: blue;
+}
+.field-horizon {
+	color: #008080;
+}
+

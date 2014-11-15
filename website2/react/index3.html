@@ -67,7 +67,7 @@ var TaskItem = React.createClass({
 			? <span/>
 			: <span className='field-horizon'> ?{item.horizon} </span>;
 		var indexElem = (this.state.index)
-			? <span>{this.state.index}</span>
+			? <span className='index'>{this.state.index}</span>
 			: <span/>
 		var checkboxElem = (item.closed)
 			? <input type='checkbox' className='checkbox-closed' checked/>
@@ -77,7 +77,7 @@ var TaskItem = React.createClass({
 			: <span/>;
 		var itemStyle = (item.deleted) ? {'text-decoration': 'line-through', "color": "#808080"} : {};
 		return (
-			<li key={item.id}>
+			<li className='task' key={item.id}>
 				<span style={itemStyle}>
 					{indexElem}
 					{checkboxElem}
