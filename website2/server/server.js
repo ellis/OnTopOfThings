@@ -24,8 +24,8 @@ function calcHash(str) {
 }
 
 // Serve static files from the ui/ directory
-//app.use(express.static('../ui'));
-app.use(express.static('../react'));
+app.use(express.static('../ui'));
+//app.use(express.static('../react'));
 
 // For parsing application/json body contents
 app.use(bodyParser.json());
