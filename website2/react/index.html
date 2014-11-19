@@ -158,6 +158,51 @@ var TaskListSettings = React.createClass({
 	}
 });
 
+var TaskEditor = React.createClass({
+	handleSubmit: function() {
+		var headers = this.refs.headers.getDOMNode().value.trim();
+		var order = this.refs.order.getDOMNode().value.trim();
+		var header_l = headers.split(",").map(function(s) { return s.trim(); }).filter(function(s) { return s; });
+		var order_l = order.split(",").map(function(s) { return s.trim(); }).filter(function(s) { return s; });
+		this.props.onChanged(header_l, order_l);
+		return false;
+	},
+	render: function() {
+		var item = this.props.item;
+		var folder = (item.folder || []).join("/");
+		var tags = (item.tags || []).join(",");
+		return (
+			<form onSubmit={this.handleSubmit}>
+				<fieldset>
+					<label>Title:</label>
+					<input ref="title" type="text" defaultValue={item.title}/>
+					<br/>
+
+					<label>Folder:</label>
+					<input ref="folder" type="text" defaultValue={folder}/>
+					<br/>
+
+					<label>Horizon:</label>
+					<select ref="horizon">
+						<option value="inbox">inbox</option>
+						<option value="today">today</option>
+						<option value="next">next</option>
+						<option value="week">week</option>
+						<option value="month">month</option>
+						<option value="quarter">quarter</option>
+						<option value="year">year</option>
+					</select>
+					<br/>
+
+					<label>Tags:</label>
+					<input ref="tags" type="text" defaultValue={tags}/>
+					<input type="submit" tabindex="-1" value="Close"/>
+				</fieldset>
+			</form>
+		);
+	}
+});
+
 var App = React.createClass({
 	taskListSettingsChanged: function(headers, order) {
 		console.log("App.taskListSettingsChanged("+headers+", "+order+")");
