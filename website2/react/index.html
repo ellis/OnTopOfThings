@@ -23,24 +23,29 @@ function createComparor(criterion_l) {
 		for (var i = 0; i < criterion_l.length; i++) {
 			var criterion = criterion_l[i];
 			//console.log("criterion: "+criterion);
-			if (criterion == "created") {
-				var n = a.created.localeCompare(b.created);
-				if (n != 0) {
-					return n;
+			if (!a[criterion] && !b[criterion]) {
+				// fields are both null
+			}
+			else if (criterion == "created") {
+				var d = a.created.localeCompare(b.created);
+				if (d != 0) {
+					return d;
 				}
 			}
 			else if (criterion == "folder") {
 				if (!_.isEqual(a.folder, b.folder)) {
-					return (a.folder < b.folder) ? -1 : 1;
+					if (!a.folder) return -1;
+					else if (!b.folder) return 1;
+					else return (a.folder < b.folder) ? -1 : 1;
 				}
 			}
 			else if (criterion == "horizon") {
 				var ia = horizon_l.indexOf(a.horizon);
 				var ib = horizon_l.indexOf(b.horizon);
+				var d = ia - ib;
 				//console.log(a.horizon+"="+ia+", "+b.horizon+"="+ib);
-				if (ia != ib) {
-					return (ia < ib) ? -1 : 1;
-				}
+				if (d != 0)
+					return d;
 			}
 			else {
 				// TODO: check whether field is strings, and if so, compare them
@@ -83,6 +88,17 @@ var TaskItem = React.createClass({
 	}
 });
 
+var TaskItemHeader = React.createClass({
+	render: function() {
+		var headerClass = "task-header-"+this.props.level+" field-"+this.props.fieldName;
+		return (
+			<li className={headerClass}>
+				<label>{this.props.fieldValue}</label>
+			</li>
+		);
+	}
+});
+
 var TaskList = React.createClass({
 	render: function() {
 		console.log("TaskList.render()");
@@ -93,6 +109,7 @@ var TaskList = React.createClass({
 		var index = 1;
 		var hideFolder = (header_l.indexOf("folder") >= 0);
 		var hideHorizon = (header_l.indexOf("horizon") >= 0);
+		var tempIdMap = {};
 		for (var i in this.props.items) {
 			var item = this.props.items[i];
 			for (var j = 0; j < header_l.length; j++) {
@@ -101,17 +118,12 @@ var TaskList = React.createClass({
 				if (fieldName === "folder") {
 					fieldValue = "/"+(fieldValue || []).join("/");
 				}
-				console.log("j = "+j+", fieldName = "+fieldName+", fieldValue = "+fieldValue
-				 +", header0[j] = "+header0[j]);
+				//console.log("j = "+j+", fieldName = "+fieldName+", fieldValue = "+fieldValue
+				// +", header0[j] = "+header0[j]);
 				if (!_.isEqual(fieldValue, header0[j])) {
 					header0[j] = fieldValue;
-					var headerClass = "task-header-"+(j+1)+" field-"+fieldName;
 					var headerKey = _(header0).first(j + 1).join("|");
-					itemElems.push(
-						<li className={headerClass} key={headerKey}>
-							<label>{fieldValue}</label>
-						</li>
-					);
+					itemElems.push(<TaskItemHeader key={headerKey} level={j+1} fieldName={fieldName} fieldValue={fieldValue}/>);
 				}
 			}
 			itemElems.push(<TaskItem key={item.id} item={item} index={index} hide-folder={hideFolder} hide-horizon={hideHorizon}/>);
@@ -129,31 +141,36 @@ var TaskList = React.createClass({
 var TaskListSettings = React.createClass({
 	handleSubmit: function() {
 		var headers = this.refs.headers.getDOMNode().value.trim();
-		var header_l = headers.split(",").map(function(s) { return s.trim() }).filter(function(s) { return s; });
-		this.props.onChanged(header_l);
+		var order = this.refs.order.getDOMNode().value.trim();
+		var header_l = headers.split(",").map(function(s) { return s.trim(); }).filter(function(s) { return s; });
+		var order_l = order.split(",").map(function(s) { return s.trim(); }).filter(function(s) { return s; });
+		this.props.onChanged(header_l, order_l);
+		return false;
 	},
 	render: function() {
-			//<form onSubmit={this.handleSubmit}>
 		return (
-			<div>
-				Headers: <input ref="headers" type="text" defaultValue="folder" onChange={this.handleSubmit}/>
+			<form onSubmit={this.handleSubmit}>
+				Headers: <input ref="headers" type="text" defaultValue="folder"/>
+				Order: <input ref="order" type="text" defaultValue="horizon,created"/>
 				<input type='submit' value='List'/>
-			</div>
+			</form>
 		);
 	}
 });
 
 var App = React.createClass({
-	taskListSettingsChanged: function(headers) {
-		console.log("App.taskListSettingsChanged("+headers+")");
+	taskListSettingsChanged: function(headers, order) {
+		console.log("App.taskListSettingsChanged("+headers+", "+order+")");
 		var items = this.state.items;
-		this.sortItems(items);
-		this.setState({headers: headers, items: items});
+		items = this.sortItems(items, headers, order);
+		this.setState({headers: headers, order: order, items: items});
 	},
-	sortItems: function(items) {
-		var criterion_l = this.state.headers.concat(this.state.order);
+	sortItems: function(items, headers, order) {
+		var criterion_l = headers.concat(order);
 		var comparor = createComparor(criterion_l);
 		items.sort(comparor);
+		//_.each(items, function(item) { console.log(item.folder, item.horizon); });
+		return items;
 	},
 	fetchItemsFromServer: function() {
 		console.log("App.fetchItemsFromServer()");
@@ -166,8 +183,8 @@ var App = React.createClass({
 			url: "/items?wrapper=items"+archived,
 			dataType: 'json',
 			success: function(snapshot) {
-				this.sortItems(snapshot.items);
-				this.setState({items: snapshot.items});
+				var items = this.sortItems(snapshot.items, this.state.headers, this.state.order);
+				this.setState({items: items});
 			}.bind(this),
 			error: function(xhr, status, err) {
 				console.error(status, err.toString());
