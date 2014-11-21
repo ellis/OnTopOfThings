@@ -142,9 +142,10 @@ var TaskListSettings = React.createClass({
 	handleSubmit: function() {
 		var headers = this.refs.headers.getDOMNode().value.trim();
 		var order = this.refs.order.getDOMNode().value.trim();
+		var query = this.refs.query.getDOMNode().value.trim();
 		var header_l = headers.split(",").map(function(s) { return s.trim(); }).filter(function(s) { return s; });
 		var order_l = order.split(",").map(function(s) { return s.trim(); }).filter(function(s) { return s; });
-		this.props.onChanged(header_l, order_l);
+		this.props.onChanged({headers: header_l, order: order_l, query: query});
 		return false;
 	},
 	render: function() {
@@ -152,6 +153,7 @@ var TaskListSettings = React.createClass({
 			<form onSubmit={this.handleSubmit}>
 				Headers: <input ref="headers" type="text" defaultValue="folder"/>
 				Order: <input ref="order" type="text" defaultValue="horizon,created"/>
+				Query: <input ref="query" type="text" defaultValue=""/>
 				<input type='submit' value='List'/>
 			</form>
 		);
@@ -168,7 +170,7 @@ var TaskEditor = React.createClass({
 		return false;
 	},
 	render: function() {
-		var item = this.props.item;
+		var item = this.state.item;
 		var folder = (item.folder || []).join("/");
 		var tags = (item.tags || []).join(",");
 		return (
@@ -183,7 +185,7 @@ var TaskEditor = React.createClass({
 					<br/>
 
 					<label>Horizon:</label>
-					<select ref="horizon">
+					<select ref="horizon" defaultValue="inbox">
 						<option value="inbox">inbox</option>
 						<option value="today">today</option>
 						<option value="next">next</option>
@@ -204,14 +206,45 @@ var TaskEditor = React.createClass({
 });
 
 var App = React.createClass({
-	taskListSettingsChanged: function(headers, order) {
-		console.log("App.taskListSettingsChanged("+headers+", "+order+")");
-		var items = this.state.items;
-		items = this.sortItems(items, headers, order);
-		this.setState({headers: headers, order: order, items: items});
+	getInitialState: function() {
+		console.log("App.getInitialState()");
+		return {
+			itemsCache: [],
+			items: [],
+			settings: {
+				headers: ["folder"],
+				order: ["horizon", "created"],
+				query: ""
+			}
+		};
 	},
-	sortItems: function(items, headers, order) {
-		var criterion_l = headers.concat(order);
+	componentDidMount: function() {
+		console.log("App.componentDidMount()");
+		this.fetchItemsFromServer();
+	},
+	render: function() {
+		console.log("App.render()");
+		return (
+			<div>
+				<TaskListSettings onChanged={this.taskListSettingsChanged}/>
+				<TaskList items={this.state.items} headers={this.state.settings.headers} order={this.state.settings.order}/>
+			</div>
+		);
+	},
+	taskListSettingsChanged: function(settings) {
+		console.log("App.taskListSettingsChanged("+settings+")");
+		var items = this.chooseItems(this.state.itemsCache, settings);
+		this.setState({items: items, settings: settings});
+	},
+	chooseItems: function(itemsCache, settings) {
+		// Filter all the items we have
+		var filter = this.createFilterFromQuery(settings.query);
+		var items = itemsCache.filter(filter);
+		// Sort the chosen items
+		return this.sortItems(items, settings);
+	},
+	sortItems: function(items, settings) {
+		var criterion_l = settings.headers.concat(settings.order);
 		var comparor = createComparor(criterion_l);
 		items.sort(comparor);
 		//_.each(items, function(item) { console.log(item.folder, item.horizon); });
@@ -228,34 +261,64 @@ var App = React.createClass({
 			url: "/items?wrapper=items"+archived,
 			dataType: 'json',
 			success: function(snapshot) {
-				var items = this.sortItems(snapshot.items, this.state.headers, this.state.order);
-				this.setState({items: items});
+				var items = this.chooseItems(snapshot.items, this.state.settings);
+				this.setState({itemsCache: snapshot.items, items: items});
 			}.bind(this),
 			error: function(xhr, status, err) {
 				console.error(status, err.toString());
 			}.bind(this)
 		});
 	},
-	getInitialState: function() {
-		console.log("App.getInitialState()");
-		return {
-			items: [],
-			headers: ["folder"],
-			order: ["horizon", "created"]
-		};
+	createFilterFromQuery: function(query) {
+		var ast = (query) ? JSON.parse(query) : [];
+		var filterFromAst = this.filterFromAst
+		return function(item) {
+			return item.type == "task" && filterFromAst(ast, item);
+		}
 	},
-	componentDidMount: function() {
-		console.log("App.componentDidMount()");
-		this.fetchItemsFromServer();
-	},
-	render: function() {
-		console.log("App.render()");
-		return (
-			<div>
-				<TaskListSettings onChanged={this.taskListSettingsChanged}/>
-				<TaskList items={this.state.items} headers={this.state.headers} order={this.state.order}/>
-			</div>
-		);
+	filterFromAst: function(ast, item) {
+		for (var i in ast) {
+			var elem = ast[i];
+			var op = elem[0];
+
+			if (op === "AND") {
+			}
+			else if (op === "OR") {
+			}
+			// Non-recursive folder query
+			else if (op === "folder=") {
+				var queryValue = elem[1];
+				var itemValue = item.folder.join("/");
+				if (!_.isEqual(itemValue, queryValue))
+					return false;
+			}
+			// Folder query (item is in folder or one of it's children)
+			else if (op === "folder") {
+				var queryValue = elem[1];
+				var itemValue = item.folder.join("/");
+				//console.log("itemValue: "+itemValue+", "+_.isEqual(itemValue, queryValue)+", "+queryValue.startsWith(itemValue + "/"));
+				if (!(_.isEqual(itemValue, queryValue) || itemValue.startsWith(queryValue + "/")))
+					return false;
+			}
+			else {
+				var queryName = elem[1];
+				if (!item.hasOwnProperty(queryName)) return false;
+				var itemValue = item[queryName];
+
+				if (op === "=") {
+					var queryValue = elem[2];
+					if (!_.isEqual(itemValue, queryValue))
+						return false;
+				}
+				// Contains
+				else if (op === "->") {
+					var value = elem[2];
+					if (!(item.hasOwnProperty(queryName) && item[queryName].indexOf(value) >= 0))
+						return false;
+				}
+			}
+		}
+		return true;
 	}
 });
 
