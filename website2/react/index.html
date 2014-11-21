@@ -61,6 +61,9 @@ var TaskItem = React.createClass({
 			editing: false
 		};
 	},
+	shouldComponentUpdate: function (nextProps, nextState) {
+		return !_.isEqual(nextProps, this.pros) || !_.isEqual(nextState, this.state)
+	},
 	render: function() {
 		var item = this.props.item;
 		var folderElem = (!item.folder || this.props['hide-folder']) ? <span/> : <span> /{item.folder.join("/")}: </span>;
@@ -92,14 +95,20 @@ var TaskItem = React.createClass({
 				</div>
 				{
 					(this.state.editing)
-						? <TaskEditor item={item} onTaskChanged={this.props.onTaskChanged}/>
+						? <TaskEditor item={item} onTaskChanged={this.onTaskChanged}/>
 						: null
 				}
 			</li>
 		);
 	},
-	toggleEditor: function() {
+	toggleEditor: function(e) {
+		e.preventDefault();
 		this.setState({editing: !this.state.editing});
+	},
+	onTaskChanged: function(item) {
+		console.log("TaskItem.onTaskChanged()");
+		this.props.onTaskChanged(item);
+		this.setState({editing: false});
 	}
 });
 
@@ -184,6 +193,7 @@ function splitInputValue(ref, pattern) {
 
 var TaskEditor = React.createClass({
 	handleSubmit: function(e) {
+		console.log("TaskEditor.handleSubmit()");
 		//e.stopPropogation();
 		e.preventDefault();
 		var item = this.props.item;
@@ -198,11 +208,12 @@ var TaskEditor = React.createClass({
 		var folder = (item.folder || []).join("/");
 		var tag = (item.tag || []).join(",");
 		return (
-			<form onSubmit={this.handleSubmit}>
+			<form onSubmit={this.handleSubmit} className="container">
 				<fieldset>
-					<label>Title:</label>
-					<input ref="title" type="text" defaultValue={item.title}/>
-					<br/>
+					<div className="row">
+						<div className="col-md-2"><label>Title:</label></div>
+						<div className="col-md-6"><input ref="title" type="text" defaultValue={item.title}/></div>
+					</div>
 
 					<label>Folder:</label>
 					<input ref="folder" type="text" defaultValue={folder}/>
@@ -222,7 +233,7 @@ var TaskEditor = React.createClass({
 
 					<label>Tags:</label>
 					<input ref="tag" type="text" defaultValue={tag}/>
-					<input type="submit" value="Close"/>
+					<input type="submit" value="Save"/>
 				</fieldset>
 			</form>
 		);
@@ -345,9 +356,14 @@ var App = React.createClass({
 		}
 		return true;
 	},
-	onTaskChanged: function(task, callback) {
-		console.log("onTaskChanged()");
-		console.log(JSON.stringify(task));
+	onTaskChanged: function(item) {
+		console.log("App.onTaskChanged()");
+		console.log(JSON.stringify(item));
+		var itemsCache = _.map(this.state.itemsCache, function(item0) {
+			return (item0.id === item.id) ? item : item0;
+		});
+		var items = this.chooseItems(itemsCache, this.state.settings);
+		this.setState({itemsCache: itemsCache, items: items});
 	}
 });
 
