@@ -56,6 +56,11 @@ function createComparor(criterion_l) {
 }
 
 var TaskItem = React.createClass({
+	getInitialState: function() {
+		return {
+			editing: false
+		};
+	},
 	render: function() {
 		var item = this.props.item;
 		var folderElem = (!item.folder || this.props['hide-folder']) ? <span/> : <span> /{item.folder.join("/")}: </span>;
@@ -75,16 +80,26 @@ var TaskItem = React.createClass({
 		var itemStyle = (item.deleted) ? {'textDecoration': 'line-through', "color": "#808080"} : {};
 		return (
 			<li className='task'>
-				<span style={itemStyle}>
-					{indexElem}
-					{checkboxElem}
-					{folderElem}
-					{horizonElem}
-					{item.title}
-					{tagElem}
-				</span>
+				<div>
+					<span style={itemStyle} onDoubleClick={this.toggleEditor}>
+						{indexElem}
+						{checkboxElem}
+						{folderElem}
+						{horizonElem}
+						{item.title}
+						{tagElem}
+					</span>
+				</div>
+				{
+					(this.state.editing)
+						? <TaskEditor item={item} onTaskChanged={this.props.onTaskChanged}/>
+						: null
+				}
 			</li>
 		);
+	},
+	toggleEditor: function() {
+		this.setState({editing: !this.state.editing});
 	}
 });
 
@@ -126,7 +141,10 @@ var TaskList = React.createClass({
 					itemElems.push(<TaskItemHeader key={headerKey} level={j+1} fieldName={fieldName} fieldValue={fieldValue}/>);
 				}
 			}
-			itemElems.push(<TaskItem key={item.id} item={item} index={index} hide-folder={hideFolder} hide-horizon={hideHorizon}/>);
+			itemElems.push(
+				<TaskItem key={item.id} item={item} index={index}
+					hide-folder={hideFolder} hide-horizon={hideHorizon}
+					onTaskChanged={this.props.onTaskChanged}/>);
 			index++;
 		}
 
@@ -160,19 +178,25 @@ var TaskListSettings = React.createClass({
 	}
 });
 
+function splitInputValue(ref, pattern) {
+	return ref.getDOMNode().value.trim().split(pattern).map(function(s) { return s.trim(); }).filter(function(s) { return s; });
+}
+
 var TaskEditor = React.createClass({
-	handleSubmit: function() {
-		var headers = this.refs.headers.getDOMNode().value.trim();
-		var order = this.refs.order.getDOMNode().value.trim();
-		var header_l = headers.split(",").map(function(s) { return s.trim(); }).filter(function(s) { return s; });
-		var order_l = order.split(",").map(function(s) { return s.trim(); }).filter(function(s) { return s; });
-		this.props.onChanged(header_l, order_l);
-		return false;
+	handleSubmit: function(e) {
+		//e.stopPropogation();
+		e.preventDefault();
+		var item = this.props.item;
+		item.title = this.refs.title.getDOMNode().value.trim();
+		item.folder = splitInputValue(this.refs.folder, "/");
+		item.horizon = this.refs.horizon.getDOMNode().value.trim();
+		item.tag = splitInputValue(this.refs.tag, ",");
+		this.props.onTaskChanged(item);
 	},
 	render: function() {
-		var item = this.state.item;
+		var item = this.props.item;
 		var folder = (item.folder || []).join("/");
-		var tags = (item.tags || []).join(",");
+		var tag = (item.tag || []).join(",");
 		return (
 			<form onSubmit={this.handleSubmit}>
 				<fieldset>
@@ -185,7 +209,7 @@ var TaskEditor = React.createClass({
 					<br/>
 
 					<label>Horizon:</label>
-					<select ref="horizon" defaultValue="inbox">
+					<select ref="horizon" defaultValue={item.horizon}>
 						<option value="inbox">inbox</option>
 						<option value="today">today</option>
 						<option value="next">next</option>
@@ -197,8 +221,8 @@ var TaskEditor = React.createClass({
 					<br/>
 
 					<label>Tags:</label>
-					<input ref="tags" type="text" defaultValue={tags}/>
-					<input type="submit" tabindex="-1" value="Close"/>
+					<input ref="tag" type="text" defaultValue={tag}/>
+					<input type="submit" value="Close"/>
 				</fieldset>
 			</form>
 		);
@@ -227,7 +251,8 @@ var App = React.createClass({
 		return (
 			<div>
 				<TaskListSettings onChanged={this.taskListSettingsChanged}/>
-				<TaskList items={this.state.items} headers={this.state.settings.headers} order={this.state.settings.order}/>
+				<TaskList items={this.state.items} headers={this.state.settings.headers} order={this.state.settings.order}
+					onTaskChanged={this.onTaskChanged}/>
 			</div>
 		);
 	},
@@ -319,6 +344,10 @@ var App = React.createClass({
 			}
 		}
 		return true;
+	},
+	onTaskChanged: function(task, callback) {
+		console.log("onTaskChanged()");
+		console.log(JSON.stringify(task));
 	}
 });
 
