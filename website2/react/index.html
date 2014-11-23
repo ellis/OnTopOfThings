@@ -3,19 +3,21 @@
 <head>
 	<meta charset="utf-8">
 	<title>On Top Of Things</title>
-	<link rel="stylesheet" href="base.css">
+	<link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
+	<link rel="stylesheet" href="main.css">
 	<script src="bower_components/jquery/dist/jquery.js"></script>
 	<script src="bower_components/react/react-with-addons.js"></script>
 	<script src="bower_components/react/JSXTransformer.js"></script>
 	<script src="bower_components/director/build/director.js"></script>
 	<script src="bower_components/underscore/underscore.js"></script>
-	<link rel="stylesheet" href="style.css">
+	<script src="bower_components/bootstrap/dist/js/bootstrap.js"></script>
 </head>
 <body>
-<section id="app"></section>
+<section id="app" class="container"></section>
 
 <script type="text/jsx">
 var horizon_l = ["new", "today", "next", "week", "month", "quarter", "year"];
+var ENTER_KEY = 13;
 
 function createComparor(criterion_l) {
 	return function(a, b) {
@@ -55,6 +57,105 @@ function createComparor(criterion_l) {
 	}
 }
 
+var TaskCreator = React.createClass({
+	getInitialState: function() {
+		return {
+			showDetails: false
+		};
+	},
+	render: function() {
+		// TODO: when showDetails is true, display a detailed entry form
+		if (this.state.showDetails || !this.state.showDetails) {
+			return (
+				<div className="row">
+					<form onSubmit={this.handleSubmit} className="form-horizontal">
+						<div className="form-group">
+							<div className="col-xs-11">
+								<input
+									ref="allInOne"
+									type="text"
+									className="form-control"
+									placeholder="What needs to be done?"
+									onKeyDown={this.handleAllInOneKeyDown}
+									autoFocus={true}
+								/>
+							</div>
+							<div className="col-xs-1">
+								<button type="submit" className="btn btn-primary">Details</button>
+							</div>
+						</div>
+					</form>
+				</div>
+			);
+		}
+	},
+	handleAllInOneKeyDown: function (event) {
+		if (event.which !== ENTER_KEY) {
+			return;
+		}
+
+		event.preventDefault();
+
+		var text = this.refs.allInOne.getDOMNode().value.trim();
+
+		if (text) {
+			var word_l = text.split(" ");
+
+			// Find folder word
+			var folderWord = word_l.find(function(s) { return s.startsWith("/") && s.length > 1; });
+			var folder = null;
+			if (folderWord) {
+				folder = folderWord.split("/").filter(function(s) { return s; });
+				// Remove folder word from word list
+				var folderWord_i = _.indexOf(word_l, folderWord);
+				console.log("A:", folderWord, folder, folderWord_i);
+				if (folderWord_i >= 0) {
+					word_l.splice(folderWord_i, 1);
+				}
+			}
+			
+			// Find horizon
+			var horizon2_l = horizon_l.map(function(s) { return "?"+s });
+			var horizonWord = _.find(word_l, function(s) {
+				return _.indexOf(horizon2_l, s) >= 0;
+			});
+			var horizon = "inbox";
+			if (horizonWord) {
+				horizon = horizonWord.substring(1);
+				// Remove horizon word from word list
+				var horizonWord_i = _.indexOf(word_l, horizonWord);
+				if (horizonWord_i >= 0) {
+					word_l.splice(horizonWord_i, 1);
+				}
+			}
+
+			// Find tags
+			var tagWord_l = word_l.filter(function(s) { return s.startsWith("+") && s.length > 1; });
+			var tag_l = tagWord_l.map(function(s) { return s.substring(1); });
+			// Remove tag words from word list
+			word_l = _.difference(word_l, tagWord_l);
+
+			// Join words together again to create title
+			var title = word_l.join(" ");
+			// TODO: raise an error if there's not title
+			if (title) {
+				var item = {
+					type: "task",
+					title: title
+				};
+
+				if (!_.isEmpty(folder)) item.folder = folder;
+				if (horizon) item.horizon = horizon;
+				if (!_.isEmpty(tag_l)) item.tag = tag_l;
+
+				this.props.onTaskNew(item);
+
+				this.refs.allInOne.getDOMNode().value = '';
+			}
+		}
+	}
+});
+
 var TaskItem = React.createClass({
 	getInitialState: function() {
 		return {
@@ -73,9 +174,7 @@ var TaskItem = React.createClass({
 		var indexElem = (this.props.index)
 			? <span className='index'>{this.props.index}</span>
 			: <span/>
-		var checkboxElem = (item.closed)
-			? <input type='checkbox' className='checkbox-closed' checked/>
-			: <input type='checkbox' className='checkbox-closed'/>
+		var checkboxElem = <input type='checkbox' className='checkbox-closed' checked={(item.closed) ? true : false}/>
 		var tag_l = (item.tag || []).map(function(tag) { return <span className={'tag tag-'+tag}>+{tag}</span> });
 		var tagElem = (!_.isEmpty(tag_l))
 			? <span className='tags'> ({tag_l}) </span>
@@ -158,9 +257,13 @@ var TaskList = React.createClass({
 		}
 
 		return (
-			<ul className="task-list">
-			{itemElems}
-			</ul>
+			<div className="row">
+				<div className="col-md-12">
+					<ul className="task-list">
+					{itemElems}
+					</ul>
+				</div>
+			</div>
 		);
 	}
 });
@@ -177,12 +280,16 @@ var TaskListSettings = React.createClass({
 	},
 	render: function() {
 		return (
-			<form onSubmit={this.handleSubmit}>
-				Headers: <input ref="headers" type="text" defaultValue="folder"/>
-				Order: <input ref="order" type="text" defaultValue="horizon,created"/>
-				Query: <input ref="query" type="text" defaultValue=""/>
-				<input type='submit' value='List'/>
-			</form>
+			<div className="row">
+				<div className="col-md-12">
+					<form onSubmit={this.handleSubmit}>
+						Headers: <input ref="headers" type="text" defaultValue="folder"/>
+						Order: <input ref="order" type="text" defaultValue="horizon,created"/>
+						Query: <input ref="query" type="text" defaultValue=""/>
+						<input type='submit' value='List'/>
+					</form>
+				</div>
+			</div>
 		);
 	}
 });
@@ -196,7 +303,7 @@ var TaskEditor = React.createClass({
 		console.log("TaskEditor.handleSubmit()");
 		//e.stopPropogation();
 		e.preventDefault();
-		var item = this.props.item;
+		var item = _.clone(this.props.item);
 		item.title = this.refs.title.getDOMNode().value.trim();
 		item.folder = splitInputValue(this.refs.folder, "/");
 		item.horizon = this.refs.horizon.getDOMNode().value.trim();
@@ -208,33 +315,48 @@ var TaskEditor = React.createClass({
 		var folder = (item.folder || []).join("/");
 		var tag = (item.tag || []).join(",");
 		return (
-			<form onSubmit={this.handleSubmit} className="container">
-				<fieldset>
-					<div className="row">
-						<div className="col-md-2"><label>Title:</label></div>
-						<div className="col-md-6"><input ref="title" type="text" defaultValue={item.title}/></div>
+			<form onSubmit={this.handleSubmit} className="form-horizontal">
+				<div className="form-group">
+					<label className="control-label col-xs-2">Title:</label>
+					<div className="col-xs-10">
+						<input ref="title" type="text" className="form-control" defaultValue={item.title}/>
 					</div>
+				</div>
 
-					<label>Folder:</label>
-					<input ref="folder" type="text" defaultValue={folder}/>
-					<br/>
+				<div className="form-group">
+					<label className="control-label col-xs-2">Folder:</label>
+					<div className="col-xs-10">
+						<input ref="folder" type="text" className="form-control" defaultValue={folder}/>
+					</div>
+				</div>
 
-					<label>Horizon:</label>
-					<select ref="horizon" defaultValue={item.horizon}>
-						<option value="inbox">inbox</option>
-						<option value="today">today</option>
-						<option value="next">next</option>
-						<option value="week">week</option>
-						<option value="month">month</option>
-						<option value="quarter">quarter</option>
-						<option value="year">year</option>
-					</select>
-					<br/>
+				<div className="form-group">
+					<label className="control-label col-xs-2">Horizon:</label>
+					<div className="col-xs-10">
+						<select ref="horizon" className="form-control" defaultValue={item.horizon}>
+							<option value="inbox">inbox</option>
+							<option value="today">today</option>
+							<option value="next">next</option>
+							<option value="week">week</option>
+							<option value="month">month</option>
+							<option value="quarter">quarter</option>
+							<option value="year">year</option>
+						</select>
+					</div>
+				</div>
 
-					<label>Tags:</label>
-					<input ref="tag" type="text" defaultValue={tag}/>
-					<input type="submit" value="Save"/>
-				</fieldset>
+				<div className="form-group">
+					<label className="control-label col-xs-2">Tags:</label>
+					<div className="col-xs-10">
+						<input ref="tag" type="text" className="form-control" defaultValue={tag}/>
+					</div>
+				</div>
+
+				<div className="form-group">
+					<div className="col-xs-offset-2 col-xs-10">
+						<button type="submit" className="btn btn-primary">Save</button>
+					</div>
+				</div>
 			</form>
 		);
 	}
@@ -261,6 +383,7 @@ var App = React.createClass({
 		console.log("App.render()");
 		return (
 			<div>
+				<TaskCreator onTaskNew={this.onTaskNew}/>
 				<TaskListSettings onChanged={this.taskListSettingsChanged}/>
 				<TaskList items={this.state.items} headers={this.state.settings.headers} order={this.state.settings.order}
 					onTaskChanged={this.onTaskChanged}/>
@@ -356,14 +479,82 @@ var App = React.createClass({
 		}
 		return true;
 	},
+	onTaskNew: function(item) {
+		console.log("App.onTaskNew()");
+		console.log(JSON.stringify(item));
+		$.ajax({
+			type: "PUT",
+			url: "/items",
+			data: JSON.stringify(item),
+			contentType: "application/json; charset=utf-8",
+			dataType: "json",
+			success: function(data) {
+				alert(JSON.stringify(data));
+			},
+			failure: function(errMsg) {
+				alert(errMsg);
+			}
+		});
+	},
 	onTaskChanged: function(item) {
 		console.log("App.onTaskChanged()");
 		console.log(JSON.stringify(item));
-		var itemsCache = _.map(this.state.itemsCache, function(item0) {
-			return (item0.id === item.id) ? item : item0;
+		var item0 = null;
+		var itemsCache = _.map(this.state.itemsCache, function(item1) {
+			if (item1.id === item.id) {
+				item0 = item1;
+				console.log("item0: "+JSON.stringify(item0));
+				return item;
+			}
+			else {
+				return item1;
+			}
 		});
+		console.log("item0 B: "+JSON.stringify(item0));
 		var items = this.chooseItems(itemsCache, this.state.settings);
+		console.log("item0 C: "+JSON.stringify(item0));
+		this.sendTaskPatch(item0, item);
 		this.setState({itemsCache: itemsCache, items: items});
+	},
+	sendTaskPatch: function(item0, item) {
+		var diffs = [];
+
+		console.log("sendTaskPatch");
+		console.log(JSON.stringify(item0));
+		console.log(JSON.stringify(item));
+		function step(fieldName) {
+			console.log(fieldName, item0[fieldName], item[fieldName], _.isEqual(item[fieldName], item0[fieldName]))
+			if (!_.isEqual(item[fieldName], item0[fieldName])) {
+				diffs.push(["=", fieldName, item[fieldName]]);
+			}
+		}
+
+		step("title");
+		step("folder");
+		step("horizon");
+		step("tag");
+		
+		if (!_.isEmpty(diffs)) {
+			var data = { diffs: diffs };
+			$.ajax({
+				type: "POST",
+				url: "/items/"+item0.id,
+				data: JSON.stringify(data),
+				contentType: "application/json; charset=utf-8",
+				dataType: "json",
+				success: function(data) {
+					alert(JSON.stringify(data));
+					if (data.result === "OK" && data.item) {
+						console.log("OK");
+						//item_m[index] = data.item;
+						//updateItemAtIndex(index);
+					}
+				},
+				failure: function(errMsg) {
+					alert(errMsg);
+				}
+			});
+		}
 	}
 });
 
