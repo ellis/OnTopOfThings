@@ -1,5 +1,5 @@
 - [x] save edits to server
-- [ ] create new item
+- [x] create new item
 - [ ] close items
 - [ ] delete items
 - [ ] turn itemsCached into a map from id to item

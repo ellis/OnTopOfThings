@@ -482,6 +482,7 @@ var App = React.createClass({
 	onTaskNew: function(item) {
 		console.log("App.onTaskNew()");
 		console.log(JSON.stringify(item));
+		// TODO: display a "busy" icon
 		$.ajax({
 			type: "PUT",
 			url: "/items",
@@ -489,8 +490,16 @@ var App = React.createClass({
 			contentType: "application/json; charset=utf-8",
 			dataType: "json",
 			success: function(data) {
-				alert(JSON.stringify(data));
-			},
+				console.log("received new item from server:")
+				console.log(JSON.stringify(data));
+				// Add new item to cache
+				var itemsCache = this.state.itemsCache;
+				itemsCache.push(data.item);
+				// Get display items
+				var items = this.chooseItems(itemsCache, this.state.settings);
+				// Update state
+				this.setState({itemsCache: itemsCache, items: items});
+			}.bind(this),
 			failure: function(errMsg) {
 				alert(errMsg);
 			}
