@@ -269,23 +269,25 @@ var TaskList = React.createClass({
 });
 
 var TaskListSettings = React.createClass({
-	handleSubmit: function() {
+	handleSubmit: function(e) {
+		e.preventDefault();
 		var headers = this.refs.headers.getDOMNode().value.trim();
 		var order = this.refs.order.getDOMNode().value.trim();
 		var query = this.refs.query.getDOMNode().value.trim();
 		var header_l = headers.split(",").map(function(s) { return s.trim(); }).filter(function(s) { return s; });
 		var order_l = order.split(",").map(function(s) { return s.trim(); }).filter(function(s) { return s; });
-		this.props.onChanged({headers: header_l, order: order_l, query: query});
-		return false;
+		order_l = _.difference(order_l, header_l);
+		//this.props.onChanged({headers: header_l, order: order_l, query: query});
+		location.hash = "#/tasks/list/_/"+header_l.join(",")+"/"+order_l.join(",")+((query) ? "/"+query : "");
 	},
 	render: function() {
 		return (
 			<div className="row">
 				<div className="col-md-12">
 					<form onSubmit={this.handleSubmit}>
-						Headers: <input ref="headers" type="text" defaultValue="folder"/>
-						Order: <input ref="order" type="text" defaultValue="horizon,created"/>
-						Query: <input ref="query" type="text" defaultValue=""/>
+						Headers: <input ref="headers" type="text" defaultValue={this.props.settings.headers.join(',')}/>
+						Order: <input ref="order" type="text" defaultValue={this.props.settings.order.join(',')}/>
+						Query: <input ref="query" type="text" defaultValue={this.props.settings.query}/>
 						<input type='submit' value='List'/>
 					</form>
 				</div>
@@ -377,14 +379,69 @@ var App = React.createClass({
 	},
 	componentDidMount: function() {
 		console.log("App.componentDidMount()");
+
 		this.fetchItemsFromServer();
+
+		var setState = this.setState;
+		var router = Router({
+			'/': setState.bind(this, {
+				settings: {
+					headers: ["folder"],
+					order: ["horizon", "created"],
+					query: ""
+				}
+			}),
+			'/test2': {
+				//'/([^/]*)': {
+				'/([\\w,]+)/([\\w,]+)': {
+					on: function(a, b) {
+						console.log("Route /test2/:a/:b "+a+"|"+b);
+					}
+				}
+			},
+			'/test': function() {
+				console.log("Route /test");
+			},
+			'/test/list': function() {
+				console.log("Route /test/list");
+			},
+			'/test/list/:root': function(root) {
+				console.log("Route /test/list/:root", root);
+			},
+			'/test/list/:root/': function(root) {
+				console.log("Route /test/list/:root/", root);
+			},
+			'/tasks/list/:root/([\\w,]+)/([\\w,]+)': function(root0, headers0, order0) {
+				console.log("Route /tasks/list/:root/:headers/:order", root0, headers0, order0);
+				var root = [];
+				var settings = {
+					headers: headers0.split(","),
+					order: order0.split(","),
+					query: ""
+				};
+				console.log("A: "+JSON.stringify(settings));
+				this.taskListSettingsChanged(settings);
+			}.bind(this),
+			'/tasks/list/:root/([\\w,]+)/([\\w,]+)/(.+)': function(root0, headers0, order0, query0) {
+				console.log("Route /tasks/list/:root/:headers/:order/:query", root0, headers0, order0, query0);
+				var root = [];
+				var settings = {
+					headers: headers0.split(","),
+					order: order0.split(","),
+					query: query0
+				};
+				console.log("B: "+JSON.stringify(settings));
+				this.taskListSettingsChanged(settings);
+			}.bind(this)
+		});
+		router.init('/');
 	},
 	render: function() {
 		console.log("App.render()");
 		return (
 			<div>
 				<TaskCreator onTaskNew={this.onTaskNew}/>
-				<TaskListSettings onChanged={this.taskListSettingsChanged}/>
+				<TaskListSettings settings={this.state.settings} onChanged={this.taskListSettingsChanged}/>
 				<TaskList items={this.state.items} headers={this.state.settings.headers} order={this.state.settings.order}
 					onTaskChanged={this.onTaskChanged}/>
 			</div>
@@ -392,6 +449,7 @@ var App = React.createClass({
 	},
 	taskListSettingsChanged: function(settings) {
 		console.log("App.taskListSettingsChanged("+settings+")");
+		settings.order = _.difference(settings.order, settings.headers);
 		var items = this.chooseItems(this.state.itemsCache, settings);
 		this.setState({items: items, settings: settings});
 	},

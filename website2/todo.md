@@ -1,9 +1,10 @@
 - [x] save edits to server
 - [x] create new item
+- [x] try using 'director' for selecting page, ordering, and filters
 - [ ] close items
 - [ ] delete items
 - [ ] turn itemsCached into a map from id to item
-- [ ] try using 'director' for selecting page, ordering, and filters
+- [ ] improve TaskListSettings so that it updates based on the current route
 - [ ] start working on Schedule interface
 - [ ] allow for inline editing of task elements (i.e., double-click on title opens a title input box)
 - [ ] nicer task editor styling
@@ -18,7 +19,7 @@
 - [ ] in close dialog, parse input to allow for number ranges such as "1-5"
 - [ ] update displayed item after edit, but how to handle changes that impact the headers and filter?
 
-Daily schedule setup:
+# Daily schedule setup:
 
 Consists of a tree of "entries".
 Each entry is either a section name or reference to an item.
@@ -39,3 +40,9 @@ schedule: {
 [".", "nodes", "key", "91823450", "=", "text", "@Home"]
 [".", "nodes", "put", "91823450", {type: ..}]
 
+# Urls
+
+/schedule
+/tasks
+/tasks/list/:listname
+/tasks/list/:root/:headers/:order/:query
