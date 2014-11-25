@@ -1,7 +1,7 @@
 - [x] save edits to server
 - [x] create new item
 - [x] try using 'director' for selecting page, ordering, and filters
-- [ ] close items
+- [x] close items
 - [ ] delete items
 - [ ] turn itemsCached into a map from id to item
 - [ ] improve TaskListSettings so that it updates based on the current route
