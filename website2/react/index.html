@@ -296,6 +296,8 @@ var TaskListSettings = React.createClass({
 		location.hash = "#/tasks/list/_/"+header_l.join(",")+"/"+order_l.join(",")+((query) ? "/"+query : "");
 	},
 	render: function() {
+		console.log("TaskListSettings.render()");
+		console.log(JSON.stringify(this.props.settings));
 		return (
 			<div className="row">
 				<div className="col-md-12">
