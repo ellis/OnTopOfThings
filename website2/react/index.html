@@ -333,6 +333,8 @@ var TaskEditor = React.createClass({
 		var item = this.props.item;
 		var folder = (item.folder || []).join("/");
 		var tag = (item.tag || []).join(",");
+		var status = (item.closed) ? "closed" : (item.deleted) ? "deleted" : "open";
+		var archiveDisabled = (status === "open");
 		return (
 			<form onSubmit={this.handleSubmit} className="form-horizontal">
 				<div className="form-group">
@@ -344,14 +346,11 @@ var TaskEditor = React.createClass({
 
 				<div className="form-group">
 					<label className="control-label col-xs-2">Folder:</label>
-					<div className="col-xs-10">
+					<div className="col-xs-2">
 						<input ref="folder" type="text" className="form-control" defaultValue={folder}/>
 					</div>
-				</div>
-
-				<div className="form-group">
-					<label className="control-label col-xs-2">Horizon:</label>
-					<div className="col-xs-10">
+					<label className="control-label col-xs-1">Horizon:</label>
+					<div className="col-xs-2">
 						<select ref="horizon" className="form-control" defaultValue={item.horizon}>
 							<option value="inbox">inbox</option>
 							<option value="today">today</option>
@@ -362,12 +361,23 @@ var TaskEditor = React.createClass({
 							<option value="year">year</option>
 						</select>
 					</div>
+					<label className="control-label col-xs-1">Tags:</label>
+					<div className="col-xs-4">
+						<input ref="tag" type="text" className="form-control" defaultValue={tag}/>
+					</div>
 				</div>
 
 				<div className="form-group">
-					<label className="control-label col-xs-2">Tags:</label>
-					<div className="col-xs-10">
-						<input ref="tag" type="text" className="form-control" defaultValue={tag}/>
+					<label className="control-label col-xs-2">Status:</label>
+					<div className="col-xs-2">
+						<select ref="status" className="form-control" defaultValue={status}>
+							<option value="open">open</option>
+							<option value="closed">closed</option>
+							<option value="deleted">deleted</option>
+						</select>
+					</div>
+					<div className="col-xs-2">
+						<label><input ref="archived" type="checkbox" className="form-control" defaultValue={item.archived} disabled={archiveDisabled}/>Archived</label>
 					</div>
 				</div>
 

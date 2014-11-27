@@ -1,18 +1,23 @@
 - [x] save edits to server
 - [x] create new item
 - [x] try using 'director' for selecting page, ordering, and filters
+- [x] improve TaskListSettings so that it updates based on the current route
+- [x] turn itemsCached into a map from id to item
 - [x] close items
+- [ ] TaskEditor: expand edit capabilities to include closed, deleted, archive
+- [ ] TaskEditor: fix label for archived textbox
+- [ ] TaskEditor: fix enabled status on archived textbox, so that it gets enabled when user selected 'closed'
+- [ ] TaskEditor: handle 'closed' and 'deleted' fields on item send back up to App
+- [ ] TaskEditor: handle status and archived
+- [ ] TaskEditor: folder: make it auto-complete
+- [ ] TaskEditor: more compact styling
 - [ ] delete items
-- [ ] turn itemsCached into a map from id to item
-- [ ] improve TaskListSettings so that it updates based on the current route
+- [ ] archive items
+- [ ] TaskListSettings: why doesn't 'query' get updates?
 - [ ] start working on Schedule interface
 - [ ] allow for inline editing of task elements (i.e., double-click on title opens a title input box)
-- [ ] nicer task editor styling
 - [ ] start creating console interface?
 - [ ] check out https://github.com/tastejs/todomvc/tree/gh-pages/examples/react
-- [ ] get css and other resources locally so that website works in train
-- [ ] style the dialog box better, especially the size
-- [ ] expand edit capabilities to include closed, deleted, archive
 - [ ] figure out why Escape doesn't close the dialog
 - [ ] when closed checkbox is clicked, request to close item
 - [ ] let user uncheck closed button on an item
