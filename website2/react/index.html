@@ -58,39 +58,24 @@ function createComparor(criterion_l) {
 	}
 }
 
-var TaskCreator = React.createClass({
-	getInitialState: function() {
-		return {
-			showDetails: false
-		};
-	},
+var TaskCreatorInput = React.createClass({
 	render: function() {
-		// TODO: when showDetails is true, display a detailed entry form
-		if (this.state.showDetails || !this.state.showDetails) {
-			return (
-				<div className="row">
+		return (
+			<form onSubmit={this.handleSubmit} className="form-horizontal">
+				<div className="form-group">
 					<div className="col-xs-12">
-						<form onSubmit={this.handleSubmit} className="form-horizontal">
-							<div className="form-group">
-								<div className="col-xs-11">
-									<input
-										ref="allInOne"
-										type="text"
-										className="form-control"
-										placeholder="What needs to be done?"
-										onKeyDown={this.handleAllInOneKeyDown}
-										autoFocus={true}
-									/>
-								</div>
-								<div className="col-xs-1">
-									<button type="submit" className="btn btn-primary">Details</button>
-								</div>
-							</div>
-						</form>
+						<input
+							ref="allInOne"
+							type="text"
+							className="form-control"
+							placeholder="What needs to be done?"
+							onKeyDown={this.handleAllInOneKeyDown}
+							autoFocus={true}
+						/>
 					</div>
 				</div>
-			);
-		}
+			</form>
+		);
 	},
 	handleAllInOneKeyDown: function (event) {
 		if (event.which !== ENTER_KEY) {
@@ -155,6 +140,85 @@ var TaskCreator = React.createClass({
 
 				this.refs.allInOne.getDOMNode().value = '';
 			}
+		}
+	}
+});
+
+var TaskSearchInput = React.createClass({
+	render: function() {
+		return (
+			<form onSubmit={this.handleSubmit} className="form-horizontal">
+				<div className="form-group">
+					<div className="col-xs-12">
+						<input
+							ref="allInOne"
+							type="text"
+							className="form-control"
+							placeholder="Search?"
+							onKeyDown={this.handleAllInOneKeyDown}
+						/>
+					</div>
+				</div>
+			</form>
+		);
+	},
+	handleAllInOneKeyDown: function (event) {
+		if (event.which !== ENTER_KEY) {
+			return;
+		}
+
+		event.preventDefault();
+
+		var text = this.refs.allInOne.getDOMNode().value.trim();
+
+		if (text) {
+			var word_l = text.split(" ");
+
+			// Find folder word
+			var folderWord = word_l.find(function(s) { return s.startsWith("/") && s.length > 1; });
+			var folder = null;
+			if (folderWord) {
+				folder = _.compact(folderWord.split("/"));
+				// Remove folder word from word list
+				var folderWord_i = _.indexOf(word_l, folderWord);
+				//console.log("A:", folderWord, folder, folderWord_i);
+				if (folderWord_i >= 0) {
+					word_l.splice(folderWord_i, 1);
+				}
+			}
+			
+			// Find horizon
+			var horizon2_l = horizon_l.map(function(s) { return "?"+s });
+			var horizonWord = _.find(word_l, function(s) {
+				return _.indexOf(horizon2_l, s) >= 0;
+			});
+			var horizon = null;
+			if (horizonWord) {
+				horizon = horizonWord.substring(1);
+				// Remove horizon word from word list
+				var horizonWord_i = _.indexOf(word_l, horizonWord);
+				if (horizonWord_i >= 0) {
+					word_l.splice(horizonWord_i, 1);
+				}
+			}
+
+			// Find tags
+			var tagWord_l = word_l.filter(function(s) { return s.startsWith("+") && s.length > 1; });
+			var tag_l = tagWord_l.map(function(s) { return s.substring(1); });
+			// Remove tag words from word list
+			word_l = _.difference(word_l, tagWord_l);
+
+			// Join words together again to create title
+			var title = word_l.join(" ");
+
+			var item = {};
+			if (title) item.title = title;
+			if (!_.isEmpty(folder)) item.folder = folder;
+			if (horizon) item.horizon = horizon;
+			if (!_.isEmpty(tag_l)) item.tag = tag_l;
+
+			if (!_.isEmpty(item))
+				this.props.onSearch(item);
 		}
 	}
 });
@@ -301,16 +365,32 @@ var TaskListSettings = React.createClass({
 		console.log("TaskListSettings.render()");
 		console.log(JSON.stringify(this.props.settings));
 		return (
-			<div className="row">
-				<div className="col-md-12">
-					<form onSubmit={this.handleSubmit}>
-						Headers: <input ref="headers" type="text" defaultValue={this.props.settings.headers.join(',')}/>
-						Order: <input ref="order" type="text" defaultValue={this.props.settings.order.join(',')}/>
-						Query: <input ref="query" type="text" defaultValue={this.props.settings.query}/>
-						<input type='submit' value='List'/>
-					</form>
+			<form onSubmit={this.handleSubmit} className="form-horizontal">
+				<div className="form-group">
+					<label className="control-label col-xs-1">Search:</label>
+					<div className="col-xs-2">
+						<input ref="search" type="text" className="form-control" defaultValue={this.props.settings.search}/>
+					</div>
+					<label className="control-label col-xs-1">Headers:</label>
+					<div className="col-xs-2">
+						<input ref="headers" type="text" className="form-control" defaultValue={this.props.settings.headers.join(',')}/>
+					</div>
+					<label className="control-label col-xs-1">Order:</label>
+					<div className="col-xs-2">
+						<input ref="order" type="text" className="form-control" defaultValue={this.props.settings.order}/>
+					</div>
+					<label className="control-label col-xs-1">Filter:</label>
+					<div className="col-xs-2">
+						<input ref="query" type="text" className="form-control" defaultValue={this.props.settings.query}/>
+					</div>
 				</div>
-			</div>
+
+				<div className="form-group">
+					<div className="col-xs-offset-2 col-xs-10">
+						<button type="submit" className="btn btn-primary">List</button>
+					</div>
+				</div>
+			</form>
 		);
 	}
 });
@@ -503,10 +583,13 @@ var App = React.createClass({
 		console.log("App.render()");
 		return (
 			<div>
-				<NavBar onTaskNew={this.onTaskNew}/>
-				<div style={{height: "3em"}}/>
-				<TaskCreator onTaskNew={this.onTaskNew}/>
-				<TaskListSettings settings={this.state.settings} onChanged={this.taskListSettingsChanged}/>
+				<NavBar
+					settings={this.state.settings}
+					onTaskNew={this.onTaskNew}
+					onChanged={this.taskListSettingsChanged}
+					onSearch={this.handleSearch}
+				/>
+				<div style={{height: "8em"}}/>
 				<TaskList items={this.state.items} headers={this.state.settings.headers} order={this.state.settings.order}
 					onTaskChanged={this.onTaskChanged}/>
 			</div>
@@ -692,6 +775,22 @@ var App = React.createClass({
 				}
 			});
 		}
+	},
+	handleSearch: function(search) {
+		console.log("App.handleSearch("+JSON.stringify(search)+")");
+		var settings = this.state.settings;
+		var query_l = [];
+		if (search.folder)
+			query_l.push(["folder", search.folder.join("/")]);
+		if (search.tag) {
+			_.each(search.tag, function(name) {
+				query_l.push(["->", "tag", t]);
+			});
+		}
+		if (search.horizon)
+			query_l.push(["=", "horizon", search.horizon]);
+		settings.query = JSON.stringify(query_l);
+		this.setState({settings: settings});
 	}
 });
 
@@ -733,7 +832,15 @@ NavBar = new React.createClass({
             <li className="active"><a href="./">Fixed top <span className="sr-only">(current)</span></a></li>
           </ul>
         </div>
-        <TaskCreator onTaskNew={this.props.onTaskNew}/>
+        <div className="row">
+          <div className="col-md-10">
+            <TaskCreatorInput onTaskNew={this.props.onTaskNew}/>
+          </div>
+          <div className="col-md-2">
+            <TaskSearchInput onSearch={this.props.onSearch}/>
+          </div>
+        </div>
+        <TaskListSettings settings={this.props.settings} onChanged={this.props.taskListSettingsChanged}/>
       </div>
     </nav>);
 	
