@@ -4,16 +4,14 @@
 - [x] improve TaskListSettings so that it updates based on the current route
 - [x] turn itemsCached into a map from id to item
 - [x] close items
-- [ ] TaskEditor: expand edit capabilities to include closed, deleted, archive
-- [ ] TaskEditor: fix label for archived textbox
-- [ ] TaskEditor: fix enabled status on archived textbox, so that it gets enabled when user selected 'closed'
-- [ ] TaskEditor: handle 'closed' and 'deleted' fields on item send back up to App
-- [ ] TaskEditor: handle status and archived
-- [ ] TaskEditor: folder: make it auto-complete
-- [ ] TaskEditor: more compact styling
-- [ ] delete items
-- [ ] archive items
+- [x] TaskEditor: expand edit capabilities to include closed, deleted, archive
+- [x] TaskEditor: fix enabled status on archived textbox, so that it gets enabled when user selected 'closed'
+- [x] TaskEditor: handle 'closed' and 'deleted' fields on item send back up to App
+- [x] TaskEditor: handle status and archived
+- [x] BUG: why isn't item removed from list after archiving?
+- [ ] menu item to archive closed and deleted items
 - [ ] TaskListSettings: why doesn't 'query' get updates?
+- [ ] TaskListSettings: select whether showArchived = yes|no|both
 - [ ] start working on Schedule interface
 - [ ] allow for inline editing of task elements (i.e., double-click on title opens a title input box)
 - [ ] start creating console interface?
@@ -23,6 +21,8 @@
 - [ ] let user uncheck closed button on an item
 - [ ] in close dialog, parse input to allow for number ranges such as "1-5"
 - [ ] update displayed item after edit, but how to handle changes that impact the headers and filter?
+- [ ] TaskEditor: folder: make it auto-complete
+- [ ] TaskEditor: more compact styling
 
 # Daily schedule setup:
 

@@ -318,40 +318,36 @@ function splitInputValue(ref, pattern) {
 }
 
 var TaskEditor = React.createClass({
-	handleSubmit: function(e) {
-		console.log("TaskEditor.handleSubmit()");
-		//e.stopPropogation();
-		e.preventDefault();
-		var item = _.clone(this.props.item);
-		item.title = this.refs.title.getDOMNode().value.trim();
-		item.folder = splitInputValue(this.refs.folder, "/");
-		item.horizon = this.refs.horizon.getDOMNode().value.trim();
-		item.tag = splitInputValue(this.refs.tag, ",");
-		this.props.onTaskChanged(item);
+	getInitialState: function() {
+		console.log("TaskEditor.getInitialState()");
+		var item = this.props.item;
+		var status = (item.closed) ? "closed" : (item.deleted) ? "deleted" : "open";
+		return {
+			folder: (item.folder || []).join("/"),
+			tag: (item.tag || []).join(","),
+			status: status,
+			archived: item.archived || false,
+			archiveDisabled: (status === "open")
+		};
 	},
 	render: function() {
-		var item = this.props.item;
-		var folder = (item.folder || []).join("/");
-		var tag = (item.tag || []).join(",");
-		var status = (item.closed) ? "closed" : (item.deleted) ? "deleted" : "open";
-		var archiveDisabled = (status === "open");
 		return (
 			<form onSubmit={this.handleSubmit} className="form-horizontal">
 				<div className="form-group">
 					<label className="control-label col-xs-2">Title:</label>
 					<div className="col-xs-10">
-						<input ref="title" type="text" className="form-control" defaultValue={item.title}/>
+						<input ref="title" type="text" className="form-control" defaultValue={this.props.item.title}/>
 					</div>
 				</div>
 
 				<div className="form-group">
 					<label className="control-label col-xs-2">Folder:</label>
 					<div className="col-xs-2">
-						<input ref="folder" type="text" className="form-control" defaultValue={folder}/>
+						<input ref="folder" type="text" className="form-control" defaultValue={this.state.folder}/>
 					</div>
 					<label className="control-label col-xs-1">Horizon:</label>
 					<div className="col-xs-2">
-						<select ref="horizon" className="form-control" defaultValue={item.horizon}>
+						<select ref="horizon" className="form-control" defaultValue={this.state.horizon}>
 							<option value="inbox">inbox</option>
 							<option value="today">today</option>
 							<option value="next">next</option>
@@ -363,21 +359,25 @@ var TaskEditor = React.createClass({
 					</div>
 					<label className="control-label col-xs-1">Tags:</label>
 					<div className="col-xs-4">
-						<input ref="tag" type="text" className="form-control" defaultValue={tag}/>
+						<input ref="tag" type="text" className="form-control" defaultValue={this.state.tag}/>
 					</div>
 				</div>
 
 				<div className="form-group">
 					<label className="control-label col-xs-2">Status:</label>
 					<div className="col-xs-2">
-						<select ref="status" className="form-control" defaultValue={status}>
+						<select ref="status" className="form-control" value={this.state.status}
+							onChange={this.handleStatusChange}>
 							<option value="open">open</option>
 							<option value="closed">closed</option>
 							<option value="deleted">deleted</option>
 						</select>
 					</div>
+					<label className="control-label col-xs-1">Archived:</label>
 					<div className="col-xs-2">
-						<label><input ref="archived" type="checkbox" className="form-control" defaultValue={item.archived} disabled={archiveDisabled}/>Archived</label>
+						<input ref="archived" type="checkbox" className="form-control"
+							defaultValue={this.state.archived}
+							disabled={this.state.archiveDisabled}/>
 					</div>
 				</div>
 
@@ -388,6 +388,51 @@ var TaskEditor = React.createClass({
 				</div>
 			</form>
 		);
+	},
+	handleSubmit: function(e) {
+		console.log("TaskEditor.handleSubmit()");
+		//e.stopPropogation();
+		e.preventDefault();
+		var item = _.clone(this.props.item);
+		console.log("item.title #0: "+item.title);
+		item.title = this.refs.title.getDOMNode().value.trim();
+		console.log("item.title #1: "+item.title);
+		item.folder = splitInputValue(this.refs.folder, "/");
+		item.horizon = this.refs.horizon.getDOMNode().value.trim();
+		item.tag = splitInputValue(this.refs.tag, ",");
+		var date = moment().utc().format();
+		switch (this.state.status) {
+			case "open":
+				delete item.closed;
+				delete item.deleted;
+				break;
+			case "closed":
+				if (!item.closed)
+					item.closed = date;
+				delete item.deleted;
+				break;
+			case "deleted":
+				if (!item.deleted)
+					item.deleted = date;
+				delete item.closed;
+				break;
+		}
+		var archived = this.refs.archived.getDOMNode().checked;
+		if (archived) {
+			item.archived = true;
+		}
+		else {
+			delete item.archived;
+		}
+		
+		this.props.onTaskChanged(item);
+	},
+	handleStatusChange: function(e) {
+		var status = e.target.value;
+		this.setState({
+			status: status,
+			archiveDisabled: (status === "open")
+		});
 	}
 });
 
@@ -400,7 +445,8 @@ var App = React.createClass({
 			settings: {
 				headers: ["folder"],
 				order: ["horizon", "created"],
-				query: ""
+				query: "",
+				showArchived: false
 			}
 		};
 	},
@@ -470,7 +516,7 @@ var App = React.createClass({
 	},
 	chooseItems: function(idToItemCache, settings) {
 		// Filter all the items we have
-		var filter = this.createFilterFromQuery(settings.query);
+		var filter = this.createFilterFromQuery(settings.showArchived, settings.query);
 		var items = _.values(idToItemCache).filter(filter);
 		// Sort the chosen items
 		return this.sortItems(items, settings);
@@ -507,11 +553,17 @@ var App = React.createClass({
 			}.bind(this)
 		});
 	},
-	createFilterFromQuery: function(query) {
+	createFilterFromQuery: function(showArchived, query) {
 		var ast = (query) ? JSON.parse(query) : [];
 		var filterFromAst = this.filterFromAst
 		return function(item) {
-			return item.type == "task" && filterFromAst(ast, item);
+			var b1 = true;
+			switch (showArchived || "no") {
+				case "yes": b1 = (item.archived || false); break;
+				case "no": b1 = !(item.archived || false); break;
+				case "both": b1 = true; break;
+			}
+			return item.type == "task" && b1 && filterFromAst(ast, item);
 		}
 	},
 	filterFromAst: function(ast, item) {
@@ -573,7 +625,7 @@ var App = React.createClass({
 				console.log(JSON.stringify(data));
 				// Add new item to cache
 				var idToItemCache = this.state.idToItemCache;
-				idToItemCache.push(data.item);
+				idToItemCache[data.item.id] = data.item;
 				this.updateItems(idToItemCache);
 			}.bind(this),
 			failure: function(errMsg) {
@@ -612,6 +664,8 @@ var App = React.createClass({
 		step("horizon");
 		step("tag");
 		step("closed");
+		step("deleted");
+		step("archived");
 		
 		if (!_.isEmpty(diffs)) {
 			var data = { diffs: diffs };
@@ -622,7 +676,7 @@ var App = React.createClass({
 				contentType: "application/json; charset=utf-8",
 				dataType: "json",
 				success: function(data) {
-					alert(JSON.stringify(data));
+					//alert(JSON.stringify(data));
 					if (data.result === "OK" && data.item) {
 						var idToItemCache = this.state.idToItemCache;
 						idToItemCache[data.item.id] = data.item;
@@ -637,13 +691,6 @@ var App = React.createClass({
 	}
 });
 
-/*var item0 = { "folder": ['one', 'two'], horizon: 'week', tag: ['mustdo'], title: 'rock around the clock' };
-
-React.render(
-	<TaskItem item={item0}/>,
-	document.getElementById("test")
-);
-*/
 React.render(
 	<App/>,
 	document.getElementById("app")
