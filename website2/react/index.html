@@ -549,7 +549,7 @@ var App = React.createClass({
 			},
 			'/tasks/list/:root/([\\w,]+)/([\\w,]+)': function(root0, headers0, order0) {
 				console.log("Route /tasks/list/:root/:headers/:order", root0, headers0, order0);
-				console.log("this.req: "+JSON.stringify(this.req));
+				//console.log("this: "+JSON.stringify(this));
 				var root = [];
 				var settings = {
 					headers: headers0.split(","),
@@ -565,7 +565,7 @@ var App = React.createClass({
 				var settings = {
 					headers: headers0.split(","),
 					order: order0.split(","),
-					query: query0
+					query: decodeURIComponent((query0+'').replace(/\+/g, '%20'))
 				};
 				console.log("B: "+JSON.stringify(settings));
 				this.taskListSettingsChanged(settings);
@@ -770,6 +770,9 @@ var App = React.createClass({
 			});
 		}
 	},
+	updateTaskListSettings: function(settings) {
+		location.hash = "#/tasks/list/_/"+settings.headers.join(",")+"/"+settings.order.join(",")+((settings.query) ? "/"+settings.query : "");
+	},
 	handleSearch: function(search) {
 		console.log("App.handleSearch("+JSON.stringify(search)+")");
 		var settings = this.state.settings;
@@ -778,13 +781,13 @@ var App = React.createClass({
 			query_l.push(["folder", search.folder.join("/")]);
 		if (search.tag) {
 			_.each(search.tag, function(name) {
-				query_l.push(["->", "tag", t]);
+				query_l.push(["->", "tag", name]);
 			});
 		}
 		if (search.horizon)
 			query_l.push(["=", "horizon", search.horizon]);
 		settings.query = JSON.stringify(query_l);
-		this.setState({settings: settings});
+		this.updateTaskListSettings(settings);
 	}
 });
 
