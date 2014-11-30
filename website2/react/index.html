@@ -367,10 +367,6 @@ var TaskListSettings = React.createClass({
 		return (
 			<form onSubmit={this.handleSubmit} className="form-horizontal">
 				<div className="form-group">
-					<label className="control-label col-xs-1">Search:</label>
-					<div className="col-xs-2">
-						<input ref="search" type="text" className="form-control" defaultValue={this.props.settings.search}/>
-					</div>
 					<label className="control-label col-xs-1">Headers:</label>
 					<div className="col-xs-2">
 						<input ref="headers" type="text" className="form-control" defaultValue={this.props.settings.headers.join(',')}/>
@@ -383,10 +379,7 @@ var TaskListSettings = React.createClass({
 					<div className="col-xs-2">
 						<input ref="query" type="text" className="form-control" defaultValue={this.props.settings.query}/>
 					</div>
-				</div>
-
-				<div className="form-group">
-					<div className="col-xs-offset-2 col-xs-10">
+					<div className="col-xs-offset-2 col-xs-1">
 						<button type="submit" className="btn btn-primary">List</button>
 					</div>
 				</div>
@@ -556,6 +549,7 @@ var App = React.createClass({
 			},
 			'/tasks/list/:root/([\\w,]+)/([\\w,]+)': function(root0, headers0, order0) {
 				console.log("Route /tasks/list/:root/:headers/:order", root0, headers0, order0);
+				console.log("this.req: "+JSON.stringify(this.req));
 				var root = [];
 				var settings = {
 					headers: headers0.split(","),
@@ -586,10 +580,10 @@ var App = React.createClass({
 				<NavBar
 					settings={this.state.settings}
 					onTaskNew={this.onTaskNew}
-					onChanged={this.taskListSettingsChanged}
 					onSearch={this.handleSearch}
 				/>
 				<div style={{height: "8em"}}/>
+				<TaskListSettings settings={this.state.settings} onChanged={this.taskListSettingsChanged}/>
 				<TaskList items={this.state.items} headers={this.state.settings.headers} order={this.state.settings.order}
 					onTaskChanged={this.onTaskChanged}/>
 			</div>
@@ -840,7 +834,6 @@ NavBar = new React.createClass({
             <TaskSearchInput onSearch={this.props.onSearch}/>
           </div>
         </div>
-        <TaskListSettings settings={this.props.settings} onChanged={this.props.taskListSettingsChanged}/>
       </div>
     </nav>);
 	
