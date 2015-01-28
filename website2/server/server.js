@@ -164,7 +164,7 @@ app.post('/archive', function(request, response) {
 		}
 	});
 	patch.hunks[0].ids = ids;
-0
+
 	if (ids.length > 0) {
 		var content = JSON.stringify(patch);
 		var hash = calcHash(content);
