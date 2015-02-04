@@ -172,7 +172,7 @@ app.post('/archive', function(request, response) {
 		fs.writeFileSync(filename, content);
 	}
 
-	response.write(JSON.stringify({result: "OK", deleted: timeString}));
+	response.write(JSON.stringify({result: "OK"}));
 	response.end();
 });
 

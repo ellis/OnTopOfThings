@@ -9,13 +9,18 @@
 - [x] TaskEditor: handle 'closed' and 'deleted' fields on item send back up to App
 - [x] TaskEditor: handle status and archived
 - [x] BUG: why isn't item removed from list after archiving?
+- [ ] menu item to archive closed and deleted items
+- [ ] search: also search when user presses ENTER on an empty search box (to clear the search criteria)
+- [ ] from URL parameters, fill in filter and search fields
 - [ ] App: search: search on title words
 - [ ] App: search: OR together folders, horizons, title words, tags
 - [ ] App: search: figure out way to AND the tags
 - [ ] App: search: let user put quotations around title words to specify sequence
 - [ ] TaskListSettings: why doesn't 'query' get updates?
-- [ ] menu item to archive closed and deleted items
 - [ ] TaskListSettings: select whether showArchived = yes|no|both
+- [ ] TaskListSettings: make Headers a drop-down checkbox list
+- [ ] TaskListSettings: make Order a sortable listbox
+- [ ] TaskListSettings: consider merging Search and Filter field, where '[]' is used to indicate advanced filter instead of simple search
 - [ ] start working on Schedule interface
 - [ ] allow for inline editing of task elements (i.e., double-click on title opens a title input box)
 - [ ] start creating console interface?

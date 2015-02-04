@@ -581,6 +581,7 @@ var App = React.createClass({
 					settings={this.state.settings}
 					onTaskNew={this.onTaskNew}
 					onSearch={this.handleSearch}
+					onArchive={this.handleArchive}
 				/>
 				<div style={{height: "8em"}}/>
 				<TaskListSettings settings={this.state.settings} onChanged={this.taskListSettingsChanged}/>
@@ -788,6 +789,39 @@ var App = React.createClass({
 			query_l.push(["=", "horizon", search.horizon]);
 		settings.query = JSON.stringify(query_l);
 		this.updateTaskListSettings(settings);
+	},
+	handleArchive: function() {
+		// Get ID of all items that are closed or deleted
+		var id_l = [];
+		_.each(this.state.items, function(item) {
+			if (item.closed || item.deleted) {
+				id_l.push(item.id);
+			}
+		});
+		if (!_.isEmpty(id_l)) {
+			// Tell server to archive those items
+			var data = { ids: id_l };
+			$.ajax({
+				type: "POST",
+				url: "/archive",
+				data: JSON.stringify(data),
+				contentType: "application/json; charset=utf-8",
+				dataType: "json",
+				success: function(data) {
+					//alert(JSON.stringify(data));
+					if (data.result === "OK") {
+						var idToItemCache = this.state.idToItemCache;
+						_.each(id_l, function(id) {
+							idToItemCache[id].archived = true;
+						});
+						this.updateItems(idToItemCache);
+					}
+				}.bind(this),
+				failure: function(errMsg) {
+					alert(errMsg);
+				}
+			});
+		}
 	}
 });
 
@@ -813,7 +847,7 @@ NavBar = new React.createClass({
             <li className="dropdown">
               <a href="#" className="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Dropdown <span className="caret"></span></a>
               <ul className="dropdown-menu" role="menu">
-                <li><a href="#">Action</a></li>
+				<li><a href="javascript:void(0);" onClick={this.handleArchive}>Archive closed items</a></li>
                 <li><a href="#">Another action</a></li>
                 <li><a href="#">Something else here</a></li>
                 <li className="divider"></li>
@@ -839,7 +873,10 @@ NavBar = new React.createClass({
         </div>
       </div>
     </nav>);
-	
+	},
+	handleArchive: function(e) {
+		e.preventDefault();
+		this.props.onArchive();
 	}
 });
 
