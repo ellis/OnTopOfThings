@@ -9,7 +9,7 @@
 - [x] TaskEditor: handle 'closed' and 'deleted' fields on item send back up to App
 - [x] TaskEditor: handle status and archived
 - [x] BUG: why isn't item removed from list after archiving?
-- [ ] menu item to archive closed and deleted items
+- [x] menu item to archive closed and deleted items
 - [ ] search: also search when user presses ENTER on an empty search box (to clear the search criteria)
 - [ ] from URL parameters, fill in filter and search fields
 - [ ] App: search: search on title words
