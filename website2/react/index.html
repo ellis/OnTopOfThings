@@ -350,34 +350,38 @@ var TaskList = React.createClass({
 });
 
 var TaskListSettings = React.createClass({
-	handleSubmit: function(e) {
-		e.preventDefault();
-		var headers = this.refs.headers.getDOMNode().value.trim();
-		var order = this.refs.order.getDOMNode().value.trim();
-		var query = this.refs.query.getDOMNode().value.trim();
-		var header_l = _.compact(headers.split(",").map(function(s) { return s.trim(); }));
-		var order_l = _.compact(order.split(",").map(function(s) { return s.trim(); }));
-		order_l = _.difference(order_l, header_l);
-		//this.props.onChanged({headers: header_l, order: order_l, query: query});
-		location.hash = "#/tasks/list/_/"+header_l.join(",")+"/"+order_l.join(",")+((query) ? "/"+query : "");
+	getInitialState: function() {
+		console.log("TaskListSettings.getInitialState("+JSON.stringify(this.props.settings)+")");
+		return {
+			search: this.props.settings.search,
+			headers: this.props.settings.headers,
+			order: this.props.settings.order
+		};
 	},
 	render: function() {
-		console.log("TaskListSettings.render()");
-		console.log(JSON.stringify(this.props.settings));
+		console.log("TaskListSettings.render("+JSON.stringify(this.state)+")");
 		return (
 			<form onSubmit={this.handleSubmit} className="form-horizontal">
+				<div> {JSON.stringify(this.props.settings)} </div>
+				<div>Search: {JSON.stringify(this.props.settings.search)} </div>
+				<div>State: {JSON.stringify(this.state)} </div>
 				<div className="form-group">
+					<label className="control-label col-xs-1">Search:</label>
+					<div className="col-xs-2">
+						<input ref="search"
+							type="text"
+							className="form-control"
+							value={this.state.search}
+							onChange={this.handleSearchChange}
+							onKeyDown={this.handleAllInOneKeyDown}/>
+					</div>
 					<label className="control-label col-xs-1">Headers:</label>
 					<div className="col-xs-2">
 						<input ref="headers" type="text" className="form-control" defaultValue={this.props.settings.headers.join(',')}/>
 					</div>
 					<label className="control-label col-xs-1">Order:</label>
 					<div className="col-xs-2">
-						<input ref="order" type="text" className="form-control" defaultValue={this.props.settings.order}/>
-					</div>
-					<label className="control-label col-xs-1">Filter:</label>
-					<div className="col-xs-2">
-						<input ref="query" type="text" className="form-control" defaultValue={this.props.settings.query}/>
+						<input ref="order" type="text" className="form-control" defaultValue={this.props.settings.order.join(',')}/>
 					</div>
 					<div className="col-xs-offset-2 col-xs-1">
 						<button type="submit" className="btn btn-primary">List</button>
@@ -385,7 +389,25 @@ var TaskListSettings = React.createClass({
 				</div>
 			</form>
 		);
-	}
+	},
+	handleSearchChange: function(e) {
+		this.setState({search: e.target.value});
+	},
+	handleAllInOneKeyDown: function (event) {
+		if (event.which === ENTER_KEY) {
+			this.handleSubmit(e);
+		}
+	},
+	handleSubmit: function(e) {
+		e.preventDefault();
+		var headers = this.refs.headers.getDOMNode().value.trim();
+		var order = this.refs.order.getDOMNode().value.trim();
+		var search = this.refs.search.getDOMNode().value.trim();
+		var header_l = _.compact(headers.split(",").map(function(s) { return s.trim(); }));
+		var order_l = _.compact(order.split(",").map(function(s) { return s.trim(); }));
+		order_l = _.difference(order_l, header_l);
+		location.hash = "#/tasks/list/_/"+header_l.join(",")+"/"+order_l.join(",")+((search) ? "/"+search : "");
+	},
 });
 
 function splitInputValue(ref, pattern) {
@@ -520,7 +542,7 @@ var App = React.createClass({
 			settings: {
 				headers: ["folder"],
 				order: ["horizon", "created"],
-				query: "",
+				search: "",
 				showArchived: false
 			}
 		};
@@ -536,7 +558,7 @@ var App = React.createClass({
 				settings: {
 					headers: ["folder"],
 					order: ["horizon", "created"],
-					query: ""
+					search: ""
 				}
 			}),
 			'/test2': {
@@ -554,18 +576,18 @@ var App = React.createClass({
 				var settings = {
 					headers: headers0.split(","),
 					order: order0.split(","),
-					query: ""
+					search: ""
 				};
 				console.log("A: "+JSON.stringify(settings));
 				this.taskListSettingsChanged(settings);
 			}.bind(this),
-			'/tasks/list/:root/([\\w,]+)/([\\w,]+)/(.+)': function(root0, headers0, order0, query0) {
-				console.log("Route /tasks/list/:root/:headers/:order/:query", root0, headers0, order0, query0);
+			'/tasks/list/:root/([\\w,]+)/([\\w,]+)/(.+)': function(root0, headers0, order0, search0) {
+				console.log("Route /tasks/list/:root/:headers/:order/:search", root0, headers0, order0, search0);
 				var root = [];
 				var settings = {
 					headers: headers0.split(","),
 					order: order0.split(","),
-					query: decodeURIComponent((query0+'').replace(/\+/g, '%20'))
+					search: decodeURIComponent((search0+'').replace(/\+/g, '%20'))
 				};
 				console.log("B: "+JSON.stringify(settings));
 				this.taskListSettingsChanged(settings);
@@ -591,14 +613,15 @@ var App = React.createClass({
 		);
 	},
 	taskListSettingsChanged: function(settings) {
-		console.log("App.taskListSettingsChanged("+settings+")");
+		console.log("taskListSettingsChanged("+JSON.stringify(settings)+")");
 		settings.order = _.difference(settings.order, settings.headers);
 		var items = this.chooseItems(this.state.idToItemCache, settings);
 		this.setState({items: items, settings: settings});
 	},
 	chooseItems: function(idToItemCache, settings) {
+		console.log("chooseItems("+JSON.stringify(settings)+")");
 		// Filter all the items we have
-		var filter = this.createFilterFromQuery(settings.showArchived, settings.query);
+		var filter = this.createFilterFromSearch(settings.showArchived, settings.search);
 		var items = _.values(idToItemCache).filter(filter);
 		// Sort the chosen items
 		return this.sortItems(items, settings);
@@ -635,7 +658,80 @@ var App = React.createClass({
 			}.bind(this)
 		});
 	},
+	createFilterFromSearch: function(showArchived, text) {
+		console.log("createFilterFromSearch("+text+")");
+		var query = this.createQueryFromSearch(text);
+		return this.createFilterFromQuery(showArchived, query);
+	},
+	createQueryFromSearch: function(text) {
+		console.log("createQueryFromSearch("+text+")");
+		var query = text;
+		if (text && text[0] !== '[') {
+			var word_l = text.split(" ");
+
+			// Find folder word
+			var folderWord = _.find(word_l, function(s) { return s.startsWith("/") && s.length > 1; });
+			var folder = null;
+			if (folderWord) {
+				folder = _.compact(folderWord.split("/"));
+				// Remove folder word from word list
+				var folderWord_i = _.indexOf(word_l, folderWord);
+				//console.log("A:", folderWord, folder, folderWord_i);
+				if (folderWord_i >= 0) {
+					word_l.splice(folderWord_i, 1);
+				}
+			}
+			
+			// Find horizon
+			var horizon2_l = horizon_l.map(function(s) { return "?"+s });
+			var horizonWord = _.find(word_l, function(s) {
+				return _.indexOf(horizon2_l, s) >= 0;
+			});
+			var horizon = null;
+			if (horizonWord) {
+				horizon = horizonWord.substring(1);
+				// Remove horizon word from word list
+				var horizonWord_i = _.indexOf(word_l, horizonWord);
+				if (horizonWord_i >= 0) {
+					word_l.splice(horizonWord_i, 1);
+				}
+			}
+
+			// Find tags
+			var tagWord_l = word_l.filter(function(s) { return s.startsWith("+") && s.length > 1; });
+			var tag_l = tagWord_l.map(function(s) { return s.substring(1); });
+			// Remove tag words from word list
+			word_l = _.difference(word_l, tagWord_l);
+
+			// Join words together again to create title
+			var title = word_l.join(" ");
+
+			var search = {};
+			if (title) search.title = title;
+			if (!_.isEmpty(folder)) search.folder = folder;
+			if (horizon) search.horizon = horizon;
+			if (!_.isEmpty(tag_l)) search.tag = tag_l;
+
+			if (!_.isEmpty(search)) {
+				var query_l = [];
+				if (search.folder)
+					query_l.push(["folder", search.folder.join("/")]);
+				if (search.tag) {
+					_.each(search.tag, function(name) {
+						query_l.push(["->", "tag", name]);
+					});
+				}
+				if (search.horizon)
+					query_l.push(["=", "horizon", search.horizon]);
+				if (search.title)
+					query_l.push(["contains", "title", search.title]);
+				query = JSON.stringify(query_l);
+			}
+		}
+		return query;
+	},
 	createFilterFromQuery: function(showArchived, query) {
+		console.log("createFilterFromQuery("+query+")");
 		var ast = (query) ? JSON.parse(query) : [];
 		var filterFromAst = this.filterFromAst
 		return function(item) {
@@ -772,22 +868,13 @@ var App = React.createClass({
 		}
 	},
 	updateTaskListSettings: function(settings) {
-		location.hash = "#/tasks/list/_/"+settings.headers.join(",")+"/"+settings.order.join(",")+((settings.query) ? "/"+settings.query : "");
+		location.hash = "#/tasks/list/_/"+settings.headers.join(",")+"/"+settings.order.join(",")+((settings.search) ? "/"+settings.search : "");
 	},
-	handleSearch: function(search) {
-		console.log("App.handleSearch("+JSON.stringify(search)+")");
-		var settings = this.state.settings;
-		var query_l = [];
-		if (search.folder)
-			query_l.push(["folder", search.folder.join("/")]);
-		if (search.tag) {
-			_.each(search.tag, function(name) {
-				query_l.push(["->", "tag", name]);
-			});
-		}
-		if (search.horizon)
-			query_l.push(["=", "horizon", search.horizon]);
-		settings.query = JSON.stringify(query_l);
+	// TODO: can probably get rid of this now
+	handleSearch: function(text) {
+		console.log("App.handleSearch("+text+")");
+		var settings = _.clone(this.state.settings);
+		settings.search = this.createQueryFromSearch(text);
 		this.updateTaskListSettings(settings);
 	},
 	handleArchive: function() {
