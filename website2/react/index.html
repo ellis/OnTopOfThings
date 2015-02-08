@@ -12,6 +12,7 @@
 	<script src="bower_components/underscore/underscore.js"></script>
 	<script src="bower_components/moment/moment.js"></script>
 	<script src="bower_components/bootstrap/dist/js/bootstrap.js"></script>
+	<script src="bower_components/string.startsWith/src/string.startsWith.js" type="text/javascript"></script>
 </head>
 <body>
 <section id="app" class="container"></section>
@@ -90,7 +91,7 @@ var TaskCreatorInput = React.createClass({
 			var word_l = text.split(" ");
 
 			// Find folder word
-			var folderWord = word_l.find(function(s) { return s.startsWith("/") && s.length > 1; });
+			var folderWord = word_l.find(function(s) { return startsWith(s, "/") && s.length > 1; });
 			var folder = null;
 			if (folderWord) {
 				folder = _.compact(folderWord.split("/"));
@@ -390,11 +391,15 @@ var TaskListSettings = React.createClass({
 			</form>
 		);
 	},
+	shouldComponentUpdate: function(nextProps, nextState) {
+		console.log("TaskListSettings.shouldComponentUpdate("+JSON.stringify(nextProps)+")");
+		return true;
+	},
 	handleSearchChange: function(e) {
 		this.setState({search: e.target.value});
 	},
-	handleAllInOneKeyDown: function (event) {
-		if (event.which === ENTER_KEY) {
+	handleAllInOneKeyDown: function(e) {
+		if (e.which === ENTER_KEY) {
 			this.handleSubmit(e);
 		}
 	},
