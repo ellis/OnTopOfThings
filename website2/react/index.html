@@ -145,85 +145,6 @@ var TaskCreatorInput = React.createClass({
 	}
 });
 
-var TaskSearchInput = React.createClass({
-	render: function() {
-		return (
-			<form onSubmit={this.handleSubmit} className="form-horizontal">
-				<div className="form-group">
-					<div className="col-xs-12">
-						<input
-							ref="allInOne"
-							type="text"
-							className="form-control"
-							placeholder="Search?"
-							onKeyDown={this.handleAllInOneKeyDown}
-						/>
-					</div>
-				</div>
-			</form>
-		);
-	},
-	handleAllInOneKeyDown: function (event) {
-		if (event.which !== ENTER_KEY) {
-			return;
-		}
-
-		event.preventDefault();
-
-		var text = this.refs.allInOne.getDOMNode().value.trim();
-
-		if (text) {
-			var word_l = text.split(" ");
-
-			// Find folder word
-			var folderWord = word_l.find(function(s) { return s.startsWith("/") && s.length > 1; });
-			var folder = null;
-			if (folderWord) {
-				folder = _.compact(folderWord.split("/"));
-				// Remove folder word from word list
-				var folderWord_i = _.indexOf(word_l, folderWord);
-				//console.log("A:", folderWord, folder, folderWord_i);
-				if (folderWord_i >= 0) {
-					word_l.splice(folderWord_i, 1);
-				}
-			}
-			
-			// Find horizon
-			var horizon2_l = horizon_l.map(function(s) { return "?"+s });
-			var horizonWord = _.find(word_l, function(s) {
-				return _.indexOf(horizon2_l, s) >= 0;
-			});
-			var horizon = null;
-			if (horizonWord) {
-				horizon = horizonWord.substring(1);
-				// Remove horizon word from word list
-				var horizonWord_i = _.indexOf(word_l, horizonWord);
-				if (horizonWord_i >= 0) {
-					word_l.splice(horizonWord_i, 1);
-				}
-			}
-
-			// Find tags
-			var tagWord_l = word_l.filter(function(s) { return s.startsWith("+") && s.length > 1; });
-			var tag_l = tagWord_l.map(function(s) { return s.substring(1); });
-			// Remove tag words from word list
-			word_l = _.difference(word_l, tagWord_l);
-
-			// Join words together again to create title
-			var title = word_l.join(" ");
-
-			var item = {};
-			if (title) item.title = title;
-			if (!_.isEmpty(folder)) item.folder = folder;
-			if (horizon) item.horizon = horizon;
-			if (!_.isEmpty(tag_l)) item.tag = tag_l;
-
-			if (!_.isEmpty(item))
-				this.props.onSearch(item);
-		}
-	}
-});
-
 var TaskItem = React.createClass({
 	getInitialState: function() {
 		return {
@@ -359,13 +280,17 @@ var TaskListSettings = React.createClass({
 			order: this.props.settings.order
 		};
 	},
+	componentWillReceiveProps: function(nextProps) {
+		this.setState({
+			search: nextProps.settings.search,
+			headers: nextProps.settings.headers,
+			order: nextProps.settings.order
+		});
+	},
 	render: function() {
 		console.log("TaskListSettings.render("+JSON.stringify(this.state)+")");
 		return (
 			<form onSubmit={this.handleSubmit} className="form-horizontal">
-				<div> {JSON.stringify(this.props.settings)} </div>
-				<div>Search: {JSON.stringify(this.props.settings.search)} </div>
-				<div>State: {JSON.stringify(this.state)} </div>
 				<div className="form-group">
 					<label className="control-label col-xs-1">Search:</label>
 					<div className="col-xs-2">
@@ -717,6 +642,8 @@ var App = React.createClass({
 			if (horizon) search.horizon = horizon;
 			if (!_.isEmpty(tag_l)) search.tag = tag_l;
 
+			console.log("search: "+JSON.stringify(search));
+
 			if (!_.isEmpty(search)) {
 				var query_l = [];
 				if (search.folder)
@@ -729,7 +656,7 @@ var App = React.createClass({
 				if (search.horizon)
 					query_l.push(["=", "horizon", search.horizon]);
 				if (search.title)
-					query_l.push(["contains", "title", search.title]);
+					query_l.push(["->", "title", search.title]);
 				query = JSON.stringify(query_l);
 			}
 		}
@@ -738,7 +665,7 @@ var App = React.createClass({
 	createFilterFromQuery: function(showArchived, query) {
 		console.log("createFilterFromQuery("+query+")");
 		var ast = (query) ? JSON.parse(query) : [];
-		var filterFromAst = this.filterFromAst
+		var filterFromAst = this.filterFromAst;
 		return function(item) {
 			var b1 = true;
 			switch (showArchived || "no") {
@@ -783,12 +710,18 @@ var App = React.createClass({
 					if (!_.isEqual(itemValue, queryValue))
 						return false;
 				}
-				// Contains
+				// Element of list
 				else if (op === "->") {
 					var value = elem[2];
 					if (!(item.hasOwnProperty(queryName) && item[queryName].indexOf(value) >= 0))
 						return false;
 				}
+				/*
+				else if (op === "contains") {
+					var queryValue = elem[2];
+					if (!_.isEqual(itemValue, queryValue))
+						return false;
+				}*/
 			}
 		}
 		return true;
@@ -956,11 +889,8 @@ NavBar = new React.createClass({
           </ul>
         </div>
         <div className="row">
-          <div className="col-md-10">
+          <div className="col-md-12">
             <TaskCreatorInput onTaskNew={this.props.onTaskNew}/>
-          </div>
-          <div className="col-md-2">
-            <TaskSearchInput onSearch={this.props.onSearch}/>
           </div>
         </div>
       </div>
