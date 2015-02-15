@@ -87,11 +87,8 @@ var TaskCreatorInput = React.createClass({
 
 		var text = this.refs.allInOne.getDOMNode().value.trim();
 
-		console.log("A: "+text);
-
 		if (text) {
 			var word_l = text.split(" ");
-			console.log("word_l: "+JSON.stringify(word_l));
 
 			// Find folder word
 			var folderWord = _.find(word_l, function(s) { return s.startsWith("/") && s.length > 1; });
@@ -336,6 +333,7 @@ var TaskListSettings = React.createClass({
 		var headers = this.refs.headers.getDOMNode().value.trim();
 		var order = this.refs.order.getDOMNode().value.trim();
 		var search = this.refs.search.getDOMNode().value.trim();
+		search = encodeURIComponent(''+search);
 		var header_l = _.compact(headers.split(",").map(function(s) { return s.trim(); }));
 		var order_l = _.compact(order.split(",").map(function(s) { return s.trim(); }));
 		order_l = _.difference(order_l, header_l);
@@ -494,14 +492,6 @@ var App = React.createClass({
 					search: ""
 				}
 			}),
-			'/test2': {
-				//'/([^/]*)': {
-				'/([\\w,]+)/([\\w,]+)': {
-					on: function(a, b) {
-						console.log("Route /test2/:a/:b "+a+"|"+b);
-					}
-				}
-			},
 			'/tasks/list/:root/([\\w,]+)/([\\w,]+)': function(root0, headers0, order0) {
 				console.log("Route /tasks/list/:root/:headers/:order", root0, headers0, order0);
 				//console.log("this: "+JSON.stringify(this));
