@@ -11,10 +11,11 @@
 - [x] BUG: why isn't item removed from list after archiving?
 - [x] menu item to archive closed and deleted items
 - [x] search: also search when user presses ENTER on an empty search box (to clear the search criteria)
+- [x] App: search: search on title words
 - [x] from URL parameters, fill in search field
 - [x] URL-encode the search field
 - [ ] from URL parameters, fill in header and order fields
-- [ ] App: search: search on title words
+- [ ] App: search: OR together title words
 - [ ] App: search: OR together folders, horizons, title words, tags
 - [ ] App: search: figure out way to AND the tags
 - [ ] App: search: let user put quotations around title words to specify sequence
