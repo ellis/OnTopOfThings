@@ -87,11 +87,14 @@ var TaskCreatorInput = React.createClass({
 
 		var text = this.refs.allInOne.getDOMNode().value.trim();
 
+		console.log("A: "+text);
+
 		if (text) {
 			var word_l = text.split(" ");
+			console.log("word_l: "+JSON.stringify(word_l));
 
 			// Find folder word
-			var folderWord = word_l.find(function(s) { return startsWith(s, "/") && s.length > 1; });
+			var folderWord = _.find(word_l, function(s) { return s.startsWith("/") && s.length > 1; });
 			var folder = null;
 			if (folderWord) {
 				folder = _.compact(folderWord.split("/"));
