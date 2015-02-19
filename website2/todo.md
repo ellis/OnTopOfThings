@@ -14,17 +14,16 @@
 - [x] App: search: search on title words
 - [x] from URL parameters, fill in search field
 - [x] URL-encode the search field
-- [ ] from URL parameters, fill in header and order fields
+- [x] from URL parameters, fill in header and order fields
+- [x] TaskListSettings: consider merging Search and Filter field, where '[]' is used to indicate advanced filter instead of simple search
+- [ ] TaskListSettings: make Headers a drop-down checkbox list (see http://davidstutz.github.io/bootstrap-multiselect/)
+- [ ] start working on Schedule interface
 - [ ] App: search: OR together title words
 - [ ] App: search: OR together folders, horizons, title words, tags
 - [ ] App: search: figure out way to AND the tags
 - [ ] App: search: let user put quotations around title words to specify sequence
-- [ ] TaskListSettings: why doesn't 'query' get updates?
 - [ ] TaskListSettings: select whether showArchived = yes|no|both
-- [ ] TaskListSettings: make Headers a drop-down checkbox list
 - [ ] TaskListSettings: make Order a sortable listbox
-- [ ] TaskListSettings: consider merging Search and Filter field, where '[]' is used to indicate advanced filter instead of simple search
-- [ ] start working on Schedule interface
 - [ ] allow for inline editing of task elements (i.e., double-click on title opens a title input box)
 - [ ] start creating console interface?
 - [ ] check out https://github.com/tastejs/todomvc/tree/gh-pages/examples/react

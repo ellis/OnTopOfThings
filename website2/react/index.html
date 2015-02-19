@@ -303,11 +303,21 @@ var TaskListSettings = React.createClass({
 					</div>
 					<label className="control-label col-xs-1">Headers:</label>
 					<div className="col-xs-2">
-						<input ref="headers" type="text" className="form-control" defaultValue={this.props.settings.headers.join(',')}/>
+						<input ref="headers"
+							type="text"
+							className="form-control"
+							value={this.state.headers.join(',')}
+							onChange={this.handleHeadersChange}
+							onKeyDown={this.handleAllInOneKeyDown}/>
 					</div>
 					<label className="control-label col-xs-1">Order:</label>
 					<div className="col-xs-2">
-						<input ref="order" type="text" className="form-control" defaultValue={this.props.settings.order.join(',')}/>
+						<input ref="order"
+							type="text"
+							className="form-control"
+							value={this.state.order.join(',')}
+							onChange={this.handleOrderChange}
+							onKeyDown={this.handleAllInOneKeyDown}/>
 					</div>
 					<div className="col-xs-offset-2 col-xs-1">
 						<button type="submit" className="btn btn-primary">List</button>
@@ -322,6 +332,12 @@ var TaskListSettings = React.createClass({
 	},
 	handleSearchChange: function(e) {
 		this.setState({search: e.target.value});
+	},
+	handleHeadersChange: function(e) {
+		this.setState({headers: e.target.value.split(",")});
+	},
+	handleOrderChange: function(e) {
+		this.setState({order: e.target.value.split(",")});
 	},
 	handleAllInOneKeyDown: function(e) {
 		if (e.which === ENTER_KEY) {
@@ -485,13 +501,15 @@ var App = React.createClass({
 
 		var setState = this.setState;
 		var router = Router({
-			'/': setState.bind(this, {
-				settings: {
+			'/': function() {
+				var settings = {
 					headers: ["folder"],
 					order: ["horizon", "created"],
 					search: ""
-				}
-			}),
+				};
+				console.log("A: "+JSON.stringify(settings));
+				this.taskListSettingsChanged(settings);
+			}.bind(this),
 			'/tasks/list/:root/([\\w,]+)/([\\w,]+)': function(root0, headers0, order0) {
 				console.log("Route /tasks/list/:root/:headers/:order", root0, headers0, order0);
 				//console.log("this: "+JSON.stringify(this));
@@ -501,7 +519,7 @@ var App = React.createClass({
 					order: order0.split(","),
 					search: ""
 				};
-				console.log("A: "+JSON.stringify(settings));
+				console.log("B: "+JSON.stringify(settings));
 				this.taskListSettingsChanged(settings);
 			}.bind(this),
 			'/tasks/list/:root/([\\w,]+)/([\\w,]+)/(.+)': function(root0, headers0, order0, search0) {
@@ -512,7 +530,7 @@ var App = React.createClass({
 					order: order0.split(","),
 					search: decodeURIComponent((search0+'').replace(/\+/g, '%20'))
 				};
-				console.log("B: "+JSON.stringify(settings));
+				console.log("C: "+JSON.stringify(settings));
 				this.taskListSettingsChanged(settings);
 			}.bind(this)
 		});
@@ -529,7 +547,7 @@ var App = React.createClass({
 					onArchive={this.handleArchive}
 				/>
 				<div style={{height: "8em"}}/>
-				<TaskListSettings settings={this.state.settings} onChanged={this.taskListSettingsChanged}/>
+				<TaskListSettings settings={this.state.settings}/>
 				<TaskList items={this.state.items} headers={this.state.settings.headers} order={this.state.settings.order}
 					onTaskChanged={this.onTaskChanged}/>
 			</div>
