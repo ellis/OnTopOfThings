@@ -34,6 +34,9 @@
 - [ ] update displayed item after edit, but how to handle changes that impact the headers and filter?
 - [ ] TaskEditor: folder: make it auto-complete
 - [ ] TaskEditor: more compact styling
+- [ ] TaskListSettings: why doesn't search="", headers="", order="created" work?
+- [ ] TaskListSettings: would like to list the tasks in order of newest to oldest, and from oldest to newest
+- [ ] BUG: set "search=/ppl", edit task title: why does horizon get reset to inbox?
 
 # Daily schedule setup:
 
