@@ -16,6 +16,7 @@
 - [x] URL-encode the search field
 - [x] from URL parameters, fill in header and order fields
 - [x] TaskListSettings: consider merging Search and Filter field, where '[]' is used to indicate advanced filter instead of simple search
+- [x] BUG: set "search=/ppl", edit task title: why does horizon get reset to inbox?
 - [ ] TaskListSettings: make Headers a drop-down checkbox list (see http://davidstutz.github.io/bootstrap-multiselect/)
 - [ ] start working on Schedule interface
 - [ ] App: search: OR together title words
@@ -36,7 +37,6 @@
 - [ ] TaskEditor: more compact styling
 - [ ] TaskListSettings: why doesn't search="", headers="", order="created" work?
 - [ ] TaskListSettings: would like to list the tasks in order of newest to oldest, and from oldest to newest
-- [ ] BUG: set "search=/ppl", edit task title: why does horizon get reset to inbox?
 
 # Daily schedule setup:
 

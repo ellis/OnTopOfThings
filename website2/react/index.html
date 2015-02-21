@@ -309,6 +309,30 @@ var TaskListSettings = React.createClass({
 							value={this.state.headers.join(',')}
 							onChange={this.handleHeadersChange}
 							onKeyDown={this.handleAllInOneKeyDown}/>
+						<div className="btn-group">
+							<button type="button" className="btn btn-danger">{this.state.headers.join(',') || "(empty)"}</button>
+							<button type="button" className="btn btn-danger dropdown-toggle" data-toggle="dropdown">
+								<span className="caret"></span>
+								<span className="sr-only">Toggle Dropdown</span>
+							</button>
+							<ul className="dropdown-menu" role="menu">
+								<li>&nbsp;&nbsp;&nbsp;
+									<input ref="headers_folder"
+										type="checkbox"
+										checked={_.contains(this.state.headers, 'folder')}
+										onChange={this.handleHeadersChange2.bind(this, 'folder')}/>
+									<label>folder</label>
+								</li>
+								<li>&nbsp;&nbsp;&nbsp;
+									<input ref="headers_horizon"
+										type="checkbox"
+										checked={_.contains(this.state.headers, 'horizon')}
+										onChange={this.handleHeadersChange2.bind(this, 'horizon')}/>
+									<label>horizon</label>
+								</li>
+							</ul>
+						</div>
+
 					</div>
 					<label className="control-label col-xs-1">Order:</label>
 					<div className="col-xs-2">
@@ -335,6 +359,15 @@ var TaskListSettings = React.createClass({
 	},
 	handleHeadersChange: function(e) {
 		this.setState({headers: e.target.value.split(",")});
+	},
+	handleHeadersChange2: function(name, e) {
+		console.log("handleHeadersChange2: "+JSON.stringify(this.refs.headers_folder.getDOMNode().value));
+		var headers = (_.contains(this.state.headers, name))
+			? _.without(this.state.headers, name)
+			: _.union(this.state.headers, [name]);
+		//if (this.refs.headers_folder.getDOMNode().value) headers.push("folder");
+		//if (this.refs.headers_horizon.getDOMNode().value) headers.push("horizon");
+		this.setState({headers: headers});
 	},
 	handleOrderChange: function(e) {
 		this.setState({order: e.target.value.split(",")});
