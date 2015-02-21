@@ -368,6 +368,7 @@ var TaskEditor = React.createClass({
 		var status = (item.closed) ? "closed" : (item.deleted) ? "deleted" : "open";
 		return {
 			folder: (item.folder || []).join("/"),
+			horizon: item.horizon,
 			tag: (item.tag || []).join(","),
 			status: status,
 			archived: item.archived || false,
@@ -528,7 +529,7 @@ var App = React.createClass({
 				var settings = {
 					headers: headers0.split(","),
 					order: order0.split(","),
-					search: decodeURIComponent((search0+'').replace(/\+/g, '%20'))
+					search: search0
 				};
 				console.log("C: "+JSON.stringify(settings));
 				this.taskListSettingsChanged(settings);
