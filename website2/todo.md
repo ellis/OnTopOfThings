@@ -17,6 +17,7 @@
 - [x] from URL parameters, fill in header and order fields
 - [x] TaskListSettings: consider merging Search and Filter field, where '[]' is used to indicate advanced filter instead of simple search
 - [x] BUG: set "search=/ppl", edit task title: why does horizon get reset to inbox?
+- [ ] BUG: enter "+mustdo" in search, press ENTER: gets changed to "%2Bmustdo" (but Ctrl-R fixes it again)
 - [ ] TaskListSettings: make Headers a drop-down checkbox list (see http://davidstutz.github.io/bootstrap-multiselect/)
     - make sortable: http://stackoverflow.com/questions/20424477/how-can-i-implement-a-touch-sensitive-responsive-sortable-list-supporting-drag
     - make sortable: http://jqueryui.com/sortable/
