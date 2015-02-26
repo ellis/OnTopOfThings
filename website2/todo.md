@@ -20,6 +20,7 @@
 - [x] server: change point so it's no longer 8080
 - [x] BUG: enter "+mustdo" in search, press ENTER: gets changed to "%2Bmustdo" (but Ctrl-R fixes it again)
 - [ ] manage task hierarchy, where tasks can point to parent tasks
+    - [ ] create idToChildIds map in chooseItems() around line 600
 - [ ] TaskListSettings: make Headers a drop-down checkbox list (see http://davidstutz.github.io/bootstrap-multiselect/)
     - make sortable: http://stackoverflow.com/questions/20424477/how-can-i-implement-a-touch-sensitive-responsive-sortable-list-supporting-drag
     - make sortable: http://jqueryui.com/sortable/
