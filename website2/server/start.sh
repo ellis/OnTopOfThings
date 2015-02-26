@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-node server.js 8080
+node server.js 9090

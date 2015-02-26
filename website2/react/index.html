@@ -562,7 +562,7 @@ var App = React.createClass({
 				var settings = {
 					headers: headers0.split(","),
 					order: order0.split(","),
-					search: search0
+					search: decodeURIComponent(search0)
 				};
 				console.log("C: "+JSON.stringify(settings));
 				this.taskListSettingsChanged(settings);
