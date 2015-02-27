@@ -603,6 +603,11 @@ var App = React.createClass({
 	},
 	updateItems: function(idToItemCache) {
 		var items = this.chooseItems(idToItemCache, this.state.settings);
+		var itemsWithParent = _.filter(_.values(idToItemCache), function(item) {
+			return !_.isEmpty(item.parent);
+		});
+		var idToChildren = _.groupBy(itemsWithParent, function(item) { return item.parent; });
+		console.log("idToChildren: "+JSON.stringify(idToChildren));
 		this.setState({idToItemCache: idToItemCache, items: items});
 	},
 	sortItems: function(items, settings) {
@@ -623,6 +628,13 @@ var App = React.createClass({
 			url: "/items?wrapper=items"+archived,
 			dataType: 'json',
 			success: function(snapshot) {
+				// FIXME: switch database to hold a 'parent' field instead of a 'folder' field
+				_.forEach(snapshot.items, function(item) {
+					// FIXME: make it check for a pattern like this: 3af6121d-d60c-4c7f-80d5-3598f0f2eac4, rather than just length of 32
+					if (item.hasOwnProperty("folder") && !_.isEmpty(item.folder) && _.last(item.folder).length == 32) {
+						item.parent = _.last(item.folder);
+					}
+				});
 				var idToItemCache = _.object(_.map(snapshot.items, function(item) {
 					return [item.id, item]
 				}));
