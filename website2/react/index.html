@@ -544,7 +544,7 @@ var App = React.createClass({
 				console.log("A: "+JSON.stringify(settings));
 				this.taskListSettingsChanged(settings);
 			}.bind(this),
-			'/tasks/list/:root/([\\w,]+)/([\\w,]+)': function(root0, headers0, order0) {
+			'/tasks/list/:root/([\\w,]*)/([\\w,]*)': function(root0, headers0, order0) {
 				console.log("Route /tasks/list/:root/:headers/:order", root0, headers0, order0);
 				//console.log("this: "+JSON.stringify(this));
 				var root = [];
@@ -556,7 +556,7 @@ var App = React.createClass({
 				console.log("B: "+JSON.stringify(settings));
 				this.taskListSettingsChanged(settings);
 			}.bind(this),
-			'/tasks/list/:root/([\\w,]+)/([\\w,]+)/(.+)': function(root0, headers0, order0, search0) {
+			'/tasks/list/:root/([\\w,]*)/([\\w,]*)/(.+)': function(root0, headers0, order0, search0) {
 				console.log("Route /tasks/list/:root/:headers/:order/:search", root0, headers0, order0, search0);
 				var root = [];
 				var settings = {
