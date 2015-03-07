@@ -19,6 +19,12 @@
 - [x] BUG: set "search=/ppl", edit task title: why does horizon get reset to inbox?
 - [x] server: change point so it's no longer 8080
 - [x] BUG: enter "+mustdo" in search, press ENTER: gets changed to "%2Bmustdo" (but Ctrl-R fixes it again)
+- [x] let user list tasks by age (without header)
+- [ ] try using query-string.js for query parsing
+- [ ] let user choose to display creation date
+    - for each variable: isHeader | isOrder show
+        header=folder&order=horizon,createDate&show=createDate
+- [ ] try to refactor for react-router so that I can use query parameters; may need to change toolchain...
 - [ ] manage task hierarchy, where tasks can point to parent tasks
     - [ ] work on idToChilden in updateItems() around line 609
 - [ ] TaskListSettings: make Headers a drop-down checkbox list (see http://davidstutz.github.io/bootstrap-multiselect/)
