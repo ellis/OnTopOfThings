@@ -568,6 +568,23 @@ var App = React.createClass({
 				};
 				console.log("C: "+JSON.stringify(settings));
 				this.taskListSettingsChanged(settings);
+			}.bind(this),
+			'/tasks/list2/.*': function() {
+				console.log("Route /tasks/list2/");
+				var urlQuery = queryString.parse(window.location.href.split('?')[1]);
+				console.log(urlQuery);
+				var root = [];
+				var headers0 = urlQuery.headers || "folder";
+				var order0 = urlQuery.order || "horizon,created";
+				var search0 = urlQuery.search || "";
+				console.log(JSON.stringify([headers0, order0, search0]));
+				var settings = {
+					headers: headers0.split(","),
+					order: order0.split(","),
+					search: decodeURIComponent(search0)
+				};
+				console.log("C: "+JSON.stringify(settings));
+				this.taskListSettingsChanged(settings);
 			}.bind(this)
 		});
 		router.init('/');

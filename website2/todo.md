@@ -25,6 +25,7 @@
     - for each variable: isHeader | isOrder show
         header=folder&order=horizon,createDate&show=createDate
 - [ ] try to refactor for react-router so that I can use query parameters; may need to change toolchain...
+- [ ] let user set `order` of task in its parent?  Or store ordering constraints in parent?  Or create separate item that stores ordering constraints per parent/context?
 - [ ] manage task hierarchy, where tasks can point to parent tasks
     - [ ] work on idToChilden in updateItems() around line 609
 - [ ] TaskListSettings: make Headers a drop-down checkbox list (see http://davidstutz.github.io/bootstrap-multiselect/)
