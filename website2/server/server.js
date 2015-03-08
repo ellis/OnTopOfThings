@@ -10,7 +10,7 @@ var url = require('url');
 var util = require('util');
 var _ = require('underscore');
 
-var dataDir = "../../testdata/data02/";
+var dataDir = "../../../../repo/tasks/data02/";
 
 var port = (process.argv[2]) ? process.argv[2] : 10000;
 
