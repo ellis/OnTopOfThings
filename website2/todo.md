@@ -20,7 +20,7 @@
 - [x] server: change point so it's no longer 8080
 - [x] BUG: enter "+mustdo" in search, press ENTER: gets changed to "%2Bmustdo" (but Ctrl-R fixes it again)
 - [x] let user list tasks by age (without header)
-- [ ] try using query-string.js for query parsing
+- [x] try using query-string.js for query parsing
 - [ ] let user choose to display creation date
     - for each variable: isHeader | isOrder show
         header=folder&order=horizon,createDate&show=createDate

@@ -387,7 +387,8 @@ var TaskListSettings = React.createClass({
 		var header_l = _.compact(headers.split(",").map(function(s) { return s.trim(); }));
 		var order_l = _.compact(order.split(",").map(function(s) { return s.trim(); }));
 		order_l = _.difference(order_l, header_l);
-		location.hash = "#/tasks/list/_/"+header_l.join(",")+"/"+order_l.join(",")+((search) ? "/"+search : "");
+		//location.hash = "#/tasks/list/_/"+header_l.join(",")+"/"+order_l.join(",")+((search) ? "/"+search : "");
+		location.hash = "#/tasks/list2/?headers="+header_l.join(",")+'&order='+order_l.join(",")+((search) ? "&search="+search : "");
 	},
 });
 
@@ -543,30 +544,6 @@ var App = React.createClass({
 					search: ""
 				};
 				console.log("A: "+JSON.stringify(settings));
-				this.taskListSettingsChanged(settings);
-			}.bind(this),
-			'/tasks/list/:root/([\\w,]*)/([\\w,]*)': function(root0, headers0, order0) {
-				console.log("Route /tasks/list/:root/:headers/:order", root0, headers0, order0);
-				//console.log("this: "+JSON.stringify(this));
-				var root = [];
-				var settings = {
-					headers: headers0.split(","),
-					order: order0.split(","),
-					search: ""
-				};
-				console.log("B: "+JSON.stringify(settings));
-				this.taskListSettingsChanged(settings);
-			}.bind(this),
-			'/tasks/list/:root/([\\w,]*)/([\\w,]*)/(.+)': function(root0, headers0, order0, search0) {
-				console.log("Route /tasks/list/:root/:headers/:order/:search", root0, headers0, order0, search0);
-				console.log(queryString.parse(window.location.href.split('?')[1]));
-				var root = [];
-				var settings = {
-					headers: headers0.split(","),
-					order: order0.split(","),
-					search: decodeURIComponent(search0)
-				};
-				console.log("C: "+JSON.stringify(settings));
 				this.taskListSettingsChanged(settings);
 			}.bind(this),
 			'/tasks/list2/.*': function() {
@@ -882,7 +859,9 @@ var App = React.createClass({
 		}
 	},
 	updateTaskListSettings: function(settings) {
-		location.hash = "#/tasks/list/_/"+settings.headers.join(",")+"/"+settings.order.join(",")+((settings.search) ? "/"+settings.search : "");
+		//var hash = "#/tasks/list2";
+		//'v=folder,H;horizon,O;created,O;folder,h'
+		location.hash = "#/tasks/list2/?headers="+settings.headers.join(",")+'&order='+settings.order.join(",")+((settings.search) ? "&search="+settings.search : "");
 	},
 	// TODO: can probably get rid of this now
 	handleSearch: function(text) {
