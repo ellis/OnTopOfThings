@@ -229,7 +229,7 @@ var TaskItemHeader = React.createClass({
 var TaskList = React.createClass({
 	render: function() {
 		console.log("TaskList.render()");
-		var header_l = this.props.headers;
+		var header_l = extractHeaders(this.props.settings.v);
 		console.log(" header_l: "+header_l);
 		var header0 = [];
 		var itemElems = [];
@@ -272,20 +272,43 @@ var TaskList = React.createClass({
 	}
 });
 
+function makeViewFieldsString(field_l) {
+	return _.map(field_l, function(field) { return field.name + "," + field.flag; }).join(";");
+}
+
+function parseViewFieldsString(s) {
+	var s_l = (s || "folder,H;horizon,O;created,O").split(';');
+	//console.log("s_l: "+JSON.stringify(s_l));
+	var field_l = [];
+	_.forEach(s_l, function(s) {
+		var l = s.split(',');
+		var name = l[0];
+		// TODO: do some validation here
+		field_l.push({name: name, flag: l[1]});
+	});
+	console.log("parseViewFieldsString("+s+") = "+JSON.stringify(field_l));
+	return field_l;
+}
+
+function extractHeaders(field_l) {
+	var name_l = field_l.filter(function(v) { return (v.flag == 'H'); });
+	name_l = _.map(name_l, function(v) { return v.name; });
+	console.log("extractHeaders: "+JSON.stringify(field_l)+" --- "+JSON.stringify(name_l));
+	return name_l;
+}
+
 var TaskListSettings = React.createClass({
 	getInitialState: function() {
 		console.log("TaskListSettings.getInitialState("+JSON.stringify(this.props.settings)+")");
 		return {
 			search: this.props.settings.search,
-			headers: this.props.settings.headers,
-			order: this.props.settings.order
+			fields: makeViewFieldsString(this.props.settings.v)
 		};
 	},
 	componentWillReceiveProps: function(nextProps) {
 		this.setState({
 			search: nextProps.settings.search,
-			headers: nextProps.settings.headers,
-			order: nextProps.settings.order
+			fields: makeViewFieldsString(nextProps.settings.v)
 		});
 	},
 	render: function() {
@@ -302,46 +325,13 @@ var TaskListSettings = React.createClass({
 							onChange={this.handleSearchChange}
 							onKeyDown={this.handleAllInOneKeyDown}/>
 					</div>
-					<label className="control-label col-xs-1">Headers:</label>
-					<div className="col-xs-2">
-						<input ref="headers"
+					<label className="control-label col-xs-1">Fields:</label>
+					<div className="col-xs-4">
+						<input ref="fields"
 							type="text"
 							className="form-control"
-							value={this.state.headers.join(',')}
-							onChange={this.handleHeadersChange}
-							onKeyDown={this.handleAllInOneKeyDown}/>
-						{/*<div className="btn-group">
-							<button type="button" className="btn btn-danger">{this.state.headers.join(',') || "(empty)"}</button>
-							<button type="button" className="btn btn-danger dropdown-toggle" data-toggle="dropdown">
-								<span className="caret"></span>
-								<span className="sr-only">Toggle Dropdown</span>
-							</button>
-							<ul className="dropdown-menu" role="menu">
-								<li>&nbsp;&nbsp;&nbsp;
-									<input ref="headers_folder"
-										type="checkbox"
-										checked={_.contains(this.state.headers, 'folder')}
-										onChange={this.handleHeadersChange2.bind(this, 'folder')}/>
-									<label>folder</label>
-								</li>
-								<li>&nbsp;&nbsp;&nbsp;
-									<input ref="headers_horizon"
-										type="checkbox"
-										checked={_.contains(this.state.headers, 'horizon')}
-										onChange={this.handleHeadersChange2.bind(this, 'horizon')}/>
-									<label>horizon</label>
-								</li>
-							</ul>
-						</div>*/}
-
-					</div>
-					<label className="control-label col-xs-1">Order:</label>
-					<div className="col-xs-2">
-						<input ref="order"
-							type="text"
-							className="form-control"
-							value={this.state.order.join(',')}
-							onChange={this.handleOrderChange}
+							value={this.state.fields}
+							onChange={this.handleFieldsChange}
 							onKeyDown={this.handleAllInOneKeyDown}/>
 					</div>
 					<div className="col-xs-offset-2 col-xs-1">
@@ -358,17 +348,8 @@ var TaskListSettings = React.createClass({
 	handleSearchChange: function(e) {
 		this.setState({search: e.target.value});
 	},
-	handleHeadersChange: function(e) {
-		this.setState({headers: e.target.value.split(",")});
-	},
-	handleHeadersChange2: function(name, e) {
-		console.log("handleHeadersChange2: "+JSON.stringify(this.refs.headers_folder.getDOMNode().value));
-		var headers = (_.contains(this.state.headers, name))
-			? _.without(this.state.headers, name)
-			: _.union(this.state.headers, [name]);
-		//if (this.refs.headers_folder.getDOMNode().value) headers.push("folder");
-		//if (this.refs.headers_horizon.getDOMNode().value) headers.push("horizon");
-		this.setState({headers: headers});
+	handleFieldsChange: function(e) {
+		this.setState({fields: e.target.value});
 	},
 	handleOrderChange: function(e) {
 		this.setState({order: e.target.value.split(",")});
@@ -380,15 +361,11 @@ var TaskListSettings = React.createClass({
 	},
 	handleSubmit: function(e) {
 		e.preventDefault();
-		var headers = this.refs.headers.getDOMNode().value.trim();
-		var order = this.refs.order.getDOMNode().value.trim();
 		var search = this.refs.search.getDOMNode().value.trim();
 		search = encodeURIComponent(''+search);
-		var header_l = _.compact(headers.split(",").map(function(s) { return s.trim(); }));
-		var order_l = _.compact(order.split(",").map(function(s) { return s.trim(); }));
-		order_l = _.difference(order_l, header_l);
-		//location.hash = "#/tasks/list/_/"+header_l.join(",")+"/"+order_l.join(",")+((search) ? "/"+search : "");
-		location.hash = "#/tasks/list2/?headers="+header_l.join(",")+'&order='+order_l.join(",")+((search) ? "&search="+search : "");
+		var v = parseViewFieldsString(this.refs.fields.getDOMNode().value.trim());
+		var fields = makeViewFieldsString(v)
+		location.hash = "#/tasks/list/?v="+fields+((search) ? "&search="+search : "");
 	},
 });
 
@@ -523,8 +500,11 @@ var App = React.createClass({
 			idToItemCache: {},
 			items: [],
 			settings: {
-				headers: ["folder"],
-				order: ["horizon", "created"],
+				v: [
+					{name: 'folder', flag: 'H'},
+					{name: 'horizon', flag: 'O'},
+					{name: 'created', flag: 'O'}
+				],
 				search: "",
 				showArchived: false
 			}
@@ -539,25 +519,27 @@ var App = React.createClass({
 		var router = Router({
 			'/': function() {
 				var settings = {
-					headers: ["folder"],
-					order: ["horizon", "created"],
+					v: [
+						{name: 'folder', flag: 'H'},
+						{name: 'horizon', flag: 'O'},
+						{name: 'created', flag: 'O'}
+					],
 					search: ""
 				};
 				console.log("A: "+JSON.stringify(settings));
 				this.taskListSettingsChanged(settings);
 			}.bind(this),
-			'/tasks/list2/.*': function() {
-				console.log("Route /tasks/list2/");
+			'/tasks/list/.*': function() {
+				console.log("Route /tasks/list/");
 				var urlQuery = queryString.parse(window.location.href.split('?')[1]);
 				console.log(urlQuery);
 				var root = [];
-				var headers0 = urlQuery.headers || "folder";
-				var order0 = urlQuery.order || "horizon,created";
+				var v0 = urlQuery.v || "";
+				var field_l = parseViewFieldsString(v0);
 				var search0 = urlQuery.search || "";
-				console.log(JSON.stringify([headers0, order0, search0]));
+				console.log(JSON.stringify([field_l, search0]));
 				var settings = {
-					headers: headers0.split(","),
-					order: order0.split(","),
+					v: field_l,
 					search: decodeURIComponent(search0)
 				};
 				console.log("C: "+JSON.stringify(settings));
@@ -578,14 +560,14 @@ var App = React.createClass({
 				/>
 				<div style={{height: "8em"}}/>
 				<TaskListSettings settings={this.state.settings}/>
-				<TaskList items={this.state.items} headers={this.state.settings.headers} order={this.state.settings.order}
+				<TaskList items={this.state.items} settings={this.state.settings}
 					onTaskChanged={this.onTaskChanged}/>
 			</div>
 		);
 	},
 	taskListSettingsChanged: function(settings) {
 		console.log("taskListSettingsChanged("+JSON.stringify(settings)+")");
-		settings.order = _.difference(settings.order, settings.headers);
+		// TODO: validate the settings
 		var items = this.chooseItems(this.state.idToItemCache, settings);
 		this.setState({items: items, settings: settings});
 	},
@@ -607,8 +589,10 @@ var App = React.createClass({
 		this.setState({idToItemCache: idToItemCache, items: items});
 	},
 	sortItems: function(items, settings) {
-		var criterion_l = settings.headers.concat(settings.order);
-		var comparor = createComparor(criterion_l);
+		// Get names of variables to order by
+		var l = settings.v.filter(function(v) { return (v.flag == 'H' || v.flag == 'O'); });
+		l = _.map(l, function(v) { return v.name; });
+		var comparor = createComparor(l);
 		items.sort(comparor);
 		//_.each(items, function(item) { console.log(item.folder, item.horizon); });
 		return items;
@@ -859,9 +843,9 @@ var App = React.createClass({
 		}
 	},
 	updateTaskListSettings: function(settings) {
-		//var hash = "#/tasks/list2";
+		//var hash = "#/tasks/list";
 		//'v=folder,H;horizon,O;created,O;folder,h'
-		location.hash = "#/tasks/list2/?headers="+settings.headers.join(",")+'&order='+settings.order.join(",")+((settings.search) ? "&search="+settings.search : "");
+		location.hash = "#/tasks/list/?headers="+settings.headers.join(",")+'&order='+settings.order.join(",")+((settings.search) ? "&search="+settings.search : "");
 	},
 	// TODO: can probably get rid of this now
 	handleSearch: function(text) {

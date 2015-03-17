@@ -21,9 +21,11 @@
 - [x] BUG: enter "+mustdo" in search, press ENTER: gets changed to "%2Bmustdo" (but Ctrl-R fixes it again)
 - [x] let user list tasks by age (without header)
 - [x] try using query-string.js for query parsing
+- [x] change view settings to accept query as follows:
+    v=folder,H;horizon,O;created,O;folder,S
+    where H=header, O=order, S=show, s=hide
 - [ ] let user choose to display creation date
-    - for each variable: isHeader | isOrder show
-        header=folder&order=horizon,createDate&show=createDate
+- [ ] create dialog box for detailed view settings?
 - [ ] try to refactor for react-router so that I can use query parameters; may need to change toolchain...
 - [ ] let user set `order` of task in its parent?  Or store ordering constraints in parent?  Or create separate item that stores ordering constraints per parent/context?
 - [ ] manage task hierarchy, where tasks can point to parent tasks
