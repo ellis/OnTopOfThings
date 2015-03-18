@@ -26,7 +26,6 @@
     where H=header, O=order, S=show, s=hide
 - [ ] let user choose to display creation date
 - [ ] create dialog box for detailed view settings?
-- [ ] try to refactor for react-router so that I can use query parameters; may need to change toolchain...
 - [ ] let user set `order` of task in its parent?  Or store ordering constraints in parent?  Or create separate item that stores ordering constraints per parent/context?
 - [ ] manage task hierarchy, where tasks can point to parent tasks
     - [ ] work on idToChilden in updateItems() around line 609
