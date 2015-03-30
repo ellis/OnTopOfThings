@@ -24,6 +24,7 @@
 - [x] change view settings to accept query as follows:
     v=folder,H;horizon,O;created,O;folder,S
     where H=header, O=order, S=show, s=hide
+- [ ] BUG: during item listing, when a header changes, reset the lower headers too
 - [ ] let user choose to display creation date
 - [ ] create dialog box for detailed view settings?
 - [ ] let user set `order` of task in its parent?  Or store ordering constraints in parent?  Or create separate item that stores ordering constraints per parent/context?
