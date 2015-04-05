@@ -248,6 +248,7 @@ var TaskList = React.createClass({
 				//console.log("j = "+j+", fieldName = "+fieldName+", fieldValue = "+fieldValue
 				// +", header0[j] = "+header0[j]);
 				if (!_.isEqual(fieldValue, header0[j])) {
+					header0 = _.first(header0, j);
 					header0[j] = fieldValue;
 					var headerKey = _(header0).first(j + 1).join("|");
 					itemElems.push(<TaskItemHeader key={headerKey} level={j+1} fieldName={fieldName} fieldValue={fieldValue}/>);

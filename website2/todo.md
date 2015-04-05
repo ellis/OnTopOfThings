@@ -24,7 +24,7 @@
 - [x] change view settings to accept query as follows:
     v=folder,H;horizon,O;created,O;folder,S
     where H=header, O=order, S=show, s=hide
-- [ ] BUG: during item listing, when a header changes, reset the lower headers too
+- [x] BUG: during item listing, when a header changes, reset the lower headers too
 - [ ] let user choose to display creation date
 - [ ] create dialog box for detailed view settings?
 - [ ] let user set `order` of task in its parent?  Or store ordering constraints in parent?  Or create separate item that stores ordering constraints per parent/context?
@@ -52,6 +52,8 @@
 - [ ] TaskEditor: more compact styling
 - [ ] TaskListSettings: why doesn't search="", headers="", order="created" work?
 - [ ] TaskListSettings: would like to list the tasks in order of newest to oldest, and from oldest to newest
+- [ ] rename directory `website2` to `website`
+- [ ] rename directory `website2/react` to `website/ui`
 
 # Daily schedule setup:
 
