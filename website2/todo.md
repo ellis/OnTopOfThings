@@ -26,7 +26,13 @@
     where H=header, O=order, S=show, s=hide
 - [x] BUG: during item listing, when a header changes, reset the lower headers too
 - [ ] let user choose to display creation date
+- [ ] let user display order of item display elements
+- [ ] TaskView: for each item, drop-down checkbox/menu for selecting open/done/deleted/archive
+- [ ] TaskView: add selection checkbox for selecting multiple items
+- [ ] App: add menu for operating on selected items (close, delete, archive, maybe dialog box for changing properties, like moving all items to a specific folder)
 - [ ] create dialog box for detailed view settings?
+- [ ] put search field into the header again, next to the field for new tasks
+- [ ] when user starts typing in a new task, expand the view to show more information, like tags, horizon, etc
 - [ ] let user set `order` of task in its parent?  Or store ordering constraints in parent?  Or create separate item that stores ordering constraints per parent/context?
 - [ ] manage task hierarchy, where tasks can point to parent tasks
     - [ ] work on idToChilden in updateItems() around line 609

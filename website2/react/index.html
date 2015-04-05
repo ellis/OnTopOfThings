@@ -157,6 +157,7 @@ var TaskItem = React.createClass({
 	},
 	render: function() {
 		var item = this.props.item;
+		var dateElem = null; // CONTINUE
 		var folderElem = (!item.folder || this.props['hide-folder']) ? <span/> : <span> /{item.folder.join("/")}: </span>;
 		var horizonElem = (!item.horizon || this.props['hide-horizon'])
 			? <span/>
@@ -178,6 +179,7 @@ var TaskItem = React.createClass({
 					<span style={itemStyle} onDoubleClick={this.toggleEditor}>
 						{indexElem}
 						{checkboxElem}
+						{dateElem}
 						{folderElem}
 						{horizonElem}
 						{item.title}
@@ -229,6 +231,7 @@ var TaskItemHeader = React.createClass({
 var TaskList = React.createClass({
 	render: function() {
 		console.log("TaskList.render()");
+		// CONTINUE: handle view settings better (e.g. this isn't header_l anymore), and allow somehow for TaskItem to know whether to display the creation date
 		var header_l = extractHeaders(this.props.settings.v);
 		console.log(" header_l: "+header_l);
 		var header0 = [];
