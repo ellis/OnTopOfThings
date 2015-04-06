@@ -169,8 +169,10 @@ var TaskItem = React.createClass({
 				onChange={this.onToggleClosed}
 			/>
 		var tag_l = (item.tag || []).map(function(tag) { return <span className={'tag tag-'+tag}>+{tag}</span> });
+		tag_l.push(<span>{item.created.substring(0, 10)}</span>);
+		tag_l = _.rest(_.flatten(tag_l.map(function(x) { return [", ", x]; })));
 		var tagElem = (!_.isEmpty(tag_l))
-			? <span className='tags'> ({tag_l}) </span>
+			? <span className='tags'> ({tag_l})</span>
 			: <span/>;
 		var itemStyle = (item.deleted) ? {'textDecoration': 'line-through', "color": "#808080"} : {};
 		return (

@@ -25,3 +25,6 @@ li.task input.checkbox-closed { width: 3em; margin: auto 0; }
 	color: #008080;
 }
 
+span.tags {
+	color: #066;
+}

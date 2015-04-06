@@ -22,11 +22,13 @@
 - [x] let user list tasks by age (without header)
 - [x] try using query-string.js for query parsing
 - [x] change view settings to accept query as follows:
-    v=folder,H;horizon,O;created,O;folder,S
+    v=folder,H;horizon,O;created,O;tag,S
     where H=header, O=order, S=show, s=hide
 - [x] BUG: during item listing, when a header changes, reset the lower headers too
 - [ ] let user choose to display creation date
-- [ ] let user display order of item display elements
+- [ ] let user choose order of item display elements (via the 'S' flag for view config)
+- [ ] add an 'o' view flag, that uses the element for ordering, but doesn't display it automatically
+- [ ] figure out how to sort on 'created', but either not show it at all, or show it at the end
 - [ ] TaskView: for each item, drop-down checkbox/menu for selecting open/done/deleted/archive
 - [ ] TaskView: add selection checkbox for selecting multiple items
 - [ ] App: add menu for operating on selected items (close, delete, archive, maybe dialog box for changing properties, like moving all items to a specific folder)
