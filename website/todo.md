@@ -31,6 +31,10 @@
 - [ ] figure out how to sort on 'created', but either not show it at all, or show it at the end
 - [ ] TaskView: for each item, drop-down checkbox/menu for selecting open/done/deleted/archive
 - [ ] TaskView: add selection checkbox for selecting multiple items
+- [ ] consider a json query language:
+    - https://github.com/deitch/searchjs
+    - http://www.jsoniq.org/
+    - http://objectpath.org/
 - [ ] App: add menu for operating on selected items (close, delete, archive, maybe dialog box for changing properties, like moving all items to a specific folder)
 - [ ] create dialog box for detailed view settings?
 - [ ] put search field into the header again, next to the field for new tasks
