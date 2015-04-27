@@ -25,8 +25,9 @@
     v=folder,H;horizon,O;created,O;tag,S
     where H=header, O=order, S=show, s=hide
 - [x] BUG: during item listing, when a header changes, reset the lower headers too
+- [ ] diplay creation date
+- [ ] create index objects that somehow track the order of items in a given context (e.g. project)
 - [ ] read article about todo app using ReactJS and Flux: https://www.codementor.io/reactjs/tutorial/react-js-flux-architecture-tutorial
-- [ ] let user choose to display creation date
 - [ ] let user choose order of item display elements (via the 'S' flag for view config)
 - [ ] add an 'o' view flag, that uses the element for ordering, but doesn't display it automatically
 - [ ] figure out how to sort on 'created', but either not show it at all, or show it at the end
