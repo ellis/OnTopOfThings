@@ -27,6 +27,7 @@
 - [x] BUG: during item listing, when a header changes, reset the lower headers too
 - [ ] diplay creation date
 - [ ] create index objects that somehow track the order of items in a given context (e.g. project)
+- [ ] make it easy to see tasks that have been completed
 - [ ] read article about todo app using ReactJS and Flux: https://www.codementor.io/reactjs/tutorial/react-js-flux-architecture-tutorial
 - [ ] let user choose order of item display elements (via the 'S' flag for view config)
 - [ ] add an 'o' view flag, that uses the element for ordering, but doesn't display it automatically
