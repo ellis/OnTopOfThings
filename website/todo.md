@@ -1,31 +1,5 @@
-- [x] save edits to server
-- [x] create new item
-- [x] try using 'director' for selecting page, ordering, and filters
-- [x] improve TaskListSettings so that it updates based on the current route
-- [x] turn itemsCached into a map from id to item
-- [x] close items
-- [x] TaskEditor: expand edit capabilities to include closed, deleted, archive
-- [x] TaskEditor: fix enabled status on archived textbox, so that it gets enabled when user selected 'closed'
-- [x] TaskEditor: handle 'closed' and 'deleted' fields on item send back up to App
-- [x] TaskEditor: handle status and archived
-- [x] BUG: why isn't item removed from list after archiving?
-- [x] menu item to archive closed and deleted items
-- [x] search: also search when user presses ENTER on an empty search box (to clear the search criteria)
-- [x] App: search: search on title words
-- [x] from URL parameters, fill in search field
-- [x] URL-encode the search field
-- [x] from URL parameters, fill in header and order fields
-- [x] TaskListSettings: consider merging Search and Filter field, where '[]' is used to indicate advanced filter instead of simple search
-- [x] BUG: set "search=/ppl", edit task title: why does horizon get reset to inbox?
-- [x] server: change point so it's no longer 8080
-- [x] BUG: enter "+mustdo" in search, press ENTER: gets changed to "%2Bmustdo" (but Ctrl-R fixes it again)
-- [x] let user list tasks by age (without header)
-- [x] try using query-string.js for query parsing
-- [x] change view settings to accept query as follows:
-    v=folder,H;horizon,O;created,O;tag,S
-    where H=header, O=order, S=show, s=hide
-- [x] BUG: during item listing, when a header changes, reset the lower headers too
-- [ ] diplay creation date
+# Todos
+
 - [ ] create index objects that somehow track the order of items in a given context (e.g. project)
 - [ ] make it easy to see tasks that have been completed
 - [ ] read article about todo app using ReactJS and Flux: https://www.codementor.io/reactjs/tutorial/react-js-flux-architecture-tutorial
@@ -97,3 +71,34 @@ schedule: {
 /tasks
 /tasks/list/:listname
 /tasks/list/:root/:headers/:order/:query
+
+# Completed Todos
+
+- [x] save edits to server
+- [x] create new item
+- [x] try using 'director' for selecting page, ordering, and filters
+- [x] improve TaskListSettings so that it updates based on the current route
+- [x] turn itemsCached into a map from id to item
+- [x] close items
+- [x] TaskEditor: expand edit capabilities to include closed, deleted, archive
+- [x] TaskEditor: fix enabled status on archived textbox, so that it gets enabled when user selected 'closed'
+- [x] TaskEditor: handle 'closed' and 'deleted' fields on item send back up to App
+- [x] TaskEditor: handle status and archived
+- [x] BUG: why isn't item removed from list after archiving?
+- [x] menu item to archive closed and deleted items
+- [x] search: also search when user presses ENTER on an empty search box (to clear the search criteria)
+- [x] App: search: search on title words
+- [x] from URL parameters, fill in search field
+- [x] URL-encode the search field
+- [x] from URL parameters, fill in header and order fields
+- [x] TaskListSettings: consider merging Search and Filter field, where '[]' is used to indicate advanced filter instead of simple search
+- [x] BUG: set "search=/ppl", edit task title: why does horizon get reset to inbox?
+- [x] server: change point so it's no longer 8080
+- [x] BUG: enter "+mustdo" in search, press ENTER: gets changed to "%2Bmustdo" (but Ctrl-R fixes it again)
+- [x] let user list tasks by age (without header)
+- [x] try using query-string.js for query parsing
+- [x] change view settings to accept query as follows:
+    v=folder,H;horizon,O;created,O;tag,S
+    where H=header, O=order, S=show, s=hide
+- [x] BUG: during item listing, when a header changes, reset the lower headers too
+- [x] display creation date

@@ -743,6 +743,14 @@ var App = React.createClass({
 				if (!(_.isEqual(itemValue, queryValue) || itemValue.startsWith(queryValue + "/")))
 					return false;
 			}
+			// Folder exclusion (item is not folder nor one of it's children)
+			else if (op === "!folder") {
+				var queryValue = elem[1];
+				var itemValue = item.folder.join("/");
+				//console.log("itemValue: "+itemValue+", "+_.isEqual(itemValue, queryValue)+", "+queryValue.startsWith(itemValue + "/"));
+				if (_.isEqual(itemValue, queryValue) || itemValue.startsWith(queryValue + "/"))
+					return false;
+			}
 			else {
 				var queryName = elem[1];
 				if (!item.hasOwnProperty(queryName)) return false;
@@ -756,15 +764,16 @@ var App = React.createClass({
 				// Element of list
 				else if (op === "->") {
 					var value = elem[2];
-					if (!(item.hasOwnProperty(queryName) && item[queryName].indexOf(value) >= 0))
+					if (itemValue.indexOf(value) < 0)
 						return false;
 				}
-				/*
-				else if (op === "contains") {
-					var queryValue = elem[2];
-					if (!_.isEqual(itemValue, queryValue))
+				else if (op === "<-") {
+					var list = elem[2] || [];
+					console.log("op: <-");
+					console.log(list, itemValue, list.indexOf(itemValue));
+					if (list.indexOf(item[queryName]) < 0)
 						return false;
-				}*/
+				}
 			}
 		}
 		return true;
@@ -924,6 +933,29 @@ NavBar = new React.createClass({
                 <li className="dropdown-header">Nav header</li>
                 <li><a href="#">Separated link</a></li>
                 <li><a href="#">One more separated link</a></li>
+              </ul>
+            </li>
+            <li className="dropdown">
+              <a href="#" className="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Views <span className="caret"></span></a>
+              <ul className="dropdown-menu" role="menu">
+                <li className="dropdown-header">ETH</li>
+                <li><a href="#/tasks/list/?v=folder,H;horizon,O;created,O&search=%2Feth %3Fnext">
+                  ?next</a></li>
+
+                <li className="divider"></li>
+                <li className="dropdown-header">Personal</li>
+                <li><a href='#/tasks/list/?v=folder,H;horizon,O;created,O&search=[["!folder"%2C"eth"]]'>
+                  Projects</a></li>
+                <li><a href='#/tasks/list/?v=folder,H;horizon,H;created,O&search=[["!folder"%2C"eth"]%2C["%3D"%2C"horizon"%2C"next"]]'>
+                  Review ?next</a></li>
+                <li><a href='#/tasks/list/?v=folder,H;horizon,H;created,O&search=[["!folder"%2C"eth"]%2C["<-"%2C"horizon"%2C["next"%2C"week"]]]'>
+                  Review &lt;=?week</a></li>
+                <li><a href='#/tasks/list/?v=folder,H;horizon,H;created,O&search=[["!folder"%2C"eth"]%2C["<-"%2C"horizon"%2C["next"%2C"week"%2C"month"]]]'>
+                  Review &lt;=?month</a></li>
+                <li><a href='#/tasks/list/?v=folder,H;horizon,H;created,O&search=[["!folder"%2C"eth"]%2C["<-"%2C"horizon"%2C["next"%2C"week"%2C"month"%2C"quarter"]]]'>
+                  Review &lt;=?quarter</a></li>
+                <li><a href='#/tasks/list/?v=created,O'>
+                  Chronological</a></li>
               </ul>
             </li>
           </ul>
