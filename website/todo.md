@@ -44,6 +44,7 @@
 - [ ] TaskListSettings: would like to list the tasks in order of newest to oldest, and from oldest to newest
 - [ ] rename directory `website/react` to `website/ui`
 - [ ] Add field for reason for closing an item -- this is particularly desired for when deleting the item; look at how github does it
+- [ ] Move the "Views" list to an external data file, so that it's not hard-coded to my personal view list
 
 # Daily schedule setup:
 
