@@ -43,6 +43,43 @@
 - [ ] TaskListSettings: would like to list the tasks in order of newest to oldest, and from oldest to newest
 - [ ] rename directory `website2` to `website`
 - [ ] rename directory `website2/react` to `website/ui`
+- [ ] create charts of number of tasks in various projects/tags (also over time)
+- [ ] create charts of amount of time spent on various projects/tags (also over time)
+- [ ] create a convenient way to add notes to tasks and folders; multiple notes or all in one file?  If all in one file, there would likely be merging challenges.
+
+# Indexes
+
+Ideas:
+
+- create folder items that have a list of task UUIDs; this might be useful as a starting point for other kinds of lists?  It may be challenging to merge re-orderings from multiple computers.
+- add an "index" field to tasks; this is the simplest solution, but then we need to change multiple tasks whenever one of the indexes is reordered.
+
+Let's think about the diff for ordering tasks.
+Consider using a list:
+```
+indexedItems: [A, B, C]
+
+set.remove uuid
+set.append uuid
+set.insert index uuid
+set.move uuid index
+
+when items are archive, they need to also be removed from the indexedItems list
+```
+
+Consider using a map:
+```
+indexedItems:
+  A: 1
+  B: 2
+
+map.append key value
+map.remove key
+
+to change order, submit multiple fields on the map.
+should be easy to merge, but still have difficulty of duplicate index values.
+when items are archive, they need to also be removed from the indexedItems map
+```
 
 # Daily schedule setup:
 
