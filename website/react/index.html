@@ -940,7 +940,13 @@ NavBar = new React.createClass({
               <ul className="dropdown-menu" role="menu">
                 <li className="dropdown-header">ETH</li>
                 <li><a href="#/tasks/list/?v=folder,H;horizon,O;created,O&search=%2Feth %3Fnext">
-                  ?next</a></li>
+                  Review ?next</a></li>
+                <li><a href='#/tasks/list/?v=folder,H;horizon,H;created,O&search=[["folder"%2C"eth"]%2C["<-"%2C"horizon"%2C["next"%2C"week"]]]'>
+                  Review ?week</a></li>
+                <li><a href='#/tasks/list/?v=folder,H;horizon,H;created,O&search=[["folder"%2C"eth"]%2C["<-"%2C"horizon"%2C["next"%2C"week"%2C"month"]]]'>
+                  Review ?month</a></li>
+                <li><a href='#/tasks/list/?v=folder,H;horizon,H;created,O&search=%2Bworkmisc'>
+                  +workmisc</a></li>
 
                 <li className="divider"></li>
                 <li className="dropdown-header">Personal</li>

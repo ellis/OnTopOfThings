@@ -5,7 +5,7 @@
 - [ ] read article about todo app using ReactJS and Flux: https://www.codementor.io/reactjs/tutorial/react-js-flux-architecture-tutorial
 - [ ] let user choose order of item display elements (via the 'S' flag for view config)
 - [ ] add an 'o' view flag, that uses the element for ordering, but doesn't display it automatically
-- [ ] figure out how to sort on 'created', but either not show it at all, or show it at the end
+- [ ] figure out view specification for how to sort on 'created', but either not show it at all, or show it at the end
 - [ ] TaskView: for each item, drop-down checkbox/menu for selecting open/done/deleted/archive
 - [ ] TaskView: add selection checkbox for selecting multiple items
 - [ ] consider a json query language:
@@ -23,6 +23,7 @@
     - make sortable: http://stackoverflow.com/questions/20424477/how-can-i-implement-a-touch-sensitive-responsive-sortable-list-supporting-drag
     - make sortable: http://jqueryui.com/sortable/
 - [ ] start working on Schedule interface
+- [ ] App: search: automatically OR together values for field when multiple were specificed for folders, horizions, tags (e.g. "/per /fam" should show both /per and /fam folders)
 - [ ] App: search: OR together title words
 - [ ] App: search: OR together folders, horizons, title words, tags
 - [ ] App: search: figure out way to AND the tags
@@ -43,6 +44,46 @@
 - [ ] TaskListSettings: would like to list the tasks in order of newest to oldest, and from oldest to newest
 - [ ] rename directory `website2` to `website`
 - [ ] rename directory `website2/react` to `website/ui`
+- [ ] create charts of number of tasks in various projects/tags (also over time)
+- [ ] create charts of amount of time spent on various projects/tags (also over time)
+- [ ] create a convenient way to add notes to tasks and folders; multiple notes or all in one file?  If all in one file, there would likely be merging challenges.
+- [ ] rename directory `website/react` to `website/ui`
+- [ ] Add field for reason for closing an item -- this is particularly desired for when deleting the item; look at how github does it
+- [ ] Move the "Views" list to an external data file, so that it's not hard-coded to my personal view list
+
+# Indexes
+
+Ideas:
+
+- create folder items that have a list of task UUIDs; this might be useful as a starting point for other kinds of lists?  It may be challenging to merge re-orderings from multiple computers.
+- add an "index" field to tasks; this is the simplest solution, but then we need to change multiple tasks whenever one of the indexes is reordered.
+
+Let's think about the diff for ordering tasks.
+Consider using a list:
+```
+indexedItems: [A, B, C]
+
+set.remove uuid
+set.append uuid
+set.insert index uuid
+set.move uuid index
+
+when items are archive, they need to also be removed from the indexedItems list
+```
+
+Consider using a map:
+```
+indexedItems:
+  A: 1
+  B: 2
+
+map.append key value
+map.remove key
+
+to change order, submit multiple fields on the map.
+should be easy to merge, but still have difficulty of duplicate index values.
+when items are archive, they need to also be removed from the indexedItems map
+```
 
 # Daily schedule setup:
 
@@ -102,3 +143,4 @@ schedule: {
     where H=header, O=order, S=show, s=hide
 - [x] BUG: during item listing, when a header changes, reset the lower headers too
 - [x] display creation date
+- [x] rename directory `website2` to `website`
