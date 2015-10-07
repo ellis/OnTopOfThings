@@ -1,0 +1,23 @@
+{
+  "name": "server-redux",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --compilers js:babel/register --require ./test/test_helper.js --recursive test"
+  },
+  "author": "Ellis Whitehead",
+  "license": "GPL-3.0",
+  "dependencies": {
+    "babel": "^5.8.23",
+    "immutable": "^3.7.5",
+    "immutablepatch": "^0.2.2",
+    "lodash": "^3.10.1",
+    "redux": "^3.0.2"
+  },
+  "devDependencies": {
+    "chai": "^3.3.0",
+    "chai-immutable": "^1.3.0",
+    "mocha": "^2.3.3"
+  }
+}
