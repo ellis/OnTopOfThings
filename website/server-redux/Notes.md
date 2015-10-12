@@ -31,12 +31,21 @@ Lists are sorted by item creation time.
 
 # Terminology
 
-I have a problem with "hidden" items and "archives".
+## Problems
+
+I have a problem with the terminology for "hidden" items and "archives".
 
 * hidden: hide, archive, dismiss, close
 * archives: archive, detach, store, vault
 
-Closed/hidden/dismissed items: items can either be open/active, closed/done/finished/completed, deleted/discarded/trashed.
+Currently (2015-10-10), I'm thinking:
+
+* `closed: true` for items which shouldn't be in "active" views
+  (what I used to call "archived").
+* `status: "null|done|discarded"`
+
+
+Closed/hidden/dismissed items: items can either be open/active, closed/done/finished/completed, cancelled/deleted/discarded/trashed.
 We could also enter a "closing note", such as "decided against", "no longer relevant",
 "deadline passed", "not interested", etc.
 
