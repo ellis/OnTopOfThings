@@ -18,6 +18,7 @@
 Future
 
 * [ ] merge two .hst files
+* [ ] consider using a git merge hook to maintain a single JSON file instead of many (see <http://blog.joshhaas.com/2014/06/how-to-merge-json-files-using-git/>)
 
 # File types
 
