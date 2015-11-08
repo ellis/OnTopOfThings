@@ -17,6 +17,7 @@
 Future
 
 * [ ] merge two .hst files
+* [ ] consider using a git merge hook to maintain a single JSON file instead of many (see <http://blog.joshhaas.com/2014/06/how-to-merge-json-files-using-git/>)
 
 # File types
 
@@ -36,12 +37,21 @@ authorization when multiple people are collaborating.
 "Archival" will then be the term for the removal of items to separate storage,
 in which case they won't show up in the usual list of items at all.
 
-I have a problem with "hidden" items and "archives".
+## Problems
+
+I have a problem with the terminology for "hidden" items and "archives".
 
 * hidden: hide, archive, dismiss, close
 * archives: archive, detach, store, vault
 
-Closed/hidden/dismissed items: items can either be open/active, closed/done/finished/completed, deleted/discarded/trashed.
+Currently (2015-10-10), I'm thinking:
+
+* `closed: true` for items which shouldn't be in "active" views
+  (what I used to call "archived").
+* `status: "null|done|discarded"`
+
+
+Closed/hidden/dismissed items: items can either be open/active, closed/done/finished/completed, cancelled/deleted/discarded/trashed.
 We could also enter a "closing note", such as "decided against", "no longer relevant",
 "deadline passed", "not interested", etc.
 
