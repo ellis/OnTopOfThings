@@ -37,7 +37,7 @@ function printDataStream() {
 		const id = pair[1];
 		const item = state0.getIn(['items', id]).toJS();
 		const data = _.pick(item.data, _(item.data).keys().sort().value());
-		console.log(JSON.stringify([item.id, data]));
+		console.log(JSON.stringify([item.id, {data, history: item.history}]));
 	}
 }
 

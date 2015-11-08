@@ -1,19 +1,18 @@
 # TODOs
 
-* [ ] consider combining action files together into .lst files:
-        ``for file in 20150907_161654857-741b3b13bf185b3e048935f0a437b37e.json 20150907_162005502-2c648d243cb1beedc2e19b737bc2c165.json; do cat $file; echo; done``
-* [ ] history file needs `ver` parameter for history items
-* [ ] in history file, the keys of history item data should be sorted
+* [ ] items need a `ver` parameter, and their history items need a `ver` parameter
 * [ ] reformat data:
     * [ ] remove `id` from history items
     * [ ] change tag array to tag map
     * [ ] change deleted items to set `closed` time and `closedType: discarded`
     * [ ] temporarily `_.omit(historyData, 'content')` to get rid of obsolete field
-* [ ] consider automatically adding field id, creator, created when merging the first history data item
-* [ ] allow for history (.hst) files in data dir, output of `printHistoryStream()`
-    * [ ] figure out how to load `.hst` file in as newline-separated JSON files
-    * [ ] ignore any .json files with earlier dates than the last .hst file
+* [ ] automatically add field id, creator, created when merging the first history data item
+* [ ] allow for .dat1 files in data dir, output of `printDataStream()`
+    * [ ] figure out how to load `.dat1` file as newline-separated JSON files
+    * [ ] ignore any files with earlier dates than the last .dat1 file
 * [ ] try to figure out what searches can be done with JMESPath
+* [ ] consider combining current action files together into a single .acts file for archival:
+        ``for file in 20150907_161654857-741b3b13bf185b3e048935f0a437b37e.json 20150907_162005502-2c648d243cb1beedc2e19b737bc2c165.json; do cat $file; echo; done``
 
 Future
 
@@ -31,6 +30,12 @@ Lists are sorted by item creation time.
 
 # Terminology
 
+CONCLUSION: items can be marked as "dismissed", in which case they don't show
+up in default views.  The dismissal can potentially be limited by
+authorization when multiple people are collaborating.
+"Archival" will then be the term for the removal of items to separate storage,
+in which case they won't show up in the usual list of items at all.
+
 I have a problem with "hidden" items and "archives".
 
 * hidden: hide, archive, dismiss, close
@@ -42,6 +47,7 @@ We could also enter a "closing note", such as "decided against", "no longer rele
 
 Here's a big problem with hiding items: it's a very user-specific kind of decision,
 and I'm not sure how to handle it when sharing lists among users.
+But for now, I think it's best to allow this anyway.
 
 status: open, accepted, rejected, inwork, complete, deleted, concluded
 
@@ -74,8 +80,8 @@ The "Compress" procedure does the following:
     * make sure that "Compress" was executed up to the date of the modified item,
       because otherwise we won't be able to get rid of the actions that affect
       items that are both in the archive set and outside of it.
-    * export the items
-    * remove the items
+    * export the items to a storage folder
+    * remove the items from the current `.dat1` file
 
 # New format/protocol thoughts
 
