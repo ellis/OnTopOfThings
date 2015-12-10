@@ -18,7 +18,7 @@ import _ from 'lodash';
 let order = [];
 state0.get('items').forEach((value, key) => {
 	//console.log(value.get('created'));
-	order.push([value.getIn(['data', 'created'], '0'), key]);
+	order.push([value.get('created', '0'), key]);
 });
 //console.log(order);
 order.sort();
@@ -36,8 +36,10 @@ function printDataStream() {
 	for (let pair of order) {
 		const id = pair[1];
 		const item = state0.getIn(['items', id]).toJS();
-		const data = _.pick(item.data, _(item.data).keys().sort().value());
-		console.log(JSON.stringify([item.id, {data, history: item.history}]));
+		//console.log(item);
+		const dataKeys = _(item.data).keys().without('history').sort().value();
+		const data = _.pick(item.data, dataKeys);
+		console.log(JSON.stringify([id, {ver: item.ver, data: data, history: item.history}]));
 	}
 }
 

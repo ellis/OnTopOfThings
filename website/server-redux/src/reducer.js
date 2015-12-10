@@ -22,39 +22,46 @@ function patch1(state, user, time, id, diffs) {
 	state = state
 		.updateIn(
 			['items', id],
-			Map(),
-			data0 => data0.merge(historyData).update('history', List(),
-				history => history.push(historyItem)
-			)
+			Map({data: Map(), history: List()}),
+			data0 => data0
+				.mergeIn(['data'], historyData)
+				.mergeIn(['ver'], verCurrent)
+				.update('history', List(),
+					history => history.push(historyItem)
+				)
 		);
+	return state;
 }
 
 export default function reducer(state, action) {
 	try {
 		switch (action.type) {
+			// Snapshot format from OnTopOfThings 2014
 			case 'snapshot':
-				for (const item of action.items) {
-					const historyData = _.omit(item, 'creator', 'created', 'id');
-					const data = _.omit(item, 'id');
-					data.tags = _.zipObject(_.map(item.tags, s => [s, true]));
-					data.history = [{
-						data: historyData,
-						time: item.created,
-						user: item.creator,
-						ver: verCurrent
-					}];
-					data.ver = verCurrent;
-					state = state.setIn(['items', item.id], fromJS(data));
+				for (const item0 of action.items) {
+					const historyData = _.omit(item0, 'creator', 'created', 'id');
+					const data = _.omit(item0, 'id');
+					data.tags = _.zipObject(_.map(item0.tags, s => [s, true]));
+					const item = {
+						ver: verCurrent,
+						data: data,
+						history: [{
+							data: historyData,
+							time: item0.created,
+							user: item0.creator
+						}]
+					};
+					state = state.setIn(['items', item0.id], fromJS(item));
 				}
 				break;
 			case 'patch1': {
-				patch1(state, action.user, action.time, action.id, action.diffs);
+				state = patch1(state, action.user, action.time, action.id, action.diffs);
 				break;
 			}
 			case 'patchN': {
 				for (const hunk of action.hunks) {
 					for (const id of hunk.ids) {
-						patch1(state, action.user, action.time, id, hunk.diffs);
+						state = patch1(state, action.user, action.time, id, hunk.diffs);
 					}
 				}
 				break;

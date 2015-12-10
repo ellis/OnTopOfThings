@@ -1,6 +1,7 @@
 # TODOs
 
 * [ ] items need a `ver` parameter, and their history items need a `ver` parameter
+* [ ] BUG: printDataStream: why doesn't third item, 00cc7434-269a-46e5-e038-561938b19eb1, have a data property?
 * [ ] reformat data:
     * [ ] remove `id` from history items
     * [ ] change tag array to tag map
@@ -134,7 +135,7 @@ We can either have a parent reference or child references.
 
 ## Parent references
 
-Nice an unambiguous.
+Nice and unambiguous.
 
 ## Child references
 
